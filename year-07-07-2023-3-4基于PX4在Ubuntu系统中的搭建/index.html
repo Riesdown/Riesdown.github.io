@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 6.3.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon.ico">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon.ico">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha256-HtsXJanqjKTc8vVQjO4YMhiqFoXkfBsjBWcX91T1jr8=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"riesdown.github.io","root":"/","images":"/images","scheme":"Gemini","darkmode":false,"version":"8.17.1","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12},"copycode":{"enable":false,"style":null},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false}}</script><script src="/js/config.js"></script>
+
+
+
+
+    <meta name="description" content="基于PX4在Ubuntu仿真环境中的搭建（ROS+Gazebo+Mavros+PX4+QGC）虚拟机的安装（VMware+Ubuntu18.04）VMware的安装 下载 VMware workstation pro https:&#x2F;&#x2F;customerconnect.vmware.com&#x2F;cn&#x2F;downloads&#x2F;info&#x2F;slug&#x2F;desktop_end_user_computing&#x2F;vmware">
+<meta property="og:type" content="article">
+<meta property="og:title" content="基于PX4在Ubuntu系统中的搭建">
+<meta property="og:url" content="http://riesdown.github.io/year-07-07-2023-3-4%E5%9F%BA%E4%BA%8EPX4%E5%9C%A8Ubuntu%E7%B3%BB%E7%BB%9F%E4%B8%AD%E7%9A%84%E6%90%AD%E5%BB%BA/index.html">
+<meta property="og:site_name" content="BiuBiu驿站">
+<meta property="og:description" content="基于PX4在Ubuntu仿真环境中的搭建（ROS+Gazebo+Mavros+PX4+QGC）虚拟机的安装（VMware+Ubuntu18.04）VMware的安装 下载 VMware workstation pro https:&#x2F;&#x2F;customerconnect.vmware.com&#x2F;cn&#x2F;downloads&#x2F;info&#x2F;slug&#x2F;desktop_end_user_computing&#x2F;vmware">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://riesdown.github.io/year-07-07-2023-3-4%E5%9F%BA%E4%BA%8EPX4%E5%9C%A8Ubuntu%E7%B3%BB%E7%BB%9F%E4%B8%AD%E7%9A%84%E6%90%AD%E5%BB%BA/Ubuntu%E7%8E%AF%E5%A2%831.png">
+<meta property="article:published_time" content="2023-07-07T14:20:34.000Z">
+<meta property="article:modified_time" content="2023-07-07T14:44:06.483Z">
+<meta property="article:author" content="Li">
+<meta property="article:tag" content="无人机">
+<meta property="article:tag" content="PX4">
+<meta property="article:tag" content="Ubuntu">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://riesdown.github.io/year-07-07-2023-3-4%E5%9F%BA%E4%BA%8EPX4%E5%9C%A8Ubuntu%E7%B3%BB%E7%BB%9F%E4%B8%AD%E7%9A%84%E6%90%AD%E5%BB%BA/Ubuntu%E7%8E%AF%E5%A2%831.png">
+
+
+<link rel="canonical" href="http://riesdown.github.io/year-07-07-2023-3-4%E5%9F%BA%E4%BA%8EPX4%E5%9C%A8Ubuntu%E7%B3%BB%E7%BB%9F%E4%B8%AD%E7%9A%84%E6%90%AD%E5%BB%BA/">
+
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"http://riesdown.github.io/year-07-07-2023-3-4%E5%9F%BA%E4%BA%8EPX4%E5%9C%A8Ubuntu%E7%B3%BB%E7%BB%9F%E4%B8%AD%E7%9A%84%E6%90%AD%E5%BB%BA/","path":"year-07-07-2023-3-4基于PX4在Ubuntu系统中的搭建/","title":"基于PX4在Ubuntu系统中的搭建"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>基于PX4在Ubuntu系统中的搭建 | BiuBiu驿站</title>
+  
+
+
+
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+<link rel="alternate" href="/atom.xml" title="BiuBiu驿站" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">BiuBiu驿站</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">道阻且长,行且将至</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜索" role="button">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a></li><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a></li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup"><div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off" maxlength="80"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close" role="button">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div class="search-result-container no-result">
+  <div class="search-result-icon">
+    <i class="fa fa-spinner fa-pulse fa-5x"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%9F%BA%E4%BA%8EPX4%E5%9C%A8Ubuntu%E4%BB%BF%E7%9C%9F%E7%8E%AF%E5%A2%83%E4%B8%AD%E7%9A%84%E6%90%AD%E5%BB%BA%EF%BC%88ROS-Gazebo-Mavros-PX4-QGC%EF%BC%89"><span class="nav-number">1.</span> <span class="nav-text">基于PX4在Ubuntu仿真环境中的搭建（ROS+Gazebo+Mavros+PX4+QGC）</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%99%9A%E6%8B%9F%E6%9C%BA%E7%9A%84%E5%AE%89%E8%A3%85%EF%BC%88VMware-Ubuntu18-04%EF%BC%89"><span class="nav-number">1.1.</span> <span class="nav-text">虚拟机的安装（VMware+Ubuntu18.04）</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#VMware%E7%9A%84%E5%AE%89%E8%A3%85"><span class="nav-number">1.1.1.</span> <span class="nav-text">VMware的安装</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AE%89%E8%A3%85Ubuntu%E7%B3%BB%E7%BB%9F"><span class="nav-number">1.1.2.</span> <span class="nav-text">安装Ubuntu系统</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%AE%89%E8%A3%85Ubuntu%E7%B3%BB%E7%BB%9F%EF%BC%88%E9%80%89%E6%8B%A918-04%EF%BC%89"><span class="nav-number">1.1.2.1.</span> <span class="nav-text">安装Ubuntu系统（选择18.04）</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%AE%89%E8%A3%85VMware-tools"><span class="nav-number">1.1.2.2.</span> <span class="nav-text">安装VMware tools</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%8E%AF%E5%A2%83%E6%90%AD%E5%BB%BA"><span class="nav-number">1.2.</span> <span class="nav-text">环境搭建</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#ROS%E7%8E%AF%E5%A2%83%E5%AE%89%E8%A3%85"><span class="nav-number">1.2.0.1.</span> <span class="nav-text">ROS环境安装</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#%E4%BE%9D%E8%B5%96%E5%AE%89%E8%A3%85"><span class="nav-number">1.2.0.1.1.</span> <span class="nav-text">依赖安装</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#ROS%E5%AE%89%E8%A3%85"><span class="nav-number">1.2.0.1.2.</span> <span class="nav-text">ROS安装</span></a><ol class="nav-child"><li class="nav-item nav-level-6"><a class="nav-link" href="#%E9%85%8D%E7%BD%AEUbuntu%E6%BA%90%E7%A0%81%E5%BA%93"><span class="nav-number">1.2.0.1.2.1.</span> <span class="nav-text">配置Ubuntu源码库</span></a></li><li class="nav-item nav-level-6"><a class="nav-link" href="#%E8%AE%BE%E7%BD%AEsources-list"><span class="nav-number">1.2.0.1.2.2.</span> <span class="nav-text">设置sources.list</span></a></li><li class="nav-item nav-level-6"><a class="nav-link" href="#%E6%8A%A5%E9%94%99%E5%88%99%E8%BE%93%E5%85%A5"><span class="nav-number">1.2.0.1.2.3.</span> <span class="nav-text">报错则输入</span></a></li><li class="nav-item nav-level-6"><a class="nav-link" href="#%E8%AE%BE%E5%AE%9A%E7%8E%AF%E5%A2%83"><span class="nav-number">1.2.0.1.2.4.</span> <span class="nav-text">设定环境</span></a></li><li class="nav-item nav-level-6"><a class="nav-link" href="#%E6%96%B0%E5%BB%BA%E5%B7%A5%E4%BD%9C%E7%A9%BA%E9%97%B4"><span class="nav-number">1.2.0.1.2.5.</span> <span class="nav-text">新建工作空间</span></a></li></ol></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E8%AE%BE%E7%BD%AE%E8%AE%A1%E7%AE%97%E6%9C%BA%E4%BB%A5%E6%8E%A5%E5%8F%97%E6%9D%A5%E8%87%AApackage-osrfoundation-org%E7%9A%84%E8%BD%AF%E4%BB%B6"><span class="nav-number">1.2.0.1.3.</span> <span class="nav-text">设置计算机以接受来自package.osrfoundation.org的软件</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E5%AE%89%E8%A3%85gazebo%E6%8C%87%E4%BB%A4"><span class="nav-number">1.2.0.1.4.</span> <span class="nav-text">安装gazebo指令</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#PX4%E9%85%8D%E7%BD%AE"><span class="nav-number">1.2.0.2.</span> <span class="nav-text">PX4配置</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#%E6%9B%B4%E6%96%B0%E5%AD%90%E6%A8%A1%E5%9D%97%E7%BB%84"><span class="nav-number">1.2.0.2.1.</span> <span class="nav-text">更新子模块组</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E5%AE%89%E8%A3%85%E5%BF%85%E8%A6%81%E7%9A%84python%E4%BE%9D%E8%B5%96"><span class="nav-number">1.2.0.2.2.</span> <span class="nav-text">安装必要的python依赖</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E6%96%B0%E5%BB%BA%E7%BB%88%E7%AB%AF%EF%BC%8C%E4%BF%AE%E6%94%B9bashrc%E8%B7%AF%E5%BE%84"><span class="nav-number">1.2.0.2.3.</span> <span class="nav-text">新建终端，修改bashrc路径</span></a></li></ol></li></ol></li></ol></li></ol></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Li"
+      src="/images/hexo.jpg">
+  <p class="site-author-name" itemprop="name">Li</p>
+  <div class="site-description" itemprop="description">立德立言,无问西东</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">7</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+          <a href="/categories/">
+        <span class="site-state-item-count">5</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">8</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="">
+    <a target="_blank" class="social-link" href="https://github.com/Riesdown" style="color: burlywood;">
+      <span class="icon">
+        <i class="fa fa-rss"></i>
+      </span>
+      <span class="label">Github</span>
+    </a>
+  </div>
+
+        </div>
+      </div>
+    </div>
+
+    
+    
+    <aside class="sidebar">
+      <div class="sidebar-inner">
+        <iframe frameborder="no" border="0" marginwidth="0" marginheight="0" width=330 height=450 src="//music.163.com/outchain/player?type=0&id=8536756407&auto=1&height=430">
+        </iframe>
+  </aside>
+
+
+    </div>
+    
+
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://riesdown.github.io/year-07-07-2023-3-4%E5%9F%BA%E4%BA%8EPX4%E5%9C%A8Ubuntu%E7%B3%BB%E7%BB%9F%E4%B8%AD%E7%9A%84%E6%90%AD%E5%BB%BA/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/hexo.jpg">
+      <meta itemprop="name" content="Li">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="BiuBiu驿站">
+      <meta itemprop="description" content="立德立言,无问西东">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="基于PX4在Ubuntu系统中的搭建 | BiuBiu驿站">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          基于PX4在Ubuntu系统中的搭建
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+      
+
+      <time title="创建时间：2023-07-07 22:20:34 / 修改时间：22:44:06" itemprop="dateCreated datePublished" datetime="2023-07-07T22:20:34+08:00">2023-07-07</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/PX4-%E7%8E%AF%E5%A2%83%E6%90%AD%E5%BB%BA/" itemprop="url" rel="index"><span itemprop="name">PX4 环境搭建</span></a>
+        </span>
+    </span>
+
+  
+    <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv">
+      <span class="post-meta-item-icon">
+        <i class="far fa-eye"></i>
+      </span>
+      <span class="post-meta-item-text">阅读次数：</span>
+      <span id="busuanzi_value_page_pv"></span>
+    </span>
+    <span class="post-meta-break"></span>
+    <span class="post-meta-item" title="本文字数">
+      <span class="post-meta-item-icon">
+        <i class="far fa-file-word"></i>
+      </span>
+      <span class="post-meta-item-text">本文字数：</span>
+      <span>7k</span>
+    </span>
+    <span class="post-meta-item" title="阅读时长">
+      <span class="post-meta-item-icon">
+        <i class="far fa-clock"></i>
+      </span>
+      <span class="post-meta-item-text">阅读时长 &asymp;</span>
+      <span>13 分钟</span>
+    </span>
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><h1 id="基于PX4在Ubuntu仿真环境中的搭建（ROS-Gazebo-Mavros-PX4-QGC）"><a href="#基于PX4在Ubuntu仿真环境中的搭建（ROS-Gazebo-Mavros-PX4-QGC）" class="headerlink" title="基于PX4在Ubuntu仿真环境中的搭建（ROS+Gazebo+Mavros+PX4+QGC）"></a>基于PX4在Ubuntu仿真环境中的搭建（ROS+Gazebo+Mavros+PX4+QGC）</h1><h2 id="虚拟机的安装（VMware-Ubuntu18-04）"><a href="#虚拟机的安装（VMware-Ubuntu18-04）" class="headerlink" title="虚拟机的安装（VMware+Ubuntu18.04）"></a>虚拟机的安装（VMware+Ubuntu18.04）</h2><h3 id="VMware的安装"><a href="#VMware的安装" class="headerlink" title="VMware的安装"></a>VMware的安装</h3><ul>
+<li>下载 VMware workstation pro<ul>
+<li><a target="_blank" rel="noopener" href="https://customerconnect.vmware.com/cn/downloads/info/slug/desktop_end_user_computing/vmware_workstation_pro/17_0">https://customerconnect.vmware.com/cn/downloads/info/slug/desktop_end_user_computing/vmware_workstation_pro/17_0</a></li>
+<li>选择16.0的系统</li>
+<li>VMware的激活码（自行百度），下面的链接为激活码参考链接<ul>
+<li><a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/586010170">https://zhuanlan.zhihu.com/p/586010170</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3 id="安装Ubuntu系统"><a href="#安装Ubuntu系统" class="headerlink" title="安装Ubuntu系统"></a>安装Ubuntu系统</h3><h4 id="安装Ubuntu系统（选择18-04）"><a href="#安装Ubuntu系统（选择18-04）" class="headerlink" title="安装Ubuntu系统（选择18.04）"></a>安装Ubuntu系统（选择18.04）</h4><ul>
+<li>安装链接<ul>
+<li><a target="_blank" rel="noopener" href="https://blog.csdn.net/m0_57146086/article/details/121963736?ops_request_misc=&request_id=&biz_id=102&utm_term=vmwareubuntu18.04%E5%AE%89%E8%A3%85%E6%95%99%E7%A8%8B&utm_medium=distribute.pc_search_result.none-task-blog-2~all~sobaiduweb~default-0-121963736.142%5Ev73%5Einsert_down2,201%5Ev4%5Eadd_ask,239%5Ev2%5Einsert_chatgpt&spm=1018.2226.3001.4187">https://blog.csdn.net/m0_57146086/article/details/121963736?ops_request_misc=&amp;request_id=&amp;biz_id=102&amp;utm_term=vmwareubuntu18.04%E5%AE%89%E8%A3%85%E6%95%99%E7%A8%8B&amp;utm_medium=distribute.pc_search_result.none-task-blog-2~all~sobaiduweb~default-0-121963736.142^v73^insert_down2,201^v4^add_ask,239^v2^insert_chatgpt&amp;spm=1018.2226.3001.4187</a></li>
+</ul>
+</li>
+</ul>
+<h4 id="安装VMware-tools"><a href="#安装VMware-tools" class="headerlink" title="安装VMware tools"></a>安装VMware tools</h4><ul>
+<li><p>VMware tools 能够自适应屏幕窗口大小</p>
+</li>
+<li><p><a target="_blank" rel="noopener" href="https://blog.csdn.net/qq_41892825/article/details/122464113?ops_request_misc=&request_id=&biz_id=102&utm_term=VMware%20tools&utm_medium=distribute.pc_search_result.none-task-blog-2~all~sobaiduweb~default-1-122464113.nonecase&spm=1018.2226.3001.4187">https://blog.csdn.net/qq_41892825/article/details/122464113?ops_request_misc=&amp;request_id=&amp;biz_id=102&amp;utm_term=VMware%20tools&amp;utm_medium=distribute.pc_search_result.none-task-blog-2~all~sobaiduweb~default-1-122464113.nonecase&amp;spm=1018.2226.3001.4187</a></p>
+</li>
+<li><p>如何解决主机和虚拟机之间的复制粘贴问题</p>
+<ul>
+<li>打开终端（CTRL+alt+t）</li>
+<li>sudo apt-get autoremove open-vm-tools			#卸载已有的工具<br>sudo apt-get install open-vm-tools				#安装open-vm-tools<br>sudo apt-get install open-vm-tools-desktop  	#安装open-vm-tools-desktop（最重要的一步）</li>
+<li>shutdown -r now  #重启虚拟机，或者直接点击选项卡重启也可以</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h2 id="环境搭建"><a href="#环境搭建" class="headerlink" title="环境搭建"></a>环境搭建</h2><hr>
+<h4 id="ROS环境安装"><a href="#ROS环境安装" class="headerlink" title="ROS环境安装"></a>ROS环境安装</h4><hr>
+<h5 id="依赖安装"><a href="#依赖安装" class="headerlink" title="依赖安装"></a>依赖安装</h5><ul>
+<li><p>打开终端</p>
+</li>
+<li><p>sudo apt install ninja-build exiftool ninja-build protobuf-compiler libeigen3-dev genromfs xmlstarlet libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev</p>
+</li>
+<li><p>pip2 install pandas jinja2 pyserial cerberus pyulog&#x3D;&#x3D;0.7.0 numpy toml pyquaternion empy pyyaml<br>pip3 install packaging numpy empy toml pyyaml jinja2 pyargparse</p>
+</li>
+</ul>
+<hr>
+<h5 id="ROS安装"><a href="#ROS安装" class="headerlink" title="ROS安装"></a>ROS安装</h5><h6 id="配置Ubuntu源码库"><a href="#配置Ubuntu源码库" class="headerlink" title="配置Ubuntu源码库"></a>配置Ubuntu源码库</h6><ul>
+<li><p>点击软件和更新</p>
+</li>
+<li><p><img src="/year-07-07-2023-3-4%E5%9F%BA%E4%BA%8EPX4%E5%9C%A8Ubuntu%E7%B3%BB%E7%BB%9F%E4%B8%AD%E7%9A%84%E6%90%AD%E5%BB%BA/Ubuntu%E7%8E%AF%E5%A2%831.png" alt="配置"></p>
+<hr>
+<h6 id="设置sources-list"><a href="#设置sources-list" class="headerlink" title="设置sources.list"></a>设置sources.list</h6><ul>
+<li><pre><code class="c#">sudo sh -c &#39;. /etc/lsb-release &amp;&amp; echo &quot;deb http://mirrors.tuna.tsinghua.edu.cn/ros/ubuntu/ `lsb_release -cs` main&quot; &gt; /etc/apt/sources.list.d/ros-latest.list&#39;
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">---</span><br><span class="line"></span><br><span class="line">###### 设置key</span><br><span class="line"></span><br><span class="line">- ```</span><br><span class="line">  sudo apt install curl</span><br><span class="line">  curl -s https://raw.githubusercontent.com/ros/rosdistro/master/ros.asc | sudo apt-key add -</span><br></pre></td></tr></table></figure>
+</code></pre>
+</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h6 id="报错则输入"><a href="#报错则输入" class="headerlink" title="报错则输入"></a>报错则输入</h6><ul>
+<li><pre><code>sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys F42ED6FBAB17C654
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">---</span><br><span class="line"></span><br><span class="line">###### 安装ROS</span><br><span class="line"></span><br><span class="line">- ```</span><br><span class="line">  sudo apt update</span><br><span class="line">  sudo apt install ros-melodic-desktop</span><br></pre></td></tr></table></figure>
+</code></pre>
+</li>
+</ul>
+<hr>
+<h6 id="设定环境"><a href="#设定环境" class="headerlink" title="设定环境"></a>设定环境</h6><ul>
+<li><pre><code>sudo apt update
+sudo apt install ros-melodic-desktop
+
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">---</span><br><span class="line"></span><br><span class="line">###### 构建软件包依赖关系</span><br><span class="line"></span><br><span class="line">- ```</span><br><span class="line">  sudo apt install python-rosdep python-rosinstall python-rosinstall-generator python-wstool build-essential</span><br><span class="line">  sudo apt install python-rosdep</span><br></pre></td></tr></table></figure>
+</code></pre>
+</li>
+<li><pre><code>sudo rosdep init
+
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">- 出现错误</span><br><span class="line"></span><br><span class="line">  - ERROR: cannot download default sources list from:</span><br><span class="line">    https://raw.githubusercontent.com/ros/rosdistro/master/rosdep/sources.list.d/20-default.list</span><br><span class="line">    Website may be down.</span><br><span class="line"></span><br><span class="line">    - ```</span><br><span class="line">      cd /etc</span><br><span class="line">      sudo gedit hosts</span><br></pre></td></tr></table></figure>
+
+- ERROR: default sources list file already exists:
+  /etc/ros/rosdep/sources.list.d/20-default.list
+  Please delete if you wish to re-initialize
+
+  - ```
+    sudo rm /etc/ros/rosdep/sources.list.d/20-default.list
+    
+    <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">---</span><br><span class="line"></span><br><span class="line">###### 启动ROS</span><br><span class="line"></span><br><span class="line">- ```</span><br><span class="line">  roscore</span><br></pre></td></tr></table></figure>
+</code></pre>
+</li>
+</ul>
+<h6 id="新建工作空间"><a href="#新建工作空间" class="headerlink" title="新建工作空间"></a>新建工作空间</h6><ul>
+<li><p>此空间为ROS所有，方便后续步骤安装</p>
+<ul>
+<li><pre><code>mkdir -p ~/catkin_ws/src
+mkdir -p ~/catkin_ws/scripts
+cd catkin_ws/src 
+catkin_init_workspace
+cd .. 
+catkin_make
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">---</span><br><span class="line"></span><br><span class="line">#### Gazebo安装</span><br><span class="line"></span><br><span class="line">---</span><br><span class="line"></span><br><span class="line">##### 卸载之前安装的gazebo</span><br><span class="line"></span><br><span class="line">- ```c</span><br><span class="line">  sudo apt-get remove gazebo* </span><br><span class="line">  sudo apt-get remove libgazebo*</span><br><span class="line">  sudo apt-get remove ros-melodic-gazebo* #kinetic noetic对应修改</span><br></pre></td></tr></table></figure>
+</code></pre>
+</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h5 id="设置计算机以接受来自package-osrfoundation-org的软件"><a href="#设置计算机以接受来自package-osrfoundation-org的软件" class="headerlink" title="设置计算机以接受来自package.osrfoundation.org的软件"></a>设置计算机以接受来自package.osrfoundation.org的软件</h5><ul>
+<li><pre><code class="c">sudo sh -c &#39;echo &quot;deb http://packages.osrfoundation.org/gazebo/ubuntu-stable `lsb_release -cs` main&quot; &gt; /etc/apt/sources.list.d/gazebo-stable.list&#39;
+
+cat /etc/apt/sources.list.d/gazebo-stable.list
+
+#如果出现deb http://packages.osrfoundation.org/gazebo/ubuntu-stable xenial main表示没问题
+   
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">---</span><br><span class="line"></span><br><span class="line">##### 设置密钥</span><br><span class="line"></span><br><span class="line">- ```c</span><br><span class="line">  wget https://packages.osrfoundation.org/gazebo.key -O - | sudo apt-key add -</span><br><span class="line">  sudo apt-get update</span><br></pre></td></tr></table></figure>
+</code></pre>
+</li>
+</ul>
+<hr>
+<h5 id="安装gazebo指令"><a href="#安装gazebo指令" class="headerlink" title="安装gazebo指令"></a>安装gazebo指令</h5><ul>
+<li><pre><code>sudo apt-get install gazebo9=9.1*
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">- 安装后终端输入gazebo，若能出现gazebo则为安装成功，界面如下</span><br><span class="line"></span><br><span class="line">  - ![gazebo](gazebo.png)</span><br><span class="line"></span><br><span class="line">---</span><br><span class="line"></span><br><span class="line">##### 安装gazebo与ROS插件</span><br><span class="line"></span><br><span class="line">- ```</span><br><span class="line">  sudo apt install ros-melodic-gazebo9-*</span><br><span class="line">  sudo apt install ros-melodic-gazebo-*</span><br></pre></td></tr></table></figure>
+</code></pre>
+</li>
+<li><p>测试</p>
+<ul>
+<li><pre><code>roscore  
+rosrun gazebo_ros gazebo 
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">---</span><br><span class="line"></span><br><span class="line">##### MAVROS安装</span><br><span class="line"></span><br><span class="line">- ```c</span><br><span class="line">  sudo apt install ros-melodic-mavros ros-melodic-mavros-extras 		# for ros-melodic</span><br><span class="line">  wget https://gitee.com/robin_shaun/XTDrone/raw/master/sitl_config/mavros/install_geographiclib_datasets.sh</span><br><span class="line">  sudo chmod a+x ./install_geographiclib_datasets.sh</span><br><span class="line">  sudo ./install_geographiclib_datasets.sh  #这步需要装一段时间,请耐心等待PX4配置</span><br><span class="line">  #注意，我们安装的ROS环境为ROS1，所以选择melodic方式安装，#后面的内容为注释，只需要运行终端代码即可</span><br></pre></td></tr></table></figure>
+</code></pre>
+</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h4 id="PX4配置"><a href="#PX4配置" class="headerlink" title="PX4配置"></a>PX4配置</h4><p>​	注意：由于GitHub网址国内访问太慢，所以 我们采用gitee网站的方式</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git clone https://gitee.com/bingobinlw/Firmware.git</span><br></pre></td></tr></table></figure>
+
+<p>这一步下载过后打开Firmware文件夹，勾选显示隐藏文件</p>
+<p>找到如图所示选中的文件，双击打开</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br></pre></td><td class="code"><pre><span class="line">[submodule <span class="string">&quot;mavlink/include/mavlink/v2.0&quot;</span>]</span><br><span class="line">	path = mavlink/include/mavlink/v2<span class="number">.0</span></span><br><span class="line">	url = https:<span class="comment">//gitee.com/bingobinlw/c_library_v2.git</span></span><br><span class="line">	branch = master</span><br><span class="line">[submodule <span class="string">&quot;src/drivers/uavcan/libuavcan&quot;</span>]</span><br><span class="line">	path = src/drivers/uavcan/libuavcan</span><br><span class="line">	url = https:<span class="comment">//gitee.com/bingobinlw/uavcan.git</span></span><br><span class="line">	branch = px4</span><br><span class="line">[submodule <span class="string">&quot;Tools/jMAVSim&quot;</span>]</span><br><span class="line">	path = Tools/jMAVSim</span><br><span class="line">	url = https:<span class="comment">//gitee.com/bingobinlw/jMAVSim.git</span></span><br><span class="line">	branch = master</span><br><span class="line">[submodule <span class="string">&quot;Tools/sitl_gazebo&quot;</span>]</span><br><span class="line">	path = Tools/sitl_gazebo</span><br><span class="line">	url = https:<span class="comment">//gitee.com/bingobinlw/sitl_gazebo.git</span></span><br><span class="line">	branch = master</span><br><span class="line">[submodule <span class="string">&quot;src/lib/matrix&quot;</span>]</span><br><span class="line">	path = src/lib/matrix</span><br><span class="line">	url = https:<span class="comment">//gitee.com/bingobinlw/Matrix.git</span></span><br><span class="line">	branch = master</span><br><span class="line">[submodule <span class="string">&quot;src/lib/ecl&quot;</span>]</span><br><span class="line">	path = src/lib/ecl</span><br><span class="line">	url = https:<span class="comment">//gitee.com/bingobinlw/ecl.git</span></span><br><span class="line">	branch = master</span><br><span class="line">[submodule <span class="string">&quot;boards/atlflight/cmake_hexagon&quot;</span>]</span><br><span class="line">	path = boards/atlflight/cmake_hexagon</span><br><span class="line">	url = https:<span class="comment">//gitee.com/bingobinlw/cmake_hexagon.git</span></span><br><span class="line">	branch = px4</span><br><span class="line">[submodule <span class="string">&quot;src/drivers/gps/devices&quot;</span>]</span><br><span class="line">	path = src/drivers/gps/devices</span><br><span class="line">	url = https:<span class="comment">//gitee.com/bingobinlw/GpsDrivers.git</span></span><br><span class="line">	branch = master</span><br><span class="line">[submodule <span class="string">&quot;src/modules/micrortps_bridge/micro-CDR&quot;</span>]</span><br><span class="line">	path = src/modules/micrortps_bridge/micro-CDR</span><br><span class="line">	url =https:<span class="comment">//gitee.com/bingobinlw/micro-CDR.git</span></span><br><span class="line">	branch = px4</span><br><span class="line">[submodule <span class="string">&quot;platforms/nuttx/NuttX/nuttx&quot;</span>]</span><br><span class="line">	path = platforms/nuttx/NuttX/nuttx</span><br><span class="line">	url = https:<span class="comment">//gitee.com/bingobinlw/NuttX.git</span></span><br><span class="line">	branch = px4_firmware_nuttx<span class="number">-8.2</span></span><br><span class="line">[submodule <span class="string">&quot;platforms/nuttx/NuttX/apps&quot;</span>]</span><br><span class="line">	path = platforms/nuttx/NuttX/apps</span><br><span class="line">	url =  https:<span class="comment">//gitee.com/bingobinlw/NuttX-apps.git</span></span><br><span class="line">	branch = px4_firmware_nuttx<span class="number">-8.2</span></span><br><span class="line">[submodule <span class="string">&quot;cmake/configs/uavcan_board_ident&quot;</span>]</span><br><span class="line">	path = cmake/configs/uavcan_board_ident</span><br><span class="line">	url = https:<span class="comment">//gitee.com/bingobinlw/uavcan_board_ident.git</span></span><br><span class="line">	branch = master</span><br><span class="line">[submodule <span class="string">&quot;platforms/qurt/dspal&quot;</span>]</span><br><span class="line">	path = platforms/qurt/dspal</span><br><span class="line">	url = https:<span class="comment">//gitee.com/bingobinlw/dspal.git</span></span><br></pre></td></tr></table></figure>
+
+<p>将上面代码文件拷贝覆盖选中的文件的内容，并点击保存。</p>
+<hr>
+<h5 id="更新子模块组"><a href="#更新子模块组" class="headerlink" title="更新子模块组"></a>更新子模块组</h5><ul>
+<li>在Firmware文件夹内打开终端</li>
+</ul>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git submodule update --init --recursive</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h5 id="安装必要的python依赖"><a href="#安装必要的python依赖" class="headerlink" title="安装必要的python依赖"></a>安装必要的python依赖</h5><ul>
+<li><p>新开一个终端</p>
+</li>
+<li><pre><code>cd ~/PX4_Firmware
+bash ./Tools/setup/ubuntu.sh --no-nuttx --no-sim-tools
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">---</span><br><span class="line"></span><br><span class="line">##### 编译PX4配置</span><br><span class="line"></span><br><span class="line">- ```</span><br><span class="line">  make px4_sitl_default gazebo</span><br></pre></td></tr></table></figure>
+</code></pre>
+</li>
+</ul>
+<hr>
+<h5 id="新建终端，修改bashrc路径"><a href="#新建终端，修改bashrc路径" class="headerlink" title="新建终端，修改bashrc路径"></a>新建终端，修改bashrc路径</h5><ul>
+<li><pre><code>sudo gedit ~/.bashrc
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">- 将打开的文件在最下面添加以下路径代码，然后保存</span><br><span class="line"></span><br><span class="line">  - ```</span><br><span class="line">    source ~/catkin_ws/devel/setup.bash</span><br><span class="line">    source ~/Firmware/Tools/setup_gazebo.bash ~/Firmware/ ~/Firmware/build/px4_sitl_default</span><br><span class="line">    export ROS_PACKAGE_PATH=$ROS_PACKAGE_PATH:~/Firmware</span><br><span class="line">    export ROS_PACKAGE_PATH=$ROS_PACKAGE_PATH:~/Firmware/Tools/sitl_gazebo</span><br></pre></td></tr></table></figure>
+</code></pre>
+</li>
+<li><pre><code>source ~/.bashrc
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">  - 此命令能够使环境变量正确加载</span><br><span class="line"></span><br><span class="line">新建终端运行以下命令</span><br><span class="line"></span><br><span class="line">- ```</span><br><span class="line">  cd ~/Firmware</span><br><span class="line">  roslaunch px4 mavros_posix_sitl.launch</span><br></pre></td></tr></table></figure>
+</code></pre>
+</li>
+<li><p>成功如图所示</p>
+</li>
+<li><p>并运行以下代码</p>
+<ul>
+<li><pre><code class="c">rostopic echo /mavros/state
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">  - 此命令是检查mavros和PX4之间的通信是否正确，在终端显示 connected：true表示正确无问题，若显示false，则表示bashrc文件路径配置不正确，需要检查一遍路径。成功如图所示</span><br><span class="line"></span><br><span class="line">---</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"></span><br><span class="line">#### QGC地面站安装</span><br><span class="line"></span><br><span class="line">##### 安装链接</span><br><span class="line"></span><br><span class="line">- ```</span><br><span class="line">  https://docs.qgroundcontrol.com/en/getting_started/download_and_install.html</span><br></pre></td></tr></table></figure>
+</code></pre>
+</li>
+</ul>
+</li>
+<li><p>注意这个链接需要在Ubuntu系统中打开，并且下载在Ubuntu系统中</p>
+</li>
+<li><p>根据官网所给出的链接进行安装</p>
+</li>
+<li><p>打开终端，分别输入以上代码，然后运行</p>
+</li>
+<li><p>点击蓝色字体QGC进行下载</p>
+</li>
+<li><p>在下载好的QGC安装包文件夹位置打开终端，运行下一条命令</p>
+<ul>
+<li><pre><code>chomd +x ./QGroundControl.Applmage
+</code></pre>
+</li>
+</ul>
+</li>
+<li><p>至此，仿真平台配置完成。以上所有代码都跑过一遍，安装有效。</p>
+</li>
+</ul>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="followme">
+  <span>欢迎关注我的其它发布渠道</span>
+
+  <div class="social-list">
+
+      <div class="social-item">
+          <a target="_blank" class="social-link" href="https://github.com/Riesdown">
+            <span class="icon">
+              <i class="fa fa-Github"></i>
+            </span>
+
+            <span class="label">RSS</span>
+          </a>
+      </div>
+  </div>
+</div>
+
+          <div class="post-tags">
+              <a href="/tags/%E6%97%A0%E4%BA%BA%E6%9C%BA/" rel="tag"<i class="fa fa-tag"></i>># 无人机</a>
+              <a href="/tags/PX4/" rel="tag"<i class="fa fa-tag"></i>># PX4</a>
+              <a href="/tags/Ubuntu/" rel="tag"<i class="fa fa-tag"></i>># Ubuntu</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/year-07-07-%E6%97%A0%E4%BA%BA%E6%9C%BA%E4%BB%BF%E7%9C%9F%E2%80%94PX4%E7%BC%96%E8%AF%91%EF%BC%8Cgazebo%E4%BB%BF%E7%9C%9F%E5%8F%8A%E7%AE%80%E5%8D%95off%20board%E6%8E%A7%E5%88%B6%E6%A8%A1%E5%BC%8F%E4%B8%8B%E6%97%A0%E4%BA%BA%E6%9C%BA%E8%B5%B7%E9%A3%9E/" rel="prev" title="">
+                  <i class="fa fa-chevron-left"></i> 
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/year-07-07-2023-5-18%E5%9F%BA%E4%BA%8EROS%E6%A1%86%E6%9E%B6%E4%B8%8BPX4%E7%8E%AF%E5%A2%83%E4%BB%BF%E7%9C%9F/" rel="next" title="2023-5-18基于ROS框架下PX4环境仿真">
+                  2023-5-18基于ROS框架下PX4环境仿真 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 
+    <span itemprop="copyrightYear">2023</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">Li</span>
+  </div>
+
+<div>
+<script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+<span id="busuanzi_container_site_pv" style='display:none'>
+    本站总访问量 <span id="busuanzi_value_site_pv"></span> 次
+    <span class="post-meta-divider">|</span>
+</span>
+<span id="busuanzi_container_site_uv" style='display:none'>
+    有<span id="busuanzi_value_site_uv"></span>人看过我的博客啦
+</span>
+</div>
+<div class="wordcount">
+  <span class="post-meta-item">
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-line"></i>
+    </span>
+    <span title="站点总字数">25k</span>
+  </span>
+  <span class="post-meta-item">
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+    <span title="站点阅读时长">46 分钟</span>
+  </span>
+</div>
+<div class="busuanzi-count">
+    <span class="post-meta-item" id="busuanzi_container_site_uv">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+  </div>
+
+
+
+    <script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+
+
+    </div>
+  </footer>
+
+  
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
+<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/next-boot.js"></script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/hexo-generator-searchdb/1.4.1/search.js" integrity="sha256-1kfA5uHPf65M5cphT2dvymhkuyHPQp5A53EGZOnOLmc=" crossorigin="anonymous"></script>
+<script src="/js/third-party/search/local-search.js"></script>
+
+
+
+
+
+
+
+  
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+
+
+
+
+</body>
+</html>

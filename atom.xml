@@ -1,0 +1,179 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <title>BiuBiu驿站</title>
+  
+  <subtitle>道阻且长,行且将至</subtitle>
+  <link href="http://riesdown.github.io/atom.xml" rel="self"/>
+  
+  <link href="http://riesdown.github.io/"/>
+  <updated>2023-07-07T14:49:20.178Z</updated>
+  <id>http://riesdown.github.io/</id>
+  
+  <author>
+    <name>Li</name>
+    
+  </author>
+  
+  <generator uri="https://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title>2023-5-18基于ROS框架下PX4环境仿真</title>
+    <link href="http://riesdown.github.io/year-07-07-2023-5-18%E5%9F%BA%E4%BA%8EROS%E6%A1%86%E6%9E%B6%E4%B8%8BPX4%E7%8E%AF%E5%A2%83%E4%BB%BF%E7%9C%9F/"/>
+    <id>http://riesdown.github.io/year-07-07-2023-5-18%E5%9F%BA%E4%BA%8EROS%E6%A1%86%E6%9E%B6%E4%B8%8BPX4%E7%8E%AF%E5%A2%83%E4%BB%BF%E7%9C%9F/</id>
+    <published>2023-07-07T14:35:33.000Z</published>
+    <updated>2023-07-07T14:49:20.178Z</updated>
+    
+    
+      
+      
+        
+        
+    <summary type="html">&lt;h1 id=&quot;无人机仿真—PX4编译，gazebo仿真及简单off-board控制模式下无人机起飞&quot;&gt;&lt;a href=&quot;#无人机仿真—PX4编译，gazebo仿真及简单off-board控制模式下无人机起飞&quot; class=&quot;headerlink&quot;</summary>
+        
+      
+    
+    
+    
+    <category term="ROS算法" scheme="http://riesdown.github.io/categories/ROS%E7%AE%97%E6%B3%95/"/>
+    
+    <category term="环境仿真" scheme="http://riesdown.github.io/categories/%E7%8E%AF%E5%A2%83%E4%BB%BF%E7%9C%9F/"/>
+    
+    
+    <category term="无人机" scheme="http://riesdown.github.io/tags/%E6%97%A0%E4%BA%BA%E6%9C%BA/"/>
+    
+    <category term="PX4" scheme="http://riesdown.github.io/tags/PX4/"/>
+    
+    <category term="ROS" scheme="http://riesdown.github.io/tags/ROS/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>基于PX4在Ubuntu系统中的搭建</title>
+    <link href="http://riesdown.github.io/year-07-07-2023-3-4%E5%9F%BA%E4%BA%8EPX4%E5%9C%A8Ubuntu%E7%B3%BB%E7%BB%9F%E4%B8%AD%E7%9A%84%E6%90%AD%E5%BB%BA/"/>
+    <id>http://riesdown.github.io/year-07-07-2023-3-4%E5%9F%BA%E4%BA%8EPX4%E5%9C%A8Ubuntu%E7%B3%BB%E7%BB%9F%E4%B8%AD%E7%9A%84%E6%90%AD%E5%BB%BA/</id>
+    <published>2023-07-07T14:20:34.000Z</published>
+    <updated>2023-07-07T14:44:06.483Z</updated>
+    
+    
+      
+      
+        
+        
+    <summary type="html">&lt;h1 id=&quot;基于PX4在Ubuntu仿真环境中的搭建（ROS-Gazebo-Mavros-PX4-QGC）&quot;&gt;&lt;a href=&quot;#基于PX4在Ubuntu仿真环境中的搭建（ROS-Gazebo-Mavros-PX4-QGC）&quot; class=&quot;headerlink&quot;</summary>
+        
+      
+    
+    
+    
+    <category term="PX4 环境搭建" scheme="http://riesdown.github.io/categories/PX4-%E7%8E%AF%E5%A2%83%E6%90%AD%E5%BB%BA/"/>
+    
+    
+    <category term="无人机" scheme="http://riesdown.github.io/tags/%E6%97%A0%E4%BA%BA%E6%9C%BA/"/>
+    
+    <category term="PX4" scheme="http://riesdown.github.io/tags/PX4/"/>
+    
+    <category term="Ubuntu" scheme="http://riesdown.github.io/tags/Ubuntu/"/>
+    
+  </entry>
+  
+  <entry>
+    <title></title>
+    <link href="http://riesdown.github.io/year-07-07-%E6%97%A0%E4%BA%BA%E6%9C%BA%E4%BB%BF%E7%9C%9F%E2%80%94PX4%E7%BC%96%E8%AF%91%EF%BC%8Cgazebo%E4%BB%BF%E7%9C%9F%E5%8F%8A%E7%AE%80%E5%8D%95off%20board%E6%8E%A7%E5%88%B6%E6%A8%A1%E5%BC%8F%E4%B8%8B%E6%97%A0%E4%BA%BA%E6%9C%BA%E8%B5%B7%E9%A3%9E/"/>
+    <id>http://riesdown.github.io/year-07-07-%E6%97%A0%E4%BA%BA%E6%9C%BA%E4%BB%BF%E7%9C%9F%E2%80%94PX4%E7%BC%96%E8%AF%91%EF%BC%8Cgazebo%E4%BB%BF%E7%9C%9F%E5%8F%8A%E7%AE%80%E5%8D%95off%20board%E6%8E%A7%E5%88%B6%E6%A8%A1%E5%BC%8F%E4%B8%8B%E6%97%A0%E4%BA%BA%E6%9C%BA%E8%B5%B7%E9%A3%9E/</id>
+    <published>2023-07-07T14:17:23.481Z</published>
+    <updated>2023-03-18T05:53:36.000Z</updated>
+    
+    
+      
+      
+        
+        
+    <summary type="html">&lt;h1 id=&quot;无人机仿真—PX4编译，gazebo仿真及简单off-board控制模式下无人机起飞&quot;&gt;&lt;a href=&quot;#无人机仿真—PX4编译，gazebo仿真及简单off-board控制模式下无人机起飞&quot; class=&quot;headerlink&quot;</summary>
+        
+      
+    
+    
+    
+    
+  </entry>
+  
+  <entry>
+    <title>2023-7-7无人机体系搭建</title>
+    <link href="http://riesdown.github.io/year-07-07-2023-7-7%E6%97%A0%E4%BA%BA%E6%9C%BA%E4%BD%93%E7%B3%BB%E6%90%AD%E5%BB%BA/"/>
+    <id>http://riesdown.github.io/year-07-07-2023-7-7%E6%97%A0%E4%BA%BA%E6%9C%BA%E4%BD%93%E7%B3%BB%E6%90%AD%E5%BB%BA/</id>
+    <published>2023-07-07T06:00:31.000Z</published>
+    <updated>2023-07-07T06:00:31.719Z</updated>
+    
+    
+    
+    
+    
+  </entry>
+  
+  <entry>
+    <title>电赛分析</title>
+    <link href="http://riesdown.github.io/year-07-06-2023-5-4/"/>
+    <id>http://riesdown.github.io/year-07-06-2023-5-4/</id>
+    <published>2023-07-06T07:20:14.000Z</published>
+    <updated>2023-07-06T16:32:20.983Z</updated>
+    
+    
+    <summary type="html">&lt;h1 id=&quot;电赛历程&quot;&gt;&lt;a href=&quot;#电赛历程&quot; class=&quot;headerlink&quot; title=&quot;电赛历程&quot;&gt;&lt;/a&gt;电赛历程&lt;/h1&gt;&lt;h2 id=&quot;实践历程分析&quot;&gt;&lt;a href=&quot;#实践历程分析&quot; class=&quot;headerlink&quot; title=&quot;实践历程分析&quot;&gt;&lt;/a&gt;实践历程分析&lt;/h2&gt;&lt;ul&gt;
+&lt;li&gt;&lt;p&gt;​	前言：每一次的飞机炸机之后，都必须校准一遍电调和六面校准加速度计，必须校准机架水平&lt;/p&gt;&lt;/li&gt;&lt;/ul&gt;</summary>
+    
+    
+    
+    <category term="电赛历程" scheme="http://riesdown.github.io/categories/%E7%94%B5%E8%B5%9B%E5%8E%86%E7%A8%8B/"/>
+    
+    
+    <category term="无人机" scheme="http://riesdown.github.io/tags/%E6%97%A0%E4%BA%BA%E6%9C%BA/"/>
+    
+    <category term="调试经验" scheme="http://riesdown.github.io/tags/%E8%B0%83%E8%AF%95%E7%BB%8F%E9%AA%8C/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>ROS学习</title>
+    <link href="http://riesdown.github.io/year-07-06-2023-5-25%20ROS%E5%AD%A6%E4%B9%A0%E8%AE%B0%E5%BD%95%EF%BC%88%E5%8F%82%E8%80%83%E2%80%94%E5%8F%A4%E6%9C%88%E5%B1%85%EF%BC%89%20160959/"/>
+    <id>http://riesdown.github.io/year-07-06-2023-5-25%20ROS%E5%AD%A6%E4%B9%A0%E8%AE%B0%E5%BD%95%EF%BC%88%E5%8F%82%E8%80%83%E2%80%94%E5%8F%A4%E6%9C%88%E5%B1%85%EF%BC%89%20160959/</id>
+    <published>2023-07-06T07:19:14.000Z</published>
+    <updated>2023-07-06T16:15:13.053Z</updated>
+    
+    
+    <summary type="html">&lt;h1 id=&quot;ROS学习记录（参考—古月居—深蓝学院）&quot;&gt;&lt;a href=&quot;#ROS学习记录（参考—古月居—深蓝学院）&quot; class=&quot;headerlink&quot; title=&quot;ROS学习记录（参考—古月居—深蓝学院）&quot;&gt;&lt;/a&gt;ROS学习记录（参考—古月居—深蓝学院）&lt;/h1&gt;</summary>
+    
+    
+    
+    <category term="ROS算法" scheme="http://riesdown.github.io/categories/ROS%E7%AE%97%E6%B3%95/"/>
+    
+    
+    <category term="Ubuntu" scheme="http://riesdown.github.io/tags/Ubuntu/"/>
+    
+    <category term="ROS" scheme="http://riesdown.github.io/tags/ROS/"/>
+    
+    <category term="Linux" scheme="http://riesdown.github.io/tags/Linux/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>无题</title>
+    <link href="http://riesdown.github.io/year-07-05-2023-7-5/"/>
+    <id>http://riesdown.github.io/year-07-05-2023-7-5/</id>
+    <published>2023-07-05T15:47:14.000Z</published>
+    <updated>2023-07-07T01:28:00.646Z</updated>
+    
+    
+    <summary type="html">Here&#39;s something encrypted, password is required to continue reading.</summary>
+    
+    
+    
+    <category term="随笔" scheme="http://riesdown.github.io/categories/%E9%9A%8F%E7%AC%94/"/>
+    
+    
+    <category term="故乡" scheme="http://riesdown.github.io/tags/%E6%95%85%E4%B9%A1/"/>
+    
+    <category term="回忆" scheme="http://riesdown.github.io/tags/%E5%9B%9E%E5%BF%86/"/>
+    
+  </entry>
+  
+</feed>
