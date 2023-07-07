@@ -6,7 +6,7 @@
   <link href="http://riesdown.github.io/atom.xml" rel="self"/>
   
   <link href="http://riesdown.github.io/"/>
-  <updated>2023-07-07T14:49:20.178Z</updated>
+  <updated>2023-07-07T15:16:47.201Z</updated>
   <id>http://riesdown.github.io/</id>
   
   <author>
@@ -21,16 +21,11 @@
     <link href="http://riesdown.github.io/year-07-07-2023-5-18%E5%9F%BA%E4%BA%8EROS%E6%A1%86%E6%9E%B6%E4%B8%8BPX4%E7%8E%AF%E5%A2%83%E4%BB%BF%E7%9C%9F/"/>
     <id>http://riesdown.github.io/year-07-07-2023-5-18%E5%9F%BA%E4%BA%8EROS%E6%A1%86%E6%9E%B6%E4%B8%8BPX4%E7%8E%AF%E5%A2%83%E4%BB%BF%E7%9C%9F/</id>
     <published>2023-07-07T14:35:33.000Z</published>
-    <updated>2023-07-07T14:49:20.178Z</updated>
+    <updated>2023-07-07T15:16:47.201Z</updated>
     
     
-      
-      
-        
-        
-    <summary type="html">&lt;h1 id=&quot;无人机仿真—PX4编译，gazebo仿真及简单off-board控制模式下无人机起飞&quot;&gt;&lt;a href=&quot;#无人机仿真—PX4编译，gazebo仿真及简单off-board控制模式下无人机起飞&quot; class=&quot;headerlink&quot;</summary>
-        
-      
+    <summary type="html">&lt;h1 id=&quot;无人机仿真—PX4编译，gazebo仿真及简单off-board控制模式下无人机起飞&quot;&gt;&lt;a href=&quot;#无人机仿真—PX4编译，gazebo仿真及简单off-board控制模式下无人机起飞&quot; class=&quot;headerlink&quot; title=&quot;无人机仿真—PX4编译，gazebo仿真及简单off board控制模式下无人机起飞&quot;&gt;&lt;/a&gt;无人机仿真—PX4编译，gazebo仿真及简单off board控制模式下无人机起飞&lt;/h1&gt;&lt;h2 id=&quot;前言&quot;&gt;&lt;a href=&quot;#前言&quot; class=&quot;headerlink&quot; title=&quot;前言&quot;&gt;&lt;/a&gt;前言&lt;/h2&gt;&lt;ul&gt;
+&lt;li&gt;&lt;p&gt;在上篇记录中，已经对整体的PX4仿真环境有了一定的了解，现如今就要开始对无人机进行起飞等仿真环境工作，在整体虚拟环境中如果程序能够安稳起飞降落，即可对无人机进行实飞操作。&lt;/p&gt;&lt;/li&gt;&lt;/ul&gt;</summary>
     
     
     
@@ -52,16 +47,10 @@
     <link href="http://riesdown.github.io/year-07-07-2023-3-4%E5%9F%BA%E4%BA%8EPX4%E5%9C%A8Ubuntu%E7%B3%BB%E7%BB%9F%E4%B8%AD%E7%9A%84%E6%90%AD%E5%BB%BA/"/>
     <id>http://riesdown.github.io/year-07-07-2023-3-4%E5%9F%BA%E4%BA%8EPX4%E5%9C%A8Ubuntu%E7%B3%BB%E7%BB%9F%E4%B8%AD%E7%9A%84%E6%90%AD%E5%BB%BA/</id>
     <published>2023-07-07T14:20:34.000Z</published>
-    <updated>2023-07-07T14:44:06.483Z</updated>
+    <updated>2023-07-07T15:16:24.873Z</updated>
     
     
-      
-      
-        
-        
-    <summary type="html">&lt;h1 id=&quot;基于PX4在Ubuntu仿真环境中的搭建（ROS-Gazebo-Mavros-PX4-QGC）&quot;&gt;&lt;a href=&quot;#基于PX4在Ubuntu仿真环境中的搭建（ROS-Gazebo-Mavros-PX4-QGC）&quot; class=&quot;headerlink&quot;</summary>
-        
-      
+    <summary type="html">&lt;h1 id=&quot;基于PX4在Ubuntu仿真环境中的搭建（ROS-Gazebo-Mavros-PX4-QGC）&quot;&gt;&lt;a href=&quot;#基于PX4在Ubuntu仿真环境中的搭建（ROS-Gazebo-Mavros-PX4-QGC）&quot; class=&quot;headerlink&quot; title=&quot;基于PX4在Ubuntu仿真环境中的搭建（ROS+Gazebo+Mavros+PX4+QGC）&quot;&gt;&lt;/a&gt;基于PX4在Ubuntu仿真环境中的搭建（ROS+Gazebo+Mavros+PX4+QGC）&lt;/h1&gt;&lt;h2 id=&quot;虚拟机的安装（VMware-Ubuntu18-04）&quot;&gt;&lt;a href=&quot;#虚拟机的安装（VMware-Ubuntu18-04）&quot; class=&quot;headerlink&quot; title=&quot;虚拟机的安装（VMware+Ubuntu18.04）&quot;&gt;&lt;/a&gt;虚拟机的安装（VMware+Ubuntu18.04）&lt;/h2&gt;&lt;h3 id=&quot;VMware的安装&quot;&gt;&lt;a href=&quot;#VMware的安装&quot; class=&quot;headerlink&quot; title=&quot;VMware的安装&quot;&gt;&lt;/a&gt;VMware的安装&lt;/h3&gt;</summary>
     
     
     
@@ -73,27 +62,6 @@
     <category term="PX4" scheme="http://riesdown.github.io/tags/PX4/"/>
     
     <category term="Ubuntu" scheme="http://riesdown.github.io/tags/Ubuntu/"/>
-    
-  </entry>
-  
-  <entry>
-    <title></title>
-    <link href="http://riesdown.github.io/year-07-07-%E6%97%A0%E4%BA%BA%E6%9C%BA%E4%BB%BF%E7%9C%9F%E2%80%94PX4%E7%BC%96%E8%AF%91%EF%BC%8Cgazebo%E4%BB%BF%E7%9C%9F%E5%8F%8A%E7%AE%80%E5%8D%95off%20board%E6%8E%A7%E5%88%B6%E6%A8%A1%E5%BC%8F%E4%B8%8B%E6%97%A0%E4%BA%BA%E6%9C%BA%E8%B5%B7%E9%A3%9E/"/>
-    <id>http://riesdown.github.io/year-07-07-%E6%97%A0%E4%BA%BA%E6%9C%BA%E4%BB%BF%E7%9C%9F%E2%80%94PX4%E7%BC%96%E8%AF%91%EF%BC%8Cgazebo%E4%BB%BF%E7%9C%9F%E5%8F%8A%E7%AE%80%E5%8D%95off%20board%E6%8E%A7%E5%88%B6%E6%A8%A1%E5%BC%8F%E4%B8%8B%E6%97%A0%E4%BA%BA%E6%9C%BA%E8%B5%B7%E9%A3%9E/</id>
-    <published>2023-07-07T14:17:23.481Z</published>
-    <updated>2023-03-18T05:53:36.000Z</updated>
-    
-    
-      
-      
-        
-        
-    <summary type="html">&lt;h1 id=&quot;无人机仿真—PX4编译，gazebo仿真及简单off-board控制模式下无人机起飞&quot;&gt;&lt;a href=&quot;#无人机仿真—PX4编译，gazebo仿真及简单off-board控制模式下无人机起飞&quot; class=&quot;headerlink&quot;</summary>
-        
-      
-    
-    
-    
     
   </entry>
   
@@ -115,7 +83,7 @@
     <link href="http://riesdown.github.io/year-07-06-2023-5-4/"/>
     <id>http://riesdown.github.io/year-07-06-2023-5-4/</id>
     <published>2023-07-06T07:20:14.000Z</published>
-    <updated>2023-07-06T16:32:20.983Z</updated>
+    <updated>2023-07-07T15:15:32.991Z</updated>
     
     
     <summary type="html">&lt;h1 id=&quot;电赛历程&quot;&gt;&lt;a href=&quot;#电赛历程&quot; class=&quot;headerlink&quot; title=&quot;电赛历程&quot;&gt;&lt;/a&gt;电赛历程&lt;/h1&gt;&lt;h2 id=&quot;实践历程分析&quot;&gt;&lt;a href=&quot;#实践历程分析&quot; class=&quot;headerlink&quot; title=&quot;实践历程分析&quot;&gt;&lt;/a&gt;实践历程分析&lt;/h2&gt;&lt;ul&gt;
