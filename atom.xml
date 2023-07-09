@@ -6,7 +6,7 @@
   <link href="http://riesdown.github.io/atom.xml" rel="self"/>
   
   <link href="http://riesdown.github.io/"/>
-  <updated>2023-07-07T15:16:47.201Z</updated>
+  <updated>2023-07-09T16:17:20.731Z</updated>
   <id>http://riesdown.github.io/</id>
   
   <author>
@@ -17,11 +17,67 @@
   <generator uri="https://hexo.io/">Hexo</generator>
   
   <entry>
-    <title>2023-5-18基于ROS框架下PX4环境仿真</title>
+    <title>随笔（二）</title>
+    <link href="http://riesdown.github.io/year-07-09-2023-7-9/"/>
+    <id>http://riesdown.github.io/year-07-09-2023-7-9/</id>
+    <published>2023-07-09T15:40:02.000Z</published>
+    <updated>2023-07-09T16:17:20.731Z</updated>
+    
+    
+      
+      
+        
+        
+    <summary type="html">&lt;hr&gt;
+&lt;hr&gt;
+&lt;p&gt;​	“走在风中，今天阳光，突然好温柔。”    ——五月天《温柔》&lt;/p&gt;
+&lt;p&gt;  &lt;img src=&quot;/year-07-09-2023-7-9/%E5%A4%95%E9%98%B31.jpg&quot;</summary>
+        
+      
+    
+    
+    
+    <category term="电赛历程" scheme="http://riesdown.github.io/categories/%E7%94%B5%E8%B5%9B%E5%8E%86%E7%A8%8B/"/>
+    
+    <category term="随笔" scheme="http://riesdown.github.io/categories/%E9%9A%8F%E7%AC%94/"/>
+    
+    
+    <category term="随笔" scheme="http://riesdown.github.io/tags/%E9%9A%8F%E7%AC%94/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>Publisher发布者的python实现</title>
+    <link href="http://riesdown.github.io/year-07-09-ROS%E5%AD%A6%E4%B9%A0%E8%AE%B0%E5%BD%952/"/>
+    <id>http://riesdown.github.io/year-07-09-ROS%E5%AD%A6%E4%B9%A0%E8%AE%B0%E5%BD%952/</id>
+    <published>2023-07-09T01:19:05.000Z</published>
+    <updated>2023-07-09T03:31:50.911Z</updated>
+    
+    
+      
+      
+        
+        
+    <summary type="html">&lt;hr&gt;
+&lt;h2 id=&quot;ROS学习—Publisher发布者的python实现&quot;&gt;&lt;a href=&quot;#ROS学习—Publisher发布者的python实现&quot; class=&quot;headerlink&quot;</summary>
+        
+      
+    
+    
+    
+    <category term="ROS学习" scheme="http://riesdown.github.io/categories/ROS%E5%AD%A6%E4%B9%A0/"/>
+    
+    
+    <category term="ROS" scheme="http://riesdown.github.io/tags/ROS/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>基于ROS框架下PX4环境仿真</title>
     <link href="http://riesdown.github.io/year-07-07-2023-5-18%E5%9F%BA%E4%BA%8EROS%E6%A1%86%E6%9E%B6%E4%B8%8BPX4%E7%8E%AF%E5%A2%83%E4%BB%BF%E7%9C%9F/"/>
     <id>http://riesdown.github.io/year-07-07-2023-5-18%E5%9F%BA%E4%BA%8EROS%E6%A1%86%E6%9E%B6%E4%B8%8BPX4%E7%8E%AF%E5%A2%83%E4%BB%BF%E7%9C%9F/</id>
     <published>2023-07-07T14:35:33.000Z</published>
-    <updated>2023-07-07T15:16:47.201Z</updated>
+    <updated>2023-07-09T01:24:30.809Z</updated>
     
     
     <summary type="html">&lt;h1 id=&quot;无人机仿真—PX4编译，gazebo仿真及简单off-board控制模式下无人机起飞&quot;&gt;&lt;a href=&quot;#无人机仿真—PX4编译，gazebo仿真及简单off-board控制模式下无人机起飞&quot; class=&quot;headerlink&quot; title=&quot;无人机仿真—PX4编译，gazebo仿真及简单off board控制模式下无人机起飞&quot;&gt;&lt;/a&gt;无人机仿真—PX4编译，gazebo仿真及简单off board控制模式下无人机起飞&lt;/h1&gt;&lt;h2 id=&quot;前言&quot;&gt;&lt;a href=&quot;#前言&quot; class=&quot;headerlink&quot; title=&quot;前言&quot;&gt;&lt;/a&gt;前言&lt;/h2&gt;&lt;ul&gt;
@@ -29,7 +85,7 @@
     
     
     
-    <category term="ROS算法" scheme="http://riesdown.github.io/categories/ROS%E7%AE%97%E6%B3%95/"/>
+    <category term="ROS学习" scheme="http://riesdown.github.io/categories/ROS%E5%AD%A6%E4%B9%A0/"/>
     
     <category term="环境仿真" scheme="http://riesdown.github.io/categories/%E7%8E%AF%E5%A2%83%E4%BB%BF%E7%9C%9F/"/>
     
@@ -105,14 +161,14 @@
     <link href="http://riesdown.github.io/year-07-06-2023-5-25%20ROS%E5%AD%A6%E4%B9%A0%E8%AE%B0%E5%BD%95%EF%BC%88%E5%8F%82%E8%80%83%E2%80%94%E5%8F%A4%E6%9C%88%E5%B1%85%EF%BC%89%20160959/"/>
     <id>http://riesdown.github.io/year-07-06-2023-5-25%20ROS%E5%AD%A6%E4%B9%A0%E8%AE%B0%E5%BD%95%EF%BC%88%E5%8F%82%E8%80%83%E2%80%94%E5%8F%A4%E6%9C%88%E5%B1%85%EF%BC%89%20160959/</id>
     <published>2023-07-06T07:19:14.000Z</published>
-    <updated>2023-07-06T16:15:13.053Z</updated>
+    <updated>2023-07-09T01:21:58.660Z</updated>
     
     
     <summary type="html">&lt;h1 id=&quot;ROS学习记录（参考—古月居—深蓝学院）&quot;&gt;&lt;a href=&quot;#ROS学习记录（参考—古月居—深蓝学院）&quot; class=&quot;headerlink&quot; title=&quot;ROS学习记录（参考—古月居—深蓝学院）&quot;&gt;&lt;/a&gt;ROS学习记录（参考—古月居—深蓝学院）&lt;/h1&gt;</summary>
     
     
     
-    <category term="ROS算法" scheme="http://riesdown.github.io/categories/ROS%E7%AE%97%E6%B3%95/"/>
+    <category term="ROS学习" scheme="http://riesdown.github.io/categories/ROS%E5%AD%A6%E4%B9%A0/"/>
     
     
     <category term="Ubuntu" scheme="http://riesdown.github.io/tags/Ubuntu/"/>
