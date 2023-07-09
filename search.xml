@@ -384,78 +384,6 @@ int main(int argc, char **argv)
       </tags>
   </entry>
   <entry>
-    <title>电赛分析</title>
-    <url>/year-07-06-2023-5-4/</url>
-    <content><![CDATA[<h1 id="电赛历程"><a href="#电赛历程" class="headerlink" title="电赛历程"></a>电赛历程</h1><h2 id="实践历程分析"><a href="#实践历程分析" class="headerlink" title="实践历程分析"></a>实践历程分析</h2><ul>
-<li><p>​	前言：每一次的飞机炸机之后，都必须校准一遍电调和六面校准加速度计，必须校准机架水平</p>
-<span id="more"></span>
-</li>
-<li><p>前言：每一次的试飞前，注意听电机转速是否一致。确定无误后，上螺旋桨后进行解锁操作，听螺旋桨转速是否出现噪声，而后进行定高+光流操作，然后进行解锁起飞。</p>
-</li>
-<li><p>2023年4月20日，经历第一次炸机，究其原因，光流模块和定高通道未打开，出现乱飘现象。经历过后，将第五通道置位高位，打开第八通道，遂解决</p>
-</li>
-<li><p>2023年4月21日，手动解锁无人机，安全起飞且成功降落。</p>
-</li>
-<li><p>2023年4月22日，尝试进入无人机SDK模式成功，无人机成功按照既定轨迹飞行且成功降落</p>
-</li>
-<li><p>2023年4月24日，自写函数产生逻辑错误，无人机成功运行但未能达到预期效果，经过询问，得知一切任务函数均由定时器中断中产生，在控制函数中不能加delay函数进行延时，否则将控制出错从而出现炸机，猜想遂验证失败。</p>
-</li>
-<li><p><img src="/year-07-06-2023-5-4/%E8%B0%83%E8%AF%951.png"></p>
-</li>
-<li><p><img src="/year-07-06-2023-5-4/%E8%B0%83%E8%AF%952.png"></p>
-</li>
-<li><p>2023年4月26日，程序烧写失败，查看原因，发现固件烧写错误，遂查询原因，诸多方法均未能解决，后查看一篇帖子说明ST_LINK烧写器固件未成绩，遂对其进行升级，后成功解决错误</p>
-<ul>
-<li><img src="/year-07-06-2023-5-4/%E8%B0%83%E8%AF%953.png"></li>
-</ul>
-</li>
-<li><p>2023年4月27日，验证轨迹函数，发现无人机跳过执行第三个线程，但能够执行第四个线程降落。</p>
-<ul>
-<li><img src="/year-07-06-2023-5-4/%E4%BB%A3%E7%A0%811.png"></li>
-<li>仔细分析，跟师兄讨论出两个方向，一个是当无人机执行完向前1m的轨迹飞行后，重新刷新其位置信息并赋值给无人机，后验证失败，目的是研究出无人机的坐标系是根据起飞原点位置建立一个坐标系还是依靠自身作为一个坐标系。</li>
-<li>根据师兄所说，可对其进行延时函数，规划好子任务执行时间<ul>
-<li><img src="/year-07-06-2023-5-4/%E4%BB%A3%E7%A0%812.png"></li>
-<li>将此语句放入子线程函数中，不放入前进轨迹函数中，因为子任务时间是对下一个线程的时间规划，验证可行</li>
-<li>剩余最后一个问题，还是未能够执行第三个线程，后溯源函数，发现旋转函数结束标志位一直无法判断，所以导致if语句切换到下一线程无法执行，后添加一句或语句，等待子任务执行时间结束后执行下一线程，不管是否旋转角度成功。后轨迹验证函数成功。</li>
-</ul>
-</li>
-</ul>
-</li>
-<li><p>进行openmv循迹时，注意检测俯视openmv是否能够检测到黑线，颜色阈值可以在openmv函数中进行相关调整，可以在openmv ide软件中进行分析。</p>
-</li>
-<li><p>2023年5月1日，循迹函数验证成功</p>
-<ul>
-<li><img src="/year-07-06-2023-5-4/%E5%AE%9E%E8%B7%B51.png"></li>
-</ul>
-</li>
-</ul>
-<h2 id="任务规划（5月）"><a href="#任务规划（5月）" class="headerlink" title="任务规划（5月）"></a>任务规划（5月）</h2><ul>
-<li>ROS操作系统进行学习，自带资料共九讲，远远不够，想要初步上手需要更多的理解<ul>
-<li>时间：为期20天，时间截止于5月24日</li>
-<li>目标：学会建立工程包，在一定程度上能够复现电赛上位机解锁无人机进行轨迹飞行</li>
-</ul>
-</li>
-<li>激光雷达的运用，资料较少，学会利用激光雷达进行建图<ul>
-<li>时间：为期15天，时间截止于5月20日</li>
-<li>目标：将SLAM定位进行相结合，并能够对其进行数据运算，尽可能实现路径规划</li>
-</ul>
-</li>
-<li>openmv模块的调用<ul>
-<li>理解阈值的调整，分辨率的修改，掌握大致函数的调用</li>
-</ul>
-</li>
-<li>未尽事宜，后续规划</li>
-</ul>
-]]></content>
-      <categories>
-        <category>电赛历程</category>
-      </categories>
-      <tags>
-        <tag>无人机</tag>
-        <tag>调试经验</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>ROS学习</title>
     <url>/year-07-06-2023-5-25%20ROS%E5%AD%A6%E4%B9%A0%E8%AE%B0%E5%BD%95%EF%BC%88%E5%8F%82%E8%80%83%E2%80%94%E5%8F%A4%E6%9C%88%E5%B1%85%EF%BC%89%20160959/</url>
     <content><![CDATA[<h1 id="ROS学习记录（参考—古月居—深蓝学院）"><a href="#ROS学习记录（参考—古月居—深蓝学院）" class="headerlink" title="ROS学习记录（参考—古月居—深蓝学院）"></a>ROS学习记录（参考—古月居—深蓝学院）</h1><span id="more"></span>
@@ -745,6 +673,78 @@ gedit ~/.bashrc
       </tags>
   </entry>
   <entry>
+    <title>电赛分析</title>
+    <url>/year-07-06-2023-5-4/</url>
+    <content><![CDATA[<h1 id="电赛历程"><a href="#电赛历程" class="headerlink" title="电赛历程"></a>电赛历程</h1><h2 id="实践历程分析"><a href="#实践历程分析" class="headerlink" title="实践历程分析"></a>实践历程分析</h2><ul>
+<li><p>​	前言：每一次的飞机炸机之后，都必须校准一遍电调和六面校准加速度计，必须校准机架水平</p>
+<span id="more"></span>
+</li>
+<li><p>前言：每一次的试飞前，注意听电机转速是否一致。确定无误后，上螺旋桨后进行解锁操作，听螺旋桨转速是否出现噪声，而后进行定高+光流操作，然后进行解锁起飞。</p>
+</li>
+<li><p>2023年4月20日，经历第一次炸机，究其原因，光流模块和定高通道未打开，出现乱飘现象。经历过后，将第五通道置位高位，打开第八通道，遂解决</p>
+</li>
+<li><p>2023年4月21日，手动解锁无人机，安全起飞且成功降落。</p>
+</li>
+<li><p>2023年4月22日，尝试进入无人机SDK模式成功，无人机成功按照既定轨迹飞行且成功降落</p>
+</li>
+<li><p>2023年4月24日，自写函数产生逻辑错误，无人机成功运行但未能达到预期效果，经过询问，得知一切任务函数均由定时器中断中产生，在控制函数中不能加delay函数进行延时，否则将控制出错从而出现炸机，猜想遂验证失败。</p>
+</li>
+<li><p><img src="/year-07-06-2023-5-4/%E8%B0%83%E8%AF%951.png"></p>
+</li>
+<li><p><img src="/year-07-06-2023-5-4/%E8%B0%83%E8%AF%952.png"></p>
+</li>
+<li><p>2023年4月26日，程序烧写失败，查看原因，发现固件烧写错误，遂查询原因，诸多方法均未能解决，后查看一篇帖子说明ST_LINK烧写器固件未成绩，遂对其进行升级，后成功解决错误</p>
+<ul>
+<li><img src="/year-07-06-2023-5-4/%E8%B0%83%E8%AF%953.png"></li>
+</ul>
+</li>
+<li><p>2023年4月27日，验证轨迹函数，发现无人机跳过执行第三个线程，但能够执行第四个线程降落。</p>
+<ul>
+<li><img src="/year-07-06-2023-5-4/%E4%BB%A3%E7%A0%811.png"></li>
+<li>仔细分析，跟师兄讨论出两个方向，一个是当无人机执行完向前1m的轨迹飞行后，重新刷新其位置信息并赋值给无人机，后验证失败，目的是研究出无人机的坐标系是根据起飞原点位置建立一个坐标系还是依靠自身作为一个坐标系。</li>
+<li>根据师兄所说，可对其进行延时函数，规划好子任务执行时间<ul>
+<li><img src="/year-07-06-2023-5-4/%E4%BB%A3%E7%A0%812.png"></li>
+<li>将此语句放入子线程函数中，不放入前进轨迹函数中，因为子任务时间是对下一个线程的时间规划，验证可行</li>
+<li>剩余最后一个问题，还是未能够执行第三个线程，后溯源函数，发现旋转函数结束标志位一直无法判断，所以导致if语句切换到下一线程无法执行，后添加一句或语句，等待子任务执行时间结束后执行下一线程，不管是否旋转角度成功。后轨迹验证函数成功。</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p>进行openmv循迹时，注意检测俯视openmv是否能够检测到黑线，颜色阈值可以在openmv函数中进行相关调整，可以在openmv ide软件中进行分析。</p>
+</li>
+<li><p>2023年5月1日，循迹函数验证成功</p>
+<ul>
+<li><img src="/year-07-06-2023-5-4/%E5%AE%9E%E8%B7%B51.png"></li>
+</ul>
+</li>
+</ul>
+<h2 id="任务规划（5月）"><a href="#任务规划（5月）" class="headerlink" title="任务规划（5月）"></a>任务规划（5月）</h2><ul>
+<li>ROS操作系统进行学习，自带资料共九讲，远远不够，想要初步上手需要更多的理解<ul>
+<li>时间：为期20天，时间截止于5月24日</li>
+<li>目标：学会建立工程包，在一定程度上能够复现电赛上位机解锁无人机进行轨迹飞行</li>
+</ul>
+</li>
+<li>激光雷达的运用，资料较少，学会利用激光雷达进行建图<ul>
+<li>时间：为期15天，时间截止于5月20日</li>
+<li>目标：将SLAM定位进行相结合，并能够对其进行数据运算，尽可能实现路径规划</li>
+</ul>
+</li>
+<li>openmv模块的调用<ul>
+<li>理解阈值的调整，分辨率的修改，掌握大致函数的调用</li>
+</ul>
+</li>
+<li>未尽事宜，后续规划</li>
+</ul>
+]]></content>
+      <categories>
+        <category>电赛历程</category>
+      </categories>
+      <tags>
+        <tag>无人机</tag>
+        <tag>调试经验</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>无题</title>
     <url>/year-07-05-2023-7-5/</url>
     <content><![CDATA[<div class="hbe hbe-container" id="hexo-blog-encrypt" data-wpm="Oh, this is an invalid password. Check and try again, please." data-whm="OOPS, these decrypted content may changed, but you can still have a look.">
@@ -804,17 +804,9 @@ gedit ~/.bashrc
 
 <ul>
 <li><p>ctrl+alt+t打开终端</p>
-<ul>
-<li><pre><code class="c">cd catkin_ws/src //进入工作空间
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line"></span><br><span class="line">- ```c</span><br><span class="line">  catkin_create_pkg ssr_pkg rospy std_msgs //创建一个软件包</span><br></pre></td></tr></table></figure>
-</code></pre>
-</li>
-<li><pre><code class="c">cd ..//回退到上一级子目录
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line"></span><br><span class="line">- ```c</span><br><span class="line">  catkin_make //并不是为了编译ROS节点，使用python语言编写的节点是可以直接运行的，catkin_make的作用是将ssr_pkg软件包进入ros的软件包列表</span><br><span class="line">      		//运行节点的时候，ROS能够在软件包列表找到ssr_pkg,后期对已有代码进行修改，无需再进行编译</span><br></pre></td></tr></table></figure>
-</code></pre>
-</li>
-</ul>
-</li>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">cd catkin_ws/src //进入工作空间</span><br><span class="line">catkin_create_pkg ssr_pkg rospy std_msgs //创建一个软件包</span><br><span class="line">cd ..//回退到上一级子目录</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">catkin_make //并不是为了编译ROS节点，使用python语言编写的节点是可以直接运行的，catkin_make的作用是将ssr_pkg软件包进入ros的软件包列表</span><br><span class="line">    		//运行节点的时候，ROS能够在软件包列表找到ssr_pkg,后期对已有代码进行修改，无需再进行编译</span><br></pre></td></tr></table></figure></li>
 </ul>
 <hr>
 <ul>
