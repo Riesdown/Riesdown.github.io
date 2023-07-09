@@ -805,13 +805,52 @@ gedit ~/.bashrc
 <ul>
 <li><p>ctrl+alt+t打开终端</p>
 <ul>
-<li><pre><code class="c">cd catkin_ws/src //进入工作空间
-catkin_create_pkg ssr_pkg rospy std_msgs //创建一个软件包
-cd ..//回退到上一级子目录
-catkin_make //并不是为了编译ROS节点，使用python语言编写的节点是可以直接运行的，catkin_make的作用是将ssr_pkg软件包进入ros的软件包列表
-            //运行节点的时候，ROS能够在软件包列表找到ssr_pkg,后期对已有代码进行修改，无需再进行编译
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line"></span><br><span class="line">  打开Vs code</span><br><span class="line"></span><br><span class="line">- 打开工作空间src目录，打开新创建的ssr_pkg</span><br><span class="line"></span><br><span class="line">- ssr_pkg软件包内src是存放c++节点代码，新建文件夹命名“scripts”，文件夹内新建文件“chao_node.py”,即python文件</span><br><span class="line"></span><br><span class="line">- ps</span><br><span class="line"></span><br><span class="line">  - C++发布节点框架</span><br><span class="line">    - 选择ROS管家NodeHandle</span><br><span class="line">    - 向ROS管家NodeHandle申请初始化节点</span><br><span class="line">    - 告诉管家NodeHandle需要发布的话题名称，索要能够发布消息包的发布对象pub</span><br><span class="line">    - 开启while循环，不停使用Pub对象发布消息包</span><br><span class="line"></span><br><span class="line">- python框架</span><br><span class="line"></span><br><span class="line">  - 选择ROS管家rospy</span><br><span class="line"></span><br><span class="line">  - 向ROS管家rospy申请初始化节点</span><br><span class="line"></span><br><span class="line">  - 告诉管家rospy需要发布的话题名称，索要能够发布消息包的发布对象pub</span><br><span class="line"></span><br><span class="line">  - 开启while循环，不停使用Pub对象发布消息包</span><br><span class="line"></span><br><span class="line">  - ```python</span><br><span class="line">    #!/usr/bin/env python3</span><br><span class="line">    #coding=utf-8</span><br></pre></td></tr></table></figure>
+<li><pre><code>cd catkin_ws/src //进入工作空间
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">- ```</span><br><span class="line">  catkin_create_pkg ssr_pkg rospy std_msgs //创建一个软件包</span><br></pre></td></tr></table></figure>
+
 </code></pre>
+</li>
+<li><pre><code>cd ..//回退到上一级子目录
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">- ```</span><br><span class="line">  catkin_make //并不是为了编译ROS节点，使用python语言编写的节点是可以直接运行的，catkin_make的作用是将ssr_pkg软件包进入ros的软件包列表</span><br><span class="line">      		//运行节点的时候，ROS能够在软件包列表找到ssr_pkg,后期对已有代码进行修改，无需再进行编译</span><br></pre></td></tr></table></figure>
+</code></pre>
+</li>
+</ul>
+</li>
+</ul>
+<hr>
+<ul>
+<li><p>打开Vs code</p>
+<ul>
+<li><p>打开工作空间src目录，打开新创建的ssr_pkg</p>
+</li>
+<li><p>ssr_pkg软件包内src是存放c++节点代码，新建文件夹命名“scripts”，文件夹内新建文件“chao_node.py”,即python文件</p>
+</li>
+<li><p>ps</p>
+<ul>
+<li>C++发布节点框架<ul>
+<li>选择ROS管家NodeHandle</li>
+<li>向ROS管家NodeHandle申请初始化节点</li>
+<li>告诉管家NodeHandle需要发布的话题名称，索要能够发布消息包的发布对象pub</li>
+<li>开启while循环，不停使用Pub对象发布消息包</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p>python框架</p>
+<ul>
+<li><p>选择ROS管家rospy</p>
+</li>
+<li><p>向ROS管家rospy申请初始化节点</p>
+</li>
+<li><p>告诉管家rospy需要发布的话题名称，索要能够发布消息包的发布对象pub</p>
+</li>
+<li><p>开启while循环，不停使用Pub对象发布消息包</p>
+</li>
+<li><pre><code class="python">#!/usr/bin/env python3
+#coding=utf-8
+</code></pre>
+</li>
+</ul>
 </li>
 </ul>
 </li>
