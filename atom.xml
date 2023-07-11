@@ -6,7 +6,7 @@
   <link href="http://riesdown.github.io/atom.xml" rel="self"/>
   
   <link href="http://riesdown.github.io/"/>
-  <updated>2023-07-09T16:19:59.184Z</updated>
+  <updated>2023-07-11T16:51:09.879Z</updated>
   <id>http://riesdown.github.io/</id>
   
   <author>
@@ -15,6 +15,69 @@
   </author>
   
   <generator uri="https://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title>ROS介绍</title>
+    <link href="http://riesdown.github.io/year-07-12-ROS%E4%BB%8B%E7%BB%8D/"/>
+    <id>http://riesdown.github.io/year-07-12-ROS%E4%BB%8B%E7%BB%8D/</id>
+    <published>2023-07-11T16:36:32.000Z</published>
+    <updated>2023-07-11T16:51:09.879Z</updated>
+    
+    
+      
+      
+        
+        
+    <summary type="html">&lt;h2 id=&quot;ROS&quot;&gt;&lt;a href=&quot;#ROS&quot; class=&quot;headerlink&quot; title=&quot;ROS&quot;&gt;&lt;/a&gt;ROS&lt;/h2&gt;&lt;ul&gt;
+&lt;li&gt;ROS&amp;#x3D;通信机制+开发工具+应用功能+生态系统&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3 id=&quot;通信机制&quot;&gt;&lt;a</summary>
+        
+      
+    
+    
+    
+    <category term="ROS学习" scheme="http://riesdown.github.io/categories/ROS%E5%AD%A6%E4%B9%A0/"/>
+    
+    
+    <category term="ROS" scheme="http://riesdown.github.io/tags/ROS/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>ROS安装</title>
+    <link href="http://riesdown.github.io/year-07-12-2023-7-11ROS%E5%AE%89%E8%A3%85/"/>
+    <id>http://riesdown.github.io/year-07-12-2023-7-11ROS%E5%AE%89%E8%A3%85/</id>
+    <published>2023-07-11T16:26:56.000Z</published>
+    <updated>2023-07-11T16:50:44.947Z</updated>
+    
+    
+    <summary type="html">&lt;hr&gt;
+&lt;h2 id=&quot;前言&quot;&gt;&lt;a href=&quot;#前言&quot; class=&quot;headerlink&quot; title=&quot;前言&quot;&gt;&lt;/a&gt;前言&lt;/h2&gt;&lt;p&gt;随着无人机上层应用的普及，需要用到ROS对无人机进行路径规划，导航，避障等的地方越来越多，简单记录下学习一些ROS的心得。&lt;/p&gt;</summary>
+    
+    
+    
+    <category term="ROS学习" scheme="http://riesdown.github.io/categories/ROS%E5%AD%A6%E4%B9%A0/"/>
+    
+    <category term="环境搭建" scheme="http://riesdown.github.io/categories/%E7%8E%AF%E5%A2%83%E6%90%AD%E5%BB%BA/"/>
+    
+    
+    <category term="ROS" scheme="http://riesdown.github.io/tags/ROS/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>2023-7-11</title>
+    <link href="http://riesdown.github.io/year-07-11-2023-7-11/"/>
+    <id>http://riesdown.github.io/year-07-11-2023-7-11/</id>
+    <published>2023-07-11T01:06:27.000Z</published>
+    <updated>2023-07-11T01:06:27.832Z</updated>
+    
+    
+    
+    
+    
+  </entry>
   
   <entry>
     <title>随笔（二）</title>
@@ -44,7 +107,7 @@
     <link href="http://riesdown.github.io/year-07-09-ROS%E5%AD%A6%E4%B9%A0%E8%AE%B0%E5%BD%952/"/>
     <id>http://riesdown.github.io/year-07-09-ROS%E5%AD%A6%E4%B9%A0%E8%AE%B0%E5%BD%952/</id>
     <published>2023-07-09T01:19:05.000Z</published>
-    <updated>2023-07-09T16:33:38.059Z</updated>
+    <updated>2023-07-11T12:31:04.610Z</updated>
     
     
     <summary type="html">&lt;hr&gt;
@@ -90,14 +153,16 @@
     <link href="http://riesdown.github.io/year-07-07-2023-3-4%E5%9F%BA%E4%BA%8EPX4%E5%9C%A8Ubuntu%E7%B3%BB%E7%BB%9F%E4%B8%AD%E7%9A%84%E6%90%AD%E5%BB%BA/"/>
     <id>http://riesdown.github.io/year-07-07-2023-3-4%E5%9F%BA%E4%BA%8EPX4%E5%9C%A8Ubuntu%E7%B3%BB%E7%BB%9F%E4%B8%AD%E7%9A%84%E6%90%AD%E5%BB%BA/</id>
     <published>2023-07-07T14:20:34.000Z</published>
-    <updated>2023-07-07T15:16:24.873Z</updated>
+    <updated>2023-07-11T16:40:55.492Z</updated>
     
     
     <summary type="html">&lt;h1 id=&quot;基于PX4在Ubuntu仿真环境中的搭建（ROS-Gazebo-Mavros-PX4-QGC）&quot;&gt;&lt;a href=&quot;#基于PX4在Ubuntu仿真环境中的搭建（ROS-Gazebo-Mavros-PX4-QGC）&quot; class=&quot;headerlink&quot; title=&quot;基于PX4在Ubuntu仿真环境中的搭建（ROS+Gazebo+Mavros+PX4+QGC）&quot;&gt;&lt;/a&gt;基于PX4在Ubuntu仿真环境中的搭建（ROS+Gazebo+Mavros+PX4+QGC）&lt;/h1&gt;&lt;h2 id=&quot;虚拟机的安装（VMware-Ubuntu18-04）&quot;&gt;&lt;a href=&quot;#虚拟机的安装（VMware-Ubuntu18-04）&quot; class=&quot;headerlink&quot; title=&quot;虚拟机的安装（VMware+Ubuntu18.04）&quot;&gt;&lt;/a&gt;虚拟机的安装（VMware+Ubuntu18.04）&lt;/h2&gt;&lt;h3 id=&quot;VMware的安装&quot;&gt;&lt;a href=&quot;#VMware的安装&quot; class=&quot;headerlink&quot; title=&quot;VMware的安装&quot;&gt;&lt;/a&gt;VMware的安装&lt;/h3&gt;</summary>
     
     
     
-    <category term="PX4 环境搭建" scheme="http://riesdown.github.io/categories/PX4-%E7%8E%AF%E5%A2%83%E6%90%AD%E5%BB%BA/"/>
+    <category term="PX4" scheme="http://riesdown.github.io/categories/PX4/"/>
+    
+    <category term="环境搭建" scheme="http://riesdown.github.io/categories/%E7%8E%AF%E5%A2%83%E6%90%AD%E5%BB%BA/"/>
     
     
     <category term="无人机" scheme="http://riesdown.github.io/tags/%E6%97%A0%E4%BA%BA%E6%9C%BA/"/>
@@ -148,7 +213,7 @@
     <link href="http://riesdown.github.io/year-07-06-2023-5-25%20ROS%E5%AD%A6%E4%B9%A0%E8%AE%B0%E5%BD%95%EF%BC%88%E5%8F%82%E8%80%83%E2%80%94%E5%8F%A4%E6%9C%88%E5%B1%85%EF%BC%89%20160959/"/>
     <id>http://riesdown.github.io/year-07-06-2023-5-25%20ROS%E5%AD%A6%E4%B9%A0%E8%AE%B0%E5%BD%95%EF%BC%88%E5%8F%82%E8%80%83%E2%80%94%E5%8F%A4%E6%9C%88%E5%B1%85%EF%BC%89%20160959/</id>
     <published>2023-07-06T07:19:14.000Z</published>
-    <updated>2023-07-09T01:21:58.660Z</updated>
+    <updated>2023-07-11T16:37:25.262Z</updated>
     
     
     <summary type="html">&lt;h1 id=&quot;ROS学习记录（参考—古月居—深蓝学院）&quot;&gt;&lt;a href=&quot;#ROS学习记录（参考—古月居—深蓝学院）&quot; class=&quot;headerlink&quot; title=&quot;ROS学习记录（参考—古月居—深蓝学院）&quot;&gt;&lt;/a&gt;ROS学习记录（参考—古月居—深蓝学院）&lt;/h1&gt;</summary>

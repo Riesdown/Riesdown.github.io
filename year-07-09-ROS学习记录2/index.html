@@ -29,11 +29,15 @@
 <meta property="og:site_name" content="BiuBiu驿站">
 <meta property="og:description" content="ROS学习—Publisher发布者的python实现">
 <meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://riesdown.github.io/year-07-09-ROS%E5%AD%A6%E4%B9%A0%E8%AE%B0%E5%BD%952/%E9%80%9F%E5%BA%A6%E6%8E%A7%E5%88%B6.png">
+<meta property="og:image" content="http://riesdown.github.io/year-07-09-ROS%E5%AD%A6%E4%B9%A0%E8%AE%B0%E5%BD%952/%E6%BF%80%E5%85%89%E9%9B%B7%E8%BE%BE.png">
+<meta property="og:image" content="http://riesdown.github.io/year-07-09-ROS%E5%AD%A6%E4%B9%A0%E8%AE%B0%E5%BD%952/%E6%BF%80%E5%85%89%E9%9B%B7%E8%BE%BE%E6%B6%88%E6%81%AF%E5%8C%85%E6%A0%BC%E5%BC%8F.png">
 <meta property="article:published_time" content="2023-07-09T01:19:05.000Z">
-<meta property="article:modified_time" content="2023-07-09T16:33:38.059Z">
+<meta property="article:modified_time" content="2023-07-11T12:31:04.610Z">
 <meta property="article:author" content="Li">
 <meta property="article:tag" content="ROS">
 <meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://riesdown.github.io/year-07-09-ROS%E5%AD%A6%E4%B9%A0%E8%AE%B0%E5%BD%952/%E9%80%9F%E5%BA%A6%E6%8E%A7%E5%88%B6.png">
 
 
 <link rel="canonical" href="http://riesdown.github.io/year-07-09-ROS%E5%AD%A6%E4%B9%A0%E8%AE%B0%E5%BD%952/">
@@ -144,7 +148,7 @@
       <div class="sidebar-panel-container">
         <!--noindex-->
         <div class="post-toc-wrap sidebar-panel">
-            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#ROS%E5%AD%A6%E4%B9%A0%E2%80%94Publisher%E5%8F%91%E5%B8%83%E8%80%85%E7%9A%84python%E5%AE%9E%E7%8E%B0"><span class="nav-number">1.</span> <span class="nav-text">ROS学习—Publisher发布者的python实现</span></a></li></ol></div>
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#ROS%E5%AD%A6%E4%B9%A0%E2%80%94Publisher%E5%8F%91%E5%B8%83%E8%80%85%E7%9A%84python%E5%AE%9E%E7%8E%B0"><span class="nav-number">1.</span> <span class="nav-text">ROS学习—Publisher发布者的python实现</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Subscriber%E8%AE%A2%E9%98%85%E8%80%85%E7%9A%84python%E5%AE%9E%E7%8E%B0"><span class="nav-number">2.</span> <span class="nav-text">Subscriber订阅者的python实现</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8launch%E6%96%87%E4%BB%B6%E5%90%AF%E5%8A%A8%E5%A4%9A%E4%B8%AA%E8%8A%82%E7%82%B9"><span class="nav-number">2.1.</span> <span class="nav-text">使用launch文件启动多个节点</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#ROS%E6%9C%BA%E5%99%A8%E4%BA%BA%E8%BF%90%E5%8A%A8%E6%8E%A7%E5%88%B6"><span class="nav-number">3.</span> <span class="nav-text">ROS机器人运动控制</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%9C%BA%E5%99%A8%E4%BA%BA%E8%BF%90%E5%8A%A8%E6%8E%A7%E5%88%B6%E7%9A%84C-%E5%AE%9E%E7%8E%B0"><span class="nav-number">3.1.</span> <span class="nav-text">机器人运动控制的C++实现</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%9C%BA%E5%99%A8%E4%BA%BA%E8%BF%90%E5%8A%A8%E6%8E%A7%E5%88%B6%E7%9A%84python%E5%AE%9E%E7%8E%B0"><span class="nav-number">3.2.</span> <span class="nav-text">机器人运动控制的python实现</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%BF%80%E5%85%89%E9%9B%B7%E8%BE%BE"><span class="nav-number">4.</span> <span class="nav-text">激光雷达</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%B7%A5%E4%BD%9C%E5%8E%9F%E7%90%86"><span class="nav-number">4.1.</span> <span class="nav-text">工作原理</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#RVIZ%E8%A7%82%E6%B5%8B%E4%BC%A0%E6%84%9F%E5%99%A8"><span class="nav-number">4.2.</span> <span class="nav-text">RVIZ观测传感器</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%BF%80%E5%85%89%E9%9B%B7%E8%BE%BE%E6%B6%88%E6%81%AF%E5%8C%85%E6%A0%BC%E5%BC%8F"><span class="nav-number">4.3.</span> <span class="nav-text">激光雷达消息包格式</span></a></li></ol></li></ol></div>
         </div>
         <!--/noindex-->
 
@@ -159,13 +163,13 @@
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
         <a href="/archives/">
-          <span class="site-state-item-count">8</span>
+          <span class="site-state-item-count">11</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
       <div class="site-state-item site-state-categories">
           <a href="/categories/">
-        <span class="site-state-item-count">5</span>
+        <span class="site-state-item-count">6</span>
         <span class="site-state-item-name">分类</span></a>
       </div>
       <div class="site-state-item site-state-tags">
@@ -249,7 +253,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">更新于</span>
-      <time title="修改时间：2023-07-10 00:33:38" itemprop="dateModified" datetime="2023-07-10T00:33:38+08:00">2023-07-10</time>
+      <time title="修改时间：2023-07-11 20:31:04" itemprop="dateModified" datetime="2023-07-11T20:31:04+08:00">2023-07-11</time>
     </span>
     <span class="post-meta-item">
       <span class="post-meta-item-icon">
@@ -275,14 +279,14 @@
         <i class="far fa-file-word"></i>
       </span>
       <span class="post-meta-item-text">本文字数：</span>
-      <span>622</span>
+      <span>4.2k</span>
     </span>
     <span class="post-meta-item" title="阅读时长">
       <span class="post-meta-item-icon">
         <i class="far fa-clock"></i>
       </span>
       <span class="post-meta-item-text">阅读时长 &asymp;</span>
-      <span>1 分钟</span>
+      <span>8 分钟</span>
     </span>
 </div>
 
@@ -320,6 +324,8 @@
 </li>
 </ul>
 </li>
+</ul>
+</li>
 <li><p>python框架</p>
 <ul>
 <li><p>选择ROS管家rospy</p>
@@ -332,12 +338,160 @@
 </li>
 <li><pre><code class="python">#!/usr/bin/env python3
 #coding=utf-8
+import rospy
+from std_msgs.msg import String
+if _name_== &quot;_main_&quot;:
+    rospy.init_node(&quot;节点名称&quot;)
+    rospy.logwarn(&quot;消息内容&quot;) #表明初始化节点成功
+    
+    pub = rospy.Publisher(&quot;话题名称&quot;,String,queue_size=10)#String-话题消息类型，queue_size话题发布端的消息包缓冲长度
+    
+    #定义发布对象频率
+    rate =rospy.rate(10)
+    
+   # 构建while循环，存在条件是节点没有被关闭
+    while not rospy.is_shutdown():
+        rospy.loginfo(&quot;  &quot;)#预告下一步动作
+        msg = String() #构建一个String消息包类型
+        msg.data=&quot;  &quot;#消息数据 
+        pub.publish(msg)#发布到话题当中通过pub对象
+        rate.sleep()#控制发布频率
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">      ------</span><br><span class="line"></span><br><span class="line">- 新建文件无运行权限，赋予它运行权限</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">  - 打开新创建文件的所在目录，右键空白处在终端打开</span><br><span class="line"></span><br><span class="line">  - 输入命令</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+</code></pre>
+</li>
+</ul>
+<p>  chmod +x file name<br>  <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">  - 无任何提示即说明权限添加成功</span><br><span class="line"></span><br><span class="line">- 运行节点</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">  - ```</span><br><span class="line">    roscore</span><br><span class="line">    rosrun ssr_pkg 节点名称</span><br><span class="line">    #检查发布消息对象是否正确</span><br><span class="line">    rostopic list</span><br><span class="line">    #查看话题名称内容</span><br><span class="line">    rostopic echo /话题名称</span><br><span class="line">    #若出现中文编码问题</span><br><span class="line">    echo -e &quot;编码内容&quot;</span><br></pre></td></tr></table></figure></p>
+<hr>
+</li>
+</ul>
+<h2 id="Subscriber订阅者的python实现"><a href="#Subscriber订阅者的python实现" class="headerlink" title="Subscriber订阅者的python实现"></a>Subscriber订阅者的python实现</h2><ul>
+<li>C++订阅者节点框架<ul>
+<li>召唤ROS大管家NodeHandle</li>
+<li>向ROS大管家NodeHandle申请初始化节点</li>
+<li>构建一个回调函数，用于处理从话题中接收到的消息包数据</li>
+<li>告诉Ros大管家NodeHandle需要订阅的话题名称，并设置接收消息包的回调函数</li>
+<li>调用ROS的spin（）函数，让节点不要立刻结束，时刻保持运行状态</li>
+</ul>
+</li>
+<li>Python订阅者节点框架<ul>
+<li>召唤ROS管家ROSpy</li>
+<li>向ROS管家rospy申请初始化节点</li>
+<li>构建一个回调函数，用于处理从话题中接收到的消息包数据</li>
+<li>告诉ROS管家rospy需要订阅的话题名称，并设置接收消息包的回调函数</li>
+<li>调用ROS的spin（）函数，让节点不要立刻结束，时刻保持运行状态</li>
+</ul>
+</li>
+<li>python框架和发布者节点内容类似</li>
+</ul>
+<h3 id="使用launch文件启动多个节点"><a href="#使用launch文件启动多个节点" class="headerlink" title="使用launch文件启动多个节点"></a>使用launch文件启动多个节点</h3><ul>
+<li><p>新建文件夹</p>
+</li>
+<li><p>新建文件，后缀名为launch</p>
+</li>
+<li><pre><code class="c">&lt;launch&gt;
+    &quot;ssr_pkg&quot; type=&quot;file name&quot; name=&quot;发布者节点名称&quot;/&gt;
+    &quot;atr_pkg&quot; type=&quot;file name&quot; name=&quot;订阅者节点名称&quot; launch-prefix=&quot;gnome-terminal -e&quot;/&gt; //订阅者新开一个终端窗口
+&lt;/launch&gt;
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">- 查看节点网络结构</span><br><span class="line"></span><br><span class="line">  - ```</span><br><span class="line">    rqt_graph</span><br></pre></td></tr></table></figure>
+</code></pre>
+</li>
+</ul>
+<hr>
+<h2 id="ROS机器人运动控制"><a href="#ROS机器人运动控制" class="headerlink" title="ROS机器人运动控制"></a>ROS机器人运动控制</h2><ul>
+<li><p>矢量运动控制和旋转运动控制</p>
+<ul>
+<li><p>对速度进行量化</p>
+</li>
+<li><p>选择机器人底盘在地盘投影的中点</p>
+</li>
+<li><p>建立三维坐标系，食指指向X轴，中指指向y轴，拇指指向z轴。三个方向的矢量合成</p>
+</li>
+<li><p>沿x轴旋转正方向滚转运动，y轴俯仰运动，z轴偏航运动</p>
+</li>
+<li><p>ROS中速度控制即是矢量运动和旋转运动的三轴分量</p>
+<p><img src="/year-07-09-ROS%E5%AD%A6%E4%B9%A0%E8%AE%B0%E5%BD%952/%E9%80%9F%E5%BA%A6%E6%8E%A7%E5%88%B6.png" alt="速度控制"></p>
+</li>
+</ul>
+</li>
+<li><p>流程控制</p>
+<ul>
+<li>速度控制节点—速度控制话题—机器人核心节点</li>
+<li>速度控制节点消息类型：geometry_msgs&#x2F;Twist</li>
+<li>速度控制话题：&#x2F;cmd_vel</li>
+</ul>
+</li>
+</ul>
+<h3 id="机器人运动控制的C-实现"><a href="#机器人运动控制的C-实现" class="headerlink" title="机器人运动控制的C++实现"></a>机器人运动控制的C++实现</h3><ul>
+<li><p>框架实现思路</p>
+<ul>
+<li><p>构建一个新的软件包，vel_pkg</p>
+</li>
+<li><p>在软件包中新建一个节点，节点名字叫做vel_node</p>
+</li>
+<li><p>在节点中，向ROS大管家NodeHandle申请发布话题&#x2F;cmd_vel,并拿到发布对象vel_pub</p>
+</li>
+<li><p>构建一个geometry_msgs&#x2F;Twist类型的消息包vel_msg,用来承载要发送的速度值</p>
+</li>
+<li><p>开启一个while循环，不停的使用vel_pub对象发送速度消息包vel_msg</p>
+</li>
+<li><pre><code class="c">cd catkin_ws/src/
+catkin_create_pkg vel_pkg roscpp rospy geometry_msgs //geometry_msgs包含了速度消息类型的软件包
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">  ------</span><br><span class="line"></span><br><span class="line">- 打开vs code</span><br><span class="line"></span><br><span class="line">  - 在创建的软件包内，src目录内创建节点代码文件vel_node.cpp</span><br><span class="line"></span><br><span class="line">  - ```c</span><br><span class="line">    #include &lt;ros/ros.h&gt;</span><br><span class="line">    #include &lt;geometry_msgs/Twist.h&gt;//Twist包含了linear矢量速度和angular旋转速度</span><br><span class="line">    int main(int argc,char *argv[])</span><br><span class="line">    &#123;</span><br><span class="line">        ros::init(argc,argv.&quot;vel_node&quot;);</span><br><span class="line">        ros::NodeHandle n;</span><br><span class="line">        ros::Publisher vcel_pub = n.advertise&lt;geometry_msgs::Twist&gt;(&quot;/cmd_vel&quot;,10);</span><br><span class="line">        </span><br><span class="line">        geometry_msgs::Twist vel_msg;</span><br><span class="line">        //构建一个geometry_msgs/Twist类型的消息包vel_msg,用来承载要发送的速度值</span><br><span class="line">        vel_msg.linear.x=0.1;</span><br><span class="line">        vel_msg.linear.y=0;</span><br><span class="line">        vel_msg.linear.z=0;</span><br><span class="line">        vel_msg.angular.x=0;</span><br><span class="line">        vel_msg.angular.y=0;</span><br><span class="line">        vel_msg.angular.z=0;</span><br><span class="line">        </span><br><span class="line">        //开启while循环，不停的使用vel_pub对象发送速度消息包vel_msg</span><br><span class="line">        ros::Rate r(30);</span><br><span class="line">        while(ros::ok())</span><br><span class="line">        &#123;</span><br><span class="line">            vel_pub.publish(vel_msg);</span><br><span class="line">            r.sleep();</span><br><span class="line">        &#125;</span><br><span class="line">        return 0;</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+
+  ------
+
+- 对其文件进行编译
+
+  - 打开软件包的CMakelist.txt文件
+  - build章节中复制三条编译规则到文件末尾，取消注释
+    - add_executable
+    - add_dependencies
+    - target_link_libraries
+  - 以上三条都为编译规则开头名字
+
+- ctrl+shift+b进行编译
+</code></pre>
+</li>
+<li><p>借助开源工程来完成机器人和环境的仿真</p>
+<ul>
+<li><pre><code>cd catkin_ws/src/
+git clone https://github.com/6-robot/wpr_simulation.git
+cd wpr_simulation/scripts
+./install_for-noetic.sh //自动下载编译项和环境依赖项
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">    ------</span><br><span class="line"></span><br><span class="line">- ```</span><br><span class="line">  roscore</span><br><span class="line">  roslaunch wpr_simulation wpb_simple.launch</span><br><span class="line">  //分屏</span><br><span class="line">  rosrun vel_pkg vel_node</span><br></pre></td></tr></table></figure>
 </code></pre>
 </li>
 </ul>
 </li>
 </ul>
 </li>
+</ul>
+<h3 id="机器人运动控制的python实现"><a href="#机器人运动控制的python实现" class="headerlink" title="机器人运动控制的python实现"></a>机器人运动控制的python实现</h3><ul>
+<li><pre><code>cd catkin_ws/src/wpr_simulation
+git pull//将其更新到版本的最新状态
+cd ~/catkin_ws/
+catkin_make
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">  ------</span><br><span class="line"></span><br><span class="line">- 框架实现思路</span><br><span class="line"></span><br><span class="line">  - 构建一个新的软件包，vel_pkg</span><br><span class="line"></span><br><span class="line">  - 在软件包中新建一个节点，节点名字叫做vel_node.py</span><br><span class="line"></span><br><span class="line">  - 在节点中，向ROS大管家rospy申请发布话题/cmd_vel,并拿到发布对象vel_pub</span><br><span class="line"></span><br><span class="line">  - 构建一个geometry_msgs/Twist类型的消息包vel_msg,用来承载要发送的速度值</span><br><span class="line"></span><br><span class="line">  - 开启一个while循环，不停的使用vel_pub对象发送速度消息包vel_msg</span><br><span class="line"></span><br><span class="line">- ![](ROS学习记录2/代码1.png)</span><br><span class="line"></span><br><span class="line">- 赋予其执行权限</span><br><span class="line"></span><br><span class="line">- ```</span><br><span class="line">  roscore</span><br><span class="line">  //后续步骤和上述c++实现步骤一致</span><br></pre></td></tr></table></figure>
+
+------
+</code></pre>
+</li>
+</ul>
+<h2 id="激光雷达"><a href="#激光雷达" class="headerlink" title="激光雷达"></a>激光雷达</h2><h3 id="工作原理"><a href="#工作原理" class="headerlink" title="工作原理"></a>工作原理</h3><ul>
+<li>红外激光反射</li>
+<li>时长*光速&#x3D;飞行长度，飞行长度&#x2F;2&#x3D;激光雷达到障碍物的距离</li>
+<li>旋转一周，实时更新周围环境</li>
+<li><img src="/year-07-09-ROS%E5%AD%A6%E4%B9%A0%E8%AE%B0%E5%BD%952/%E6%BF%80%E5%85%89%E9%9B%B7%E8%BE%BE.png"></li>
+</ul>
+<h3 id="RVIZ观测传感器"><a href="#RVIZ观测传感器" class="headerlink" title="RVIZ观测传感器"></a>RVIZ观测传感器</h3><ul>
+<li>可视化工具，对机器人状态显示的辅助工具</li>
+<li>修改Fixed Frame为base_footprint</li>
+<li>add添加机器人模型RobotModel</li>
+<li>添加激光雷达显示条目LaserScan</li>
+<li>新条目LaserScan选择Topic话题名称&#x2F;scan</li>
+</ul>
+<h3 id="激光雷达消息包格式"><a href="#激光雷达消息包格式" class="headerlink" title="激光雷达消息包格式"></a>激光雷达消息包格式</h3><ul>
+<li>​	 <img src="/year-07-09-ROS%E5%AD%A6%E4%B9%A0%E8%AE%B0%E5%BD%952/%E6%BF%80%E5%85%89%E9%9B%B7%E8%BE%BE%E6%B6%88%E6%81%AF%E5%8C%85%E6%A0%BC%E5%BC%8F.png"></li>
 </ul>
 
     </div>
@@ -421,13 +575,13 @@
     <span class="post-meta-item-icon">
       <i class="fa fa-chart-line"></i>
     </span>
-    <span title="站点总字数">22k</span>
+    <span title="站点总字数">29k</span>
   </span>
   <span class="post-meta-item">
     <span class="post-meta-item-icon">
       <i class="fa fa-coffee"></i>
     </span>
-    <span title="站点阅读时长">40 分钟</span>
+    <span title="站点阅读时长">52 分钟</span>
   </span>
 </div>
 <div class="busuanzi-count">

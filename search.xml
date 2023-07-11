@@ -199,7 +199,8 @@ bash ./Tools/setup/ubuntu.sh --no-nuttx --no-sim-tools
 </ul>
 ]]></content>
       <categories>
-        <category>PX4 环境搭建</category>
+        <category>PX4</category>
+        <category>环境搭建</category>
       </categories>
       <tags>
         <tag>无人机</tag>
@@ -384,6 +385,78 @@ int main(int argc, char **argv)
       </tags>
   </entry>
   <entry>
+    <title>电赛分析</title>
+    <url>/year-07-06-2023-5-4/</url>
+    <content><![CDATA[<h1 id="电赛历程"><a href="#电赛历程" class="headerlink" title="电赛历程"></a>电赛历程</h1><h2 id="实践历程分析"><a href="#实践历程分析" class="headerlink" title="实践历程分析"></a>实践历程分析</h2><ul>
+<li><p>​	前言：每一次的飞机炸机之后，都必须校准一遍电调和六面校准加速度计，必须校准机架水平</p>
+<span id="more"></span>
+</li>
+<li><p>前言：每一次的试飞前，注意听电机转速是否一致。确定无误后，上螺旋桨后进行解锁操作，听螺旋桨转速是否出现噪声，而后进行定高+光流操作，然后进行解锁起飞。</p>
+</li>
+<li><p>2023年4月20日，经历第一次炸机，究其原因，光流模块和定高通道未打开，出现乱飘现象。经历过后，将第五通道置位高位，打开第八通道，遂解决</p>
+</li>
+<li><p>2023年4月21日，手动解锁无人机，安全起飞且成功降落。</p>
+</li>
+<li><p>2023年4月22日，尝试进入无人机SDK模式成功，无人机成功按照既定轨迹飞行且成功降落</p>
+</li>
+<li><p>2023年4月24日，自写函数产生逻辑错误，无人机成功运行但未能达到预期效果，经过询问，得知一切任务函数均由定时器中断中产生，在控制函数中不能加delay函数进行延时，否则将控制出错从而出现炸机，猜想遂验证失败。</p>
+</li>
+<li><p><img src="/year-07-06-2023-5-4/%E8%B0%83%E8%AF%951.png"></p>
+</li>
+<li><p><img src="/year-07-06-2023-5-4/%E8%B0%83%E8%AF%952.png"></p>
+</li>
+<li><p>2023年4月26日，程序烧写失败，查看原因，发现固件烧写错误，遂查询原因，诸多方法均未能解决，后查看一篇帖子说明ST_LINK烧写器固件未成绩，遂对其进行升级，后成功解决错误</p>
+<ul>
+<li><img src="/year-07-06-2023-5-4/%E8%B0%83%E8%AF%953.png"></li>
+</ul>
+</li>
+<li><p>2023年4月27日，验证轨迹函数，发现无人机跳过执行第三个线程，但能够执行第四个线程降落。</p>
+<ul>
+<li><img src="/year-07-06-2023-5-4/%E4%BB%A3%E7%A0%811.png"></li>
+<li>仔细分析，跟师兄讨论出两个方向，一个是当无人机执行完向前1m的轨迹飞行后，重新刷新其位置信息并赋值给无人机，后验证失败，目的是研究出无人机的坐标系是根据起飞原点位置建立一个坐标系还是依靠自身作为一个坐标系。</li>
+<li>根据师兄所说，可对其进行延时函数，规划好子任务执行时间<ul>
+<li><img src="/year-07-06-2023-5-4/%E4%BB%A3%E7%A0%812.png"></li>
+<li>将此语句放入子线程函数中，不放入前进轨迹函数中，因为子任务时间是对下一个线程的时间规划，验证可行</li>
+<li>剩余最后一个问题，还是未能够执行第三个线程，后溯源函数，发现旋转函数结束标志位一直无法判断，所以导致if语句切换到下一线程无法执行，后添加一句或语句，等待子任务执行时间结束后执行下一线程，不管是否旋转角度成功。后轨迹验证函数成功。</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p>进行openmv循迹时，注意检测俯视openmv是否能够检测到黑线，颜色阈值可以在openmv函数中进行相关调整，可以在openmv ide软件中进行分析。</p>
+</li>
+<li><p>2023年5月1日，循迹函数验证成功</p>
+<ul>
+<li><img src="/year-07-06-2023-5-4/%E5%AE%9E%E8%B7%B51.png"></li>
+</ul>
+</li>
+</ul>
+<h2 id="任务规划（5月）"><a href="#任务规划（5月）" class="headerlink" title="任务规划（5月）"></a>任务规划（5月）</h2><ul>
+<li>ROS操作系统进行学习，自带资料共九讲，远远不够，想要初步上手需要更多的理解<ul>
+<li>时间：为期20天，时间截止于5月24日</li>
+<li>目标：学会建立工程包，在一定程度上能够复现电赛上位机解锁无人机进行轨迹飞行</li>
+</ul>
+</li>
+<li>激光雷达的运用，资料较少，学会利用激光雷达进行建图<ul>
+<li>时间：为期15天，时间截止于5月20日</li>
+<li>目标：将SLAM定位进行相结合，并能够对其进行数据运算，尽可能实现路径规划</li>
+</ul>
+</li>
+<li>openmv模块的调用<ul>
+<li>理解阈值的调整，分辨率的修改，掌握大致函数的调用</li>
+</ul>
+</li>
+<li>未尽事宜，后续规划</li>
+</ul>
+]]></content>
+      <categories>
+        <category>电赛历程</category>
+      </categories>
+      <tags>
+        <tag>无人机</tag>
+        <tag>调试经验</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>ROS学习</title>
     <url>/year-07-06-2023-5-25%20ROS%E5%AD%A6%E4%B9%A0%E8%AE%B0%E5%BD%95%EF%BC%88%E5%8F%82%E8%80%83%E2%80%94%E5%8F%A4%E6%9C%88%E5%B1%85%EF%BC%89%20160959/</url>
     <content><![CDATA[<h1 id="ROS学习记录（参考—古月居—深蓝学院）"><a href="#ROS学习记录（参考—古月居—深蓝学院）" class="headerlink" title="ROS学习记录（参考—古月居—深蓝学院）"></a>ROS学习记录（参考—古月居—深蓝学院）</h1><span id="more"></span>
@@ -490,7 +563,7 @@ source~/.bashrc
 <p>启动海龟控制节点</p>
 <ul>
 <li><pre><code>rosrun turtlesim turtle_teleop_key
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line"></span><br><span class="line">## ROS</span><br><span class="line"></span><br><span class="line">- ROS=通信机制+开发工具+应用功能+生态系统</span><br><span class="line"></span><br><span class="line">### 通信机制</span><br><span class="line"></span><br><span class="line">- 松耦合分布式通信</span><br><span class="line"></span><br><span class="line">### 开发工具</span><br><span class="line"></span><br><span class="line">- QT工具箱</span><br><span class="line">- RVIZ</span><br><span class="line">- GAZEBO</span><br><span class="line">- TF坐标变换</span><br><span class="line"></span><br><span class="line">### 应用功能</span><br><span class="line"></span><br><span class="line">- Navigation</span><br><span class="line">- SLAM</span><br><span class="line">- Movelt</span><br><span class="line"></span><br><span class="line">### 生态系统</span><br><span class="line"></span><br><span class="line">- 发行版——可以直接安装</span><br><span class="line">- 软件源——Repository，依赖于共享网络上的开源代码，不同的组织机构可以开发或者共享自己的机器人软件</span><br><span class="line">- ROS wiki——记录ROS信息文档的主要论坛</span><br><span class="line">- 邮件列表——交流ROS更新的主要渠道，同时也可以交流ROS开发的各种疑问</span><br><span class="line">- ROS Answers——咨询ROS相关问题的网站</span><br><span class="line">- 博客——发布ROS社区新闻</span><br><span class="line"></span><br><span class="line">## 核心概念</span><br><span class="line"></span><br><span class="line">- 节点（node）完成单个进程</span><br><span class="line">  - 执行具体任务的进程，独立运行的可执行文件</span><br><span class="line">  - 不同节点可使用不同的编程语言，可分布式运行于不同的主机</span><br><span class="line">  - 节点在系统的名称统一</span><br><span class="line">- 节点管理器（ROS Master）——控制中心</span><br><span class="line">  - 为节点提供命名和注册服务</span><br><span class="line">  - 跟踪和记录话题/服务通信，辅助节点相互查找，建立链接</span><br><span class="line">  - 提供参数服务器，节点使用此服务器存储和检索运行时的参数</span><br><span class="line">- 话题通讯——异步通信机制——单向</span><br><span class="line">  - 节点间用来传输数据的重要总线</span><br><span class="line">  - 使用发布/订阅模型，数据由发布者传输到订阅者，同一个话题的订阅者或发布者可以不唯一</span><br><span class="line">- 消息——话题数据</span><br><span class="line">  - 具有一定的类型和数据结构，包括ROS提供的标准类型和用户自定义类型</span><br><span class="line">  - 使用编程语言无关的.msg文件定义，编译过程中生成对应的代码文件</span><br><span class="line">- 服务——同步通信机制</span><br><span class="line">  - 使用客户端/服务器模型，客户端发送请求数据，服务器完成处理后返回应答数据</span><br><span class="line">  - 使用编程语言无关的.srv文件定义请求和应答数据结构，编译过程中生成对应的代码文件</span><br><span class="line">- ![区别](C:\Users\Liqingshan\AppData\Roaming\Typora\typora-user-images\image-20230307194127108.png)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"></span><br><span class="line">- 参数——全局共享字典</span><br><span class="line">  - 通过网络访问的共享，多变量字典</span><br><span class="line">  - 节点使用此服务器来存储和检索运行时的参数</span><br><span class="line">  - 适合存储静态，非二进制的配置参数，不适合存储动态配置的数据</span><br><span class="line">- 文件系统</span><br><span class="line">  - 功能包（package)</span><br><span class="line">    - ROS软件中的基本单元，包含节点源码，配置文件，数据定义等</span><br><span class="line">  - 功能包清单（Packge manifest）</span><br><span class="line">    - 记录功能包的基本信息，包含作者信息，许可信息，依赖选项，编译标志</span><br><span class="line">  - 元功能包（meta Packages）</span><br><span class="line">    - 组织多个用于同一目的的功能包</span><br><span class="line"></span><br><span class="line">## ROS命令行工具的使用</span><br><span class="line"></span><br><span class="line">- 常用命令</span><br><span class="line"></span><br><span class="line">  - rostopic 话题参数</span><br><span class="line"></span><br><span class="line">    - rpstopic pub -r 10 /turtle1/cmd_vel geometry_msgs/Twist “linear</span><br><span class="line"></span><br><span class="line">  - rosservice</span><br><span class="line"></span><br><span class="line">    - rosservice——服务</span><br><span class="line"></span><br><span class="line">  - rosnode   显示节点相关信息</span><br><span class="line"></span><br><span class="line">    - rosnode list  节点名字</span><br><span class="line">    - rosnode info  /turtlesim,查看节点信息</span><br><span class="line"></span><br><span class="line">  - rosparam</span><br><span class="line"></span><br><span class="line">  - rosmsg</span><br><span class="line"></span><br><span class="line">    - 显示节点数据类型，数据结构</span><br><span class="line"></span><br><span class="line">  - rossrv</span><br><span class="line"></span><br><span class="line">  - rqt_graph -rqt基于qt的可视化工具——显示系统的计算图</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">## 创建工作空间和功能包</span><br><span class="line"></span><br><span class="line">- 工作空间——存放工程开发相关文件的文件夹</span><br><span class="line"></span><br><span class="line">  - src：代码空间（source space）</span><br><span class="line">  - build：编译空间（build space）</span><br><span class="line">  - devel：开发空间（development space）</span><br><span class="line">  - install：安装空间（install space）</span><br><span class="line"></span><br><span class="line">- 创建工作空间</span><br><span class="line"></span><br><span class="line">  - ```</span><br><span class="line">    mkdir -p ~/catkin_ws/src  #src必须确定，不能够自己改变</span><br><span class="line">    cd ~/catlin_ws/src</span><br><span class="line">    catkin_init_workspace</span><br></pre></td></tr></table></figure>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line"></span><br><span class="line">## ROS</span><br><span class="line"></span><br><span class="line">- ROS=通信机制+开发工具+应用功能+生态系统</span><br><span class="line"></span><br><span class="line">### 通信机制</span><br><span class="line"></span><br><span class="line">- 松耦合分布式通信</span><br><span class="line"></span><br><span class="line">### 开发工具</span><br><span class="line"></span><br><span class="line">- QT工具箱</span><br><span class="line">- RVIZ</span><br><span class="line">- GAZEBO</span><br><span class="line">- TF坐标变换</span><br><span class="line"></span><br><span class="line">### 应用功能</span><br><span class="line"></span><br><span class="line">- Navigation</span><br><span class="line">- SLAM</span><br><span class="line">- Movelt</span><br><span class="line"></span><br><span class="line">### 生态系统</span><br><span class="line"></span><br><span class="line">- 发行版——可以直接安装</span><br><span class="line">- 软件源——Repository，依赖于共享网络上的开源代码，不同的组织机构可以开发或者共享自己的机器人软件</span><br><span class="line">- ROS wiki——记录ROS信息文档的主要论坛</span><br><span class="line">- 邮件列表——交流ROS更新的主要渠道，同时也可以交流ROS开发的各种疑问</span><br><span class="line">- ROS Answers——咨询ROS相关问题的网站</span><br><span class="line">- 博客——发布ROS社区新闻</span><br><span class="line"></span><br><span class="line">## 核心概念</span><br><span class="line"></span><br><span class="line">- 节点（node）完成单个进程</span><br><span class="line">  - 执行具体任务的进程，独立运行的可执行文件</span><br><span class="line">  - 不同节点可使用不同的编程语言，可分布式运行于不同的主机</span><br><span class="line">  - 节点在系统的名称统一</span><br><span class="line">- 节点管理器（ROS Master）——控制中心</span><br><span class="line">  - 为节点提供命名和注册服务</span><br><span class="line">  - 跟踪和记录话题/服务通信，辅助节点相互查找，建立链接</span><br><span class="line">  - 提供参数服务器，节点使用此服务器存储和检索运行时的参数</span><br><span class="line">- 话题通讯——异步通信机制——单向</span><br><span class="line">  - 节点间用来传输数据的重要总线</span><br><span class="line">  - 使用发布/订阅模型，数据由发布者传输到订阅者，同一个话题的订阅者或发布者可以不唯一</span><br><span class="line">- 消息——话题数据</span><br><span class="line">  - 具有一定的类型和数据结构，包括ROS提供的标准类型和用户自定义类型</span><br><span class="line">  - 使用编程语言无关的.msg文件定义，编译过程中生成对应的代码文件</span><br><span class="line">- 服务——同步通信机制</span><br><span class="line">  - 使用客户端/服务器模型，客户端发送请求数据，服务器完成处理后返回应答数据</span><br><span class="line">  - 使用编程语言无关的.srv文件定义请求和应答数据结构，编译过程中生成对应的代码文件</span><br><span class="line">- ![区别](ROS介绍/1.png)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"></span><br><span class="line">- 参数——全局共享字典</span><br><span class="line">  - 通过网络访问的共享，多变量字典</span><br><span class="line">  - 节点使用此服务器来存储和检索运行时的参数</span><br><span class="line">  - 适合存储静态，非二进制的配置参数，不适合存储动态配置的数据</span><br><span class="line">- 文件系统</span><br><span class="line">  - 功能包（package)</span><br><span class="line">    - ROS软件中的基本单元，包含节点源码，配置文件，数据定义等</span><br><span class="line">  - 功能包清单（Packge manifest）</span><br><span class="line">    - 记录功能包的基本信息，包含作者信息，许可信息，依赖选项，编译标志</span><br><span class="line">  - 元功能包（meta Packages）</span><br><span class="line">    - 组织多个用于同一目的的功能包</span><br><span class="line"></span><br><span class="line">## ROS命令行工具的使用</span><br><span class="line"></span><br><span class="line">- 常用命令</span><br><span class="line"></span><br><span class="line">  - rostopic 话题参数</span><br><span class="line"></span><br><span class="line">    - rpstopic pub -r 10 /turtle1/cmd_vel geometry_msgs/Twist “linear</span><br><span class="line"></span><br><span class="line">  - rosservice</span><br><span class="line"></span><br><span class="line">    - rosservice——服务</span><br><span class="line"></span><br><span class="line">  - rosnode   显示节点相关信息</span><br><span class="line"></span><br><span class="line">    - rosnode list  节点名字</span><br><span class="line">    - rosnode info  /turtlesim,查看节点信息</span><br><span class="line"></span><br><span class="line">  - rosparam</span><br><span class="line"></span><br><span class="line">  - rosmsg</span><br><span class="line"></span><br><span class="line">    - 显示节点数据类型，数据结构</span><br><span class="line"></span><br><span class="line">  - rossrv</span><br><span class="line"></span><br><span class="line">  - rqt_graph -rqt基于qt的可视化工具——显示系统的计算图</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">## 创建工作空间和功能包</span><br><span class="line"></span><br><span class="line">- 工作空间——存放工程开发相关文件的文件夹</span><br><span class="line"></span><br><span class="line">  - src：代码空间（source space）</span><br><span class="line">  - build：编译空间（build space）</span><br><span class="line">  - devel：开发空间（development space）</span><br><span class="line">  - install：安装空间（install space）</span><br><span class="line"></span><br><span class="line">- 创建工作空间</span><br><span class="line"></span><br><span class="line">  - ```</span><br><span class="line">    mkdir -p ~/catkin_ws/src  #src必须确定，不能够自己改变</span><br><span class="line">    cd ~/catlin_ws/src</span><br><span class="line">    catkin_init_workspace</span><br></pre></td></tr></table></figure>
 </code></pre>
 </li>
 <li><p>编译工作空间</p>
@@ -515,7 +588,7 @@ catkin_make
 <li><pre><code>cd ~/catkin_ws
 catkin_make
 source ~/catkin_ws/devel/setup.bash
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line"></span><br><span class="line">- cmakelists.list -编译规则</span><br><span class="line"></span><br><span class="line">## 发布者Publisher的编程实现</span><br><span class="line"></span><br><span class="line">- ![发布者](C:\Users\Liqingshan\AppData\Roaming\Typora\typora-user-images\image-20230308125059016.png)</span><br><span class="line"></span><br><span class="line">- 通过程序控制发布速度指令</span><br><span class="line"></span><br><span class="line">- ROS MAster管理所有节点</span><br><span class="line"></span><br><span class="line">- 创建功能包</span><br><span class="line"></span><br><span class="line">  - ```</span><br><span class="line">    cd ~/catkin_ws/src</span><br><span class="line">    catkin_create_pkg learning_topic rpscpp rospy std_msgs geometry_msgs turtlesim</span><br></pre></td></tr></table></figure>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line"></span><br><span class="line">- cmakelists.list -编译规则</span><br><span class="line"></span><br><span class="line">## 发布者Publisher的编程实现</span><br><span class="line"></span><br><span class="line">- ![发布者](ROS介绍/2.png)</span><br><span class="line"></span><br><span class="line">- 通过程序控制发布速度指令</span><br><span class="line"></span><br><span class="line">- ROS MAster管理所有节点</span><br><span class="line"></span><br><span class="line">- 创建功能包</span><br><span class="line"></span><br><span class="line">  - ```</span><br><span class="line">    cd ~/catkin_ws/src</span><br><span class="line">    catkin_create_pkg learning_topic rpscpp rospy std_msgs geometry_msgs turtlesim</span><br></pre></td></tr></table></figure>
 </code></pre>
 </li>
 </ul>
@@ -673,76 +746,9 @@ gedit ~/.bashrc
       </tags>
   </entry>
   <entry>
-    <title>电赛分析</title>
-    <url>/year-07-06-2023-5-4/</url>
-    <content><![CDATA[<h1 id="电赛历程"><a href="#电赛历程" class="headerlink" title="电赛历程"></a>电赛历程</h1><h2 id="实践历程分析"><a href="#实践历程分析" class="headerlink" title="实践历程分析"></a>实践历程分析</h2><ul>
-<li><p>​	前言：每一次的飞机炸机之后，都必须校准一遍电调和六面校准加速度计，必须校准机架水平</p>
-<span id="more"></span>
-</li>
-<li><p>前言：每一次的试飞前，注意听电机转速是否一致。确定无误后，上螺旋桨后进行解锁操作，听螺旋桨转速是否出现噪声，而后进行定高+光流操作，然后进行解锁起飞。</p>
-</li>
-<li><p>2023年4月20日，经历第一次炸机，究其原因，光流模块和定高通道未打开，出现乱飘现象。经历过后，将第五通道置位高位，打开第八通道，遂解决</p>
-</li>
-<li><p>2023年4月21日，手动解锁无人机，安全起飞且成功降落。</p>
-</li>
-<li><p>2023年4月22日，尝试进入无人机SDK模式成功，无人机成功按照既定轨迹飞行且成功降落</p>
-</li>
-<li><p>2023年4月24日，自写函数产生逻辑错误，无人机成功运行但未能达到预期效果，经过询问，得知一切任务函数均由定时器中断中产生，在控制函数中不能加delay函数进行延时，否则将控制出错从而出现炸机，猜想遂验证失败。</p>
-</li>
-<li><p><img src="/year-07-06-2023-5-4/%E8%B0%83%E8%AF%951.png"></p>
-</li>
-<li><p><img src="/year-07-06-2023-5-4/%E8%B0%83%E8%AF%952.png"></p>
-</li>
-<li><p>2023年4月26日，程序烧写失败，查看原因，发现固件烧写错误，遂查询原因，诸多方法均未能解决，后查看一篇帖子说明ST_LINK烧写器固件未成绩，遂对其进行升级，后成功解决错误</p>
-<ul>
-<li><img src="/year-07-06-2023-5-4/%E8%B0%83%E8%AF%953.png"></li>
-</ul>
-</li>
-<li><p>2023年4月27日，验证轨迹函数，发现无人机跳过执行第三个线程，但能够执行第四个线程降落。</p>
-<ul>
-<li><img src="/year-07-06-2023-5-4/%E4%BB%A3%E7%A0%811.png"></li>
-<li>仔细分析，跟师兄讨论出两个方向，一个是当无人机执行完向前1m的轨迹飞行后，重新刷新其位置信息并赋值给无人机，后验证失败，目的是研究出无人机的坐标系是根据起飞原点位置建立一个坐标系还是依靠自身作为一个坐标系。</li>
-<li>根据师兄所说，可对其进行延时函数，规划好子任务执行时间<ul>
-<li><img src="/year-07-06-2023-5-4/%E4%BB%A3%E7%A0%812.png"></li>
-<li>将此语句放入子线程函数中，不放入前进轨迹函数中，因为子任务时间是对下一个线程的时间规划，验证可行</li>
-<li>剩余最后一个问题，还是未能够执行第三个线程，后溯源函数，发现旋转函数结束标志位一直无法判断，所以导致if语句切换到下一线程无法执行，后添加一句或语句，等待子任务执行时间结束后执行下一线程，不管是否旋转角度成功。后轨迹验证函数成功。</li>
-</ul>
-</li>
-</ul>
-</li>
-<li><p>进行openmv循迹时，注意检测俯视openmv是否能够检测到黑线，颜色阈值可以在openmv函数中进行相关调整，可以在openmv ide软件中进行分析。</p>
-</li>
-<li><p>2023年5月1日，循迹函数验证成功</p>
-<ul>
-<li><img src="/year-07-06-2023-5-4/%E5%AE%9E%E8%B7%B51.png"></li>
-</ul>
-</li>
-</ul>
-<h2 id="任务规划（5月）"><a href="#任务规划（5月）" class="headerlink" title="任务规划（5月）"></a>任务规划（5月）</h2><ul>
-<li>ROS操作系统进行学习，自带资料共九讲，远远不够，想要初步上手需要更多的理解<ul>
-<li>时间：为期20天，时间截止于5月24日</li>
-<li>目标：学会建立工程包，在一定程度上能够复现电赛上位机解锁无人机进行轨迹飞行</li>
-</ul>
-</li>
-<li>激光雷达的运用，资料较少，学会利用激光雷达进行建图<ul>
-<li>时间：为期15天，时间截止于5月20日</li>
-<li>目标：将SLAM定位进行相结合，并能够对其进行数据运算，尽可能实现路径规划</li>
-</ul>
-</li>
-<li>openmv模块的调用<ul>
-<li>理解阈值的调整，分辨率的修改，掌握大致函数的调用</li>
-</ul>
-</li>
-<li>未尽事宜，后续规划</li>
-</ul>
-]]></content>
-      <categories>
-        <category>电赛历程</category>
-      </categories>
-      <tags>
-        <tag>无人机</tag>
-        <tag>调试经验</tag>
-      </tags>
+    <title>2023-7-11</title>
+    <url>/year-07-11-2023-7-11/</url>
+    <content><![CDATA[]]></content>
   </entry>
   <entry>
     <title>无题</title>
@@ -827,6 +833,8 @@ gedit ~/.bashrc
 </li>
 </ul>
 </li>
+</ul>
+</li>
 <li><p>python框架</p>
 <ul>
 <li><p>选择ROS管家rospy</p>
@@ -839,9 +847,478 @@ gedit ~/.bashrc
 </li>
 <li><pre><code class="python">#!/usr/bin/env python3
 #coding=utf-8
+import rospy
+from std_msgs.msg import String
+if _name_== &quot;_main_&quot;:
+    rospy.init_node(&quot;节点名称&quot;)
+    rospy.logwarn(&quot;消息内容&quot;) #表明初始化节点成功
+    
+    pub = rospy.Publisher(&quot;话题名称&quot;,String,queue_size=10)#String-话题消息类型，queue_size话题发布端的消息包缓冲长度
+    
+    #定义发布对象频率
+    rate =rospy.rate(10)
+    
+   # 构建while循环，存在条件是节点没有被关闭
+    while not rospy.is_shutdown():
+        rospy.loginfo(&quot;  &quot;)#预告下一步动作
+        msg = String() #构建一个String消息包类型
+        msg.data=&quot;  &quot;#消息数据 
+        pub.publish(msg)#发布到话题当中通过pub对象
+        rate.sleep()#控制发布频率
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line"></span><br><span class="line">      ------</span><br><span class="line"></span><br><span class="line">- 新建文件无运行权限，赋予它运行权限</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">  - 打开新创建文件的所在目录，右键空白处在终端打开</span><br><span class="line"></span><br><span class="line">  - 输入命令</span><br><span class="line"></span><br></pre></td></tr></table></figure>
 </code></pre>
 </li>
 </ul>
+<p>  chmod +x file name<br>  <figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line"></span><br><span class="line">  - 无任何提示即说明权限添加成功</span><br><span class="line"></span><br><span class="line">- 运行节点</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">  - ```</span><br><span class="line">    roscore</span><br><span class="line">    rosrun ssr_pkg 节点名称</span><br><span class="line">    #检查发布消息对象是否正确</span><br><span class="line">    rostopic list</span><br><span class="line">    #查看话题名称内容</span><br><span class="line">    rostopic echo /话题名称</span><br><span class="line">    #若出现中文编码问题</span><br><span class="line">    echo -e &quot;编码内容&quot;</span><br></pre></td></tr></table></figure></p>
+<hr>
+</li>
+</ul>
+<h2 id="Subscriber订阅者的python实现"><a href="#Subscriber订阅者的python实现" class="headerlink" title="Subscriber订阅者的python实现"></a>Subscriber订阅者的python实现</h2><ul>
+<li>C++订阅者节点框架<ul>
+<li>召唤ROS大管家NodeHandle</li>
+<li>向ROS大管家NodeHandle申请初始化节点</li>
+<li>构建一个回调函数，用于处理从话题中接收到的消息包数据</li>
+<li>告诉Ros大管家NodeHandle需要订阅的话题名称，并设置接收消息包的回调函数</li>
+<li>调用ROS的spin（）函数，让节点不要立刻结束，时刻保持运行状态</li>
+</ul>
+</li>
+<li>Python订阅者节点框架<ul>
+<li>召唤ROS管家ROSpy</li>
+<li>向ROS管家rospy申请初始化节点</li>
+<li>构建一个回调函数，用于处理从话题中接收到的消息包数据</li>
+<li>告诉ROS管家rospy需要订阅的话题名称，并设置接收消息包的回调函数</li>
+<li>调用ROS的spin（）函数，让节点不要立刻结束，时刻保持运行状态</li>
+</ul>
+</li>
+<li>python框架和发布者节点内容类似</li>
+</ul>
+<h3 id="使用launch文件启动多个节点"><a href="#使用launch文件启动多个节点" class="headerlink" title="使用launch文件启动多个节点"></a>使用launch文件启动多个节点</h3><ul>
+<li><p>新建文件夹</p>
+</li>
+<li><p>新建文件，后缀名为launch</p>
+</li>
+<li><pre><code class="c">&lt;launch&gt;
+    &quot;ssr_pkg&quot; type=&quot;file name&quot; name=&quot;发布者节点名称&quot;/&gt;
+    &quot;atr_pkg&quot; type=&quot;file name&quot; name=&quot;订阅者节点名称&quot; launch-prefix=&quot;gnome-terminal -e&quot;/&gt; //订阅者新开一个终端窗口
+&lt;/launch&gt;
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line"></span><br><span class="line">- 查看节点网络结构</span><br><span class="line"></span><br><span class="line">  - ```</span><br><span class="line">    rqt_graph</span><br></pre></td></tr></table></figure>
+</code></pre>
+</li>
+</ul>
+<hr>
+<h2 id="ROS机器人运动控制"><a href="#ROS机器人运动控制" class="headerlink" title="ROS机器人运动控制"></a>ROS机器人运动控制</h2><ul>
+<li><p>矢量运动控制和旋转运动控制</p>
+<ul>
+<li><p>对速度进行量化</p>
+</li>
+<li><p>选择机器人底盘在地盘投影的中点</p>
+</li>
+<li><p>建立三维坐标系，食指指向X轴，中指指向y轴，拇指指向z轴。三个方向的矢量合成</p>
+</li>
+<li><p>沿x轴旋转正方向滚转运动，y轴俯仰运动，z轴偏航运动</p>
+</li>
+<li><p>ROS中速度控制即是矢量运动和旋转运动的三轴分量</p>
+<p><img src="/year-07-09-ROS%E5%AD%A6%E4%B9%A0%E8%AE%B0%E5%BD%952/%E9%80%9F%E5%BA%A6%E6%8E%A7%E5%88%B6.png" alt="速度控制"></p>
+</li>
+</ul>
+</li>
+<li><p>流程控制</p>
+<ul>
+<li>速度控制节点—速度控制话题—机器人核心节点</li>
+<li>速度控制节点消息类型：geometry_msgs&#x2F;Twist</li>
+<li>速度控制话题：&#x2F;cmd_vel</li>
+</ul>
+</li>
+</ul>
+<h3 id="机器人运动控制的C-实现"><a href="#机器人运动控制的C-实现" class="headerlink" title="机器人运动控制的C++实现"></a>机器人运动控制的C++实现</h3><ul>
+<li><p>框架实现思路</p>
+<ul>
+<li><p>构建一个新的软件包，vel_pkg</p>
+</li>
+<li><p>在软件包中新建一个节点，节点名字叫做vel_node</p>
+</li>
+<li><p>在节点中，向ROS大管家NodeHandle申请发布话题&#x2F;cmd_vel,并拿到发布对象vel_pub</p>
+</li>
+<li><p>构建一个geometry_msgs&#x2F;Twist类型的消息包vel_msg,用来承载要发送的速度值</p>
+</li>
+<li><p>开启一个while循环，不停的使用vel_pub对象发送速度消息包vel_msg</p>
+</li>
+<li><pre><code class="c">cd catkin_ws/src/
+catkin_create_pkg vel_pkg roscpp rospy geometry_msgs //geometry_msgs包含了速度消息类型的软件包
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line"></span><br><span class="line">  ------</span><br><span class="line"></span><br><span class="line">- 打开vs code</span><br><span class="line"></span><br><span class="line">  - 在创建的软件包内，src目录内创建节点代码文件vel_node.cpp</span><br><span class="line"></span><br><span class="line">  - ```c</span><br><span class="line">    #include &lt;ros/ros.h&gt;</span><br><span class="line">    #include &lt;geometry_msgs/Twist.h&gt;//Twist包含了linear矢量速度和angular旋转速度</span><br><span class="line">    int main(int argc,char *argv[])</span><br><span class="line">    &#123;</span><br><span class="line">        ros::init(argc,argv.&quot;vel_node&quot;);</span><br><span class="line">        ros::NodeHandle n;</span><br><span class="line">        ros::Publisher vcel_pub = n.advertise&lt;geometry_msgs::Twist&gt;(&quot;/cmd_vel&quot;,10);</span><br><span class="line">        </span><br><span class="line">        geometry_msgs::Twist vel_msg;</span><br><span class="line">        //构建一个geometry_msgs/Twist类型的消息包vel_msg,用来承载要发送的速度值</span><br><span class="line">        vel_msg.linear.x=0.1;</span><br><span class="line">        vel_msg.linear.y=0;</span><br><span class="line">        vel_msg.linear.z=0;</span><br><span class="line">        vel_msg.angular.x=0;</span><br><span class="line">        vel_msg.angular.y=0;</span><br><span class="line">        vel_msg.angular.z=0;</span><br><span class="line">        </span><br><span class="line">        //开启while循环，不停的使用vel_pub对象发送速度消息包vel_msg</span><br><span class="line">        ros::Rate r(30);</span><br><span class="line">        while(ros::ok())</span><br><span class="line">        &#123;</span><br><span class="line">            vel_pub.publish(vel_msg);</span><br><span class="line">            r.sleep();</span><br><span class="line">        &#125;</span><br><span class="line">        return 0;</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+
+  ------
+
+- 对其文件进行编译
+
+  - 打开软件包的CMakelist.txt文件
+  - build章节中复制三条编译规则到文件末尾，取消注释
+    - add_executable
+    - add_dependencies
+    - target_link_libraries
+  - 以上三条都为编译规则开头名字
+
+- ctrl+shift+b进行编译
+</code></pre>
+</li>
+<li><p>借助开源工程来完成机器人和环境的仿真</p>
+<ul>
+<li><pre><code>cd catkin_ws/src/
+git clone https://github.com/6-robot/wpr_simulation.git
+cd wpr_simulation/scripts
+./install_for-noetic.sh //自动下载编译项和环境依赖项
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line"></span><br><span class="line">    ------</span><br><span class="line"></span><br><span class="line">- ```</span><br><span class="line">  roscore</span><br><span class="line">  roslaunch wpr_simulation wpb_simple.launch</span><br><span class="line">  //分屏</span><br><span class="line">  rosrun vel_pkg vel_node</span><br></pre></td></tr></table></figure>
+</code></pre>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h3 id="机器人运动控制的python实现"><a href="#机器人运动控制的python实现" class="headerlink" title="机器人运动控制的python实现"></a>机器人运动控制的python实现</h3><ul>
+<li><pre><code>cd catkin_ws/src/wpr_simulation
+git pull//将其更新到版本的最新状态
+cd ~/catkin_ws/
+catkin_make
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line"></span><br><span class="line">  ------</span><br><span class="line"></span><br><span class="line">- 框架实现思路</span><br><span class="line"></span><br><span class="line">  - 构建一个新的软件包，vel_pkg</span><br><span class="line"></span><br><span class="line">  - 在软件包中新建一个节点，节点名字叫做vel_node.py</span><br><span class="line"></span><br><span class="line">  - 在节点中，向ROS大管家rospy申请发布话题/cmd_vel,并拿到发布对象vel_pub</span><br><span class="line"></span><br><span class="line">  - 构建一个geometry_msgs/Twist类型的消息包vel_msg,用来承载要发送的速度值</span><br><span class="line"></span><br><span class="line">  - 开启一个while循环，不停的使用vel_pub对象发送速度消息包vel_msg</span><br><span class="line"></span><br><span class="line">- ![](ROS学习记录2/代码1.png)</span><br><span class="line"></span><br><span class="line">- 赋予其执行权限</span><br><span class="line"></span><br><span class="line">- ```</span><br><span class="line">  roscore</span><br><span class="line">  //后续步骤和上述c++实现步骤一致</span><br></pre></td></tr></table></figure>
+
+------
+</code></pre>
+</li>
+</ul>
+<h2 id="激光雷达"><a href="#激光雷达" class="headerlink" title="激光雷达"></a>激光雷达</h2><h3 id="工作原理"><a href="#工作原理" class="headerlink" title="工作原理"></a>工作原理</h3><ul>
+<li>红外激光反射</li>
+<li>时长*光速&#x3D;飞行长度，飞行长度&#x2F;2&#x3D;激光雷达到障碍物的距离</li>
+<li>旋转一周，实时更新周围环境</li>
+<li><img src="/year-07-09-ROS%E5%AD%A6%E4%B9%A0%E8%AE%B0%E5%BD%952/%E6%BF%80%E5%85%89%E9%9B%B7%E8%BE%BE.png"></li>
+</ul>
+<h3 id="RVIZ观测传感器"><a href="#RVIZ观测传感器" class="headerlink" title="RVIZ观测传感器"></a>RVIZ观测传感器</h3><ul>
+<li>可视化工具，对机器人状态显示的辅助工具</li>
+<li>修改Fixed Frame为base_footprint</li>
+<li>add添加机器人模型RobotModel</li>
+<li>添加激光雷达显示条目LaserScan</li>
+<li>新条目LaserScan选择Topic话题名称&#x2F;scan</li>
+</ul>
+<h3 id="激光雷达消息包格式"><a href="#激光雷达消息包格式" class="headerlink" title="激光雷达消息包格式"></a>激光雷达消息包格式</h3><ul>
+<li>​	 <img src="/year-07-09-ROS%E5%AD%A6%E4%B9%A0%E8%AE%B0%E5%BD%952/%E6%BF%80%E5%85%89%E9%9B%B7%E8%BE%BE%E6%B6%88%E6%81%AF%E5%8C%85%E6%A0%BC%E5%BC%8F.png"></li>
+</ul>
+]]></content>
+      <categories>
+        <category>ROS学习</category>
+      </categories>
+      <tags>
+        <tag>ROS</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>ROS安装</title>
+    <url>/year-07-12-2023-7-11ROS%E5%AE%89%E8%A3%85/</url>
+    <content><![CDATA[<hr>
+<h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>随着无人机上层应用的普及，需要用到ROS对无人机进行路径规划，导航，避障等的地方越来越多，简单记录下学习一些ROS的心得。</p>
+<span id="more"></span>
+
+<ul>
+<li><p>虚拟机安装</p>
+<ul>
+<li>安装简单</li>
+<li>硬件一般</li>
+<li>运行速度慢</li>
+<li>安全备份简单</li>
+</ul>
+</li>
+<li><p>硬盘安装</p>
+<ul>
+<li>安装复杂</li>
+<li>硬件支持好</li>
+<li>运行速度快</li>
+<li>安全备份复杂</li>
+</ul>
+</li>
+<li><p>sudo 提升用户权限</p>
+</li>
+<li><p>tab键，自动补全</p>
+</li>
+</ul>
+<h2 id="基础操作（Linux）"><a href="#基础操作（Linux）" class="headerlink" title="基础操作（Linux）"></a>基础操作（Linux）</h2><ul>
+<li>软件安装源（在软件和更新）<ul>
+<li>家庭网络选择阿里云</li>
+<li>校园网edu</li>
+</ul>
+</li>
+</ul>
+<h2 id="简单指令"><a href="#简单指令" class="headerlink" title="简单指令"></a>简单指令</h2><ul>
+<li>pwd查看当前路径</li>
+<li>cd ..跳到上级目录</li>
+<li>mkdir 创建新的文件夹</li>
+<li>ls 查看当前路径所有文件夹</li>
+<li>touch 创建一个文件</li>
+<li>mv 移动文件，相当于剪切作用</li>
+<li>cp 拷贝路径&#x2F;文件名  目标路径&#x2F;重命名文件</li>
+<li>rm 删除任意文件</li>
+<li>rm -rf 删除文件夹</li>
+<li>sudo  提升用户权限<ul>
+<li>sudo apt-get update</li>
+</ul>
+</li>
+<li>指令 –help<ul>
+<li>会弹出指令使用说明</li>
+</ul>
+</li>
+</ul>
+<h2 id="C-x2F-Python极简基础"><a href="#C-x2F-Python极简基础" class="headerlink" title="C++&#x2F;Python极简基础"></a>C++&#x2F;Python极简基础</h2><ul>
+<li><p>sudo apt-get install g++</p>
+<ul>
+<li>安装g++编译器</li>
+</ul>
+</li>
+<li><p>sudo apt-get install python</p>
+<ul>
+<li>安装python编译器</li>
+</ul>
+</li>
+<li><pre><code>g++ c++_for.cpp -o c++_for
+//g++是编译器，c++_for.cpp是执行文件名字，-o c++_for是编译成可执行文件名字
+./c++_for,编译可执行文件
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line"></span><br><span class="line">- ```</span><br><span class="line">  python python_for.py</span><br><span class="line">  //直接编译</span><br></pre></td></tr></table></figure>
+</code></pre>
+</li>
+</ul>
+<h2 id="ROS安装步骤"><a href="#ROS安装步骤" class="headerlink" title="ROS安装步骤"></a>ROS安装步骤</h2><ul>
+<li><p>添加ROS软件源</p>
+<ul>
+<li><pre><code>sudo sh -c &#39;echo&#39;&quot;deb http://packges.ros.org/ros/ubuntu $(lsb_release -sc)main&quot;&gt;/etc/apt/sources.list.d/ros-latest.list&#39;
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line"></span><br><span class="line">添加密钥</span><br><span class="line"></span><br><span class="line">- ```</span><br><span class="line">  sudo apt-key adv --keyserver&#x27;hkp://keyserver.ubuntu.com:80&#x27;--recv-key C1CF6E31E6BADE8868B172B4F42ED6FBAB17C654</span><br></pre></td></tr></table></figure>
+</code></pre>
+</li>
+</ul>
+</li>
+</ul>
+<p>安装ROS</p>
+<ul>
+<li><pre><code>sudo apt update
+sudo apt install ros-melodic-desktop-full
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line"></span><br><span class="line">初始化rosdep</span><br><span class="line"></span><br><span class="line">- ```</span><br><span class="line">  sudo rosdep init</span><br><span class="line">  rosdep update</span><br></pre></td></tr></table></figure>
+</code></pre>
+</li>
+</ul>
+<p>设置环境变量</p>
+<ul>
+<li><pre><code>echo &quot;source /opt/ros/melodic/setup.bash&quot;&gt;&gt;~/.bashrc
+source~/.bashrc
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line"></span><br><span class="line">安装rosinstall</span><br><span class="line"></span><br><span class="line">- ```</span><br><span class="line">  sudo apt install python-rosinstall python-rosinstall-generator python-wstool build-essential</span><br></pre></td></tr></table></figure>
+</code></pre>
+</li>
+</ul>
+<p>启动ROS master</p>
+<ul>
+<li><pre><code>roscore
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line"></span><br><span class="line">启动小海龟仿真器</span><br><span class="line"></span><br><span class="line">- ```</span><br><span class="line">  rosrun turtlesim turtlesim_node</span><br></pre></td></tr></table></figure>
+</code></pre>
+</li>
+</ul>
+<p>启动海龟控制节点</p>
+<ul>
+<li><pre><code>rosrun turtlesim turtle_teleop_key
+</code></pre>
+</li>
+</ul>
+<h2 id><a href="#" class="headerlink" title></a></h2>]]></content>
+      <categories>
+        <category>ROS学习</category>
+        <category>环境搭建</category>
+      </categories>
+      <tags>
+        <tag>ROS</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>ROS介绍</title>
+    <url>/year-07-12-ROS%E4%BB%8B%E7%BB%8D/</url>
+    <content><![CDATA[<h2 id="ROS"><a href="#ROS" class="headerlink" title="ROS"></a>ROS</h2><ul>
+<li>ROS&#x3D;通信机制+开发工具+应用功能+生态系统</li>
+</ul>
+<h3 id="通信机制"><a href="#通信机制" class="headerlink" title="通信机制"></a>通信机制</h3><ul>
+<li>松耦合分布式通信</li>
+</ul>
+<h3 id="开发工具"><a href="#开发工具" class="headerlink" title="开发工具"></a>开发工具</h3><ul>
+<li>QT工具箱</li>
+<li>RVIZ</li>
+<li>GAZEBO</li>
+<li>TF坐标变换</li>
+</ul>
+<h3 id="应用功能"><a href="#应用功能" class="headerlink" title="应用功能"></a>应用功能</h3><ul>
+<li>Navigation</li>
+<li>SLAM</li>
+<li>Movelt</li>
+</ul>
+<h3 id="生态系统"><a href="#生态系统" class="headerlink" title="生态系统"></a>生态系统</h3><ul>
+<li>发行版——可以直接安装</li>
+<li>软件源——Repository，依赖于共享网络上的开源代码，不同的组织机构可以开发或者共享自己的机器人软件</li>
+<li>ROS wiki——记录ROS信息文档的主要论坛</li>
+<li>邮件列表——交流ROS更新的主要渠道，同时也可以交流ROS开发的各种疑问</li>
+<li>ROS Answers——咨询ROS相关问题的网站</li>
+<li>博客——发布ROS社区新闻</li>
+</ul>
+<h2 id="核心概念"><a href="#核心概念" class="headerlink" title="核心概念"></a>核心概念</h2><ul>
+<li><p>节点（node）完成单个进程</p>
+<ul>
+<li>执行具体任务的进程，独立运行的可执行文件</li>
+<li>不同节点可使用不同的编程语言，可分布式运行于不同的主机</li>
+<li>节点在系统的名称统一</li>
+</ul>
+</li>
+<li><p>节点管理器（ROS Master）——控制中心</p>
+<ul>
+<li>为节点提供命名和注册服务</li>
+<li>跟踪和记录话题&#x2F;服务通信，辅助节点相互查找，建立链接</li>
+<li>提供参数服务器，节点使用此服务器存储和检索运行时的参数</li>
+</ul>
+</li>
+<li><p>话题通讯——异步通信机制——单向</p>
+<ul>
+<li>节点间用来传输数据的重要总线</li>
+<li>使用发布&#x2F;订阅模型，数据由发布者传输到订阅者，同一个话题的订阅者或发布者可以不唯一</li>
+</ul>
+</li>
+<li><p>消息——话题数据</p>
+<ul>
+<li>具有一定的类型和数据结构，包括ROS提供的标准类型和用户自定义类型</li>
+<li>使用编程语言无关的.msg文件定义，编译过程中生成对应的代码文件</li>
+</ul>
+</li>
+<li><p>服务——同步通信机制</p>
+<ul>
+<li>使用客户端&#x2F;服务器模型，客户端发送请求数据，服务器完成处理后返回应答数据</li>
+<li>使用编程语言无关的.srv文件定义请求和应答数据结构，编译过程中生成对应的代码文件</li>
+</ul>
+</li>
+<li><p><img src="/year-07-12-ROS%E4%BB%8B%E7%BB%8D/1.png" alt="区别"></p>
+</li>
+<li><p>参数——全局共享字典</p>
+<ul>
+<li>通过网络访问的共享，多变量字典</li>
+<li>节点使用此服务器来存储和检索运行时的参数</li>
+<li>适合存储静态，非二进制的配置参数，不适合存储动态配置的数据</li>
+</ul>
+</li>
+<li><p>文件系统</p>
+<ul>
+<li>功能包（package)<ul>
+<li>ROS软件中的基本单元，包含节点源码，配置文件，数据定义等</li>
+</ul>
+</li>
+<li>功能包清单（Packge manifest）<ul>
+<li>记录功能包的基本信息，包含作者信息，许可信息，依赖选项，编译标志</li>
+</ul>
+</li>
+<li>元功能包（meta Packages）<ul>
+<li>组织多个用于同一目的的功能包</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h2 id="ROS命令行工具的使用"><a href="#ROS命令行工具的使用" class="headerlink" title="ROS命令行工具的使用"></a>ROS命令行工具的使用</h2><ul>
+<li><p>常用命令</p>
+<ul>
+<li><p>rostopic 话题参数</p>
+<ul>
+<li>rpstopic pub -r 10 &#x2F;turtle1&#x2F;cmd_vel geometry_msgs&#x2F;Twist “linear</li>
+</ul>
+</li>
+<li><p>rosservice</p>
+<ul>
+<li>rosservice——服务</li>
+</ul>
+</li>
+<li><p>rosnode   显示节点相关信息</p>
+<ul>
+<li>rosnode list  节点名字</li>
+<li>rosnode info  &#x2F;turtlesim,查看节点信息</li>
+</ul>
+</li>
+<li><p>rosparam</p>
+</li>
+<li><p>rosmsg</p>
+<ul>
+<li>显示节点数据类型，数据结构</li>
+</ul>
+</li>
+<li><p>rossrv</p>
+</li>
+<li><p>rqt_graph -rqt基于qt的可视化工具——显示系统的计算图</p>
+</li>
+</ul>
+</li>
+</ul>
+<h2 id="创建工作空间和功能包"><a href="#创建工作空间和功能包" class="headerlink" title="创建工作空间和功能包"></a>创建工作空间和功能包</h2><ul>
+<li><p>工作空间——存放工程开发相关文件的文件夹</p>
+<ul>
+<li>src：代码空间（source space）</li>
+<li>build：编译空间（build space）</li>
+<li>devel：开发空间（development space）</li>
+<li>install：安装空间（install space）</li>
+</ul>
+</li>
+<li><p>创建工作空间</p>
+<ul>
+<li><pre><code>mkdir -p ~/catkin_ws/src  #src必须确定，不能够自己改变
+cd ~/catlin_ws/src
+catkin_init_workspace
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line"></span><br><span class="line">- 编译工作空间</span><br><span class="line"></span><br><span class="line">  - ```</span><br><span class="line">    cd ~/catkin_ws/</span><br><span class="line">    catkin_make</span><br></pre></td></tr></table></figure>
+</code></pre>
+</li>
+</ul>
+</li>
+<li><p>设置环境变量</p>
+<ul>
+<li><pre><code>source devel/setup.bash
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line"></span><br><span class="line">- 检查环境变量</span><br><span class="line"></span><br><span class="line">  - ```</span><br><span class="line">    echo $ROS_PACKAGE_PATH</span><br></pre></td></tr></table></figure>
+</code></pre>
+</li>
+</ul>
+</li>
+<li><p>创建功能包（放置源码的最小单元）</p>
+<ul>
+<li><pre><code>cd ~/catkin_ws/src
+catkin_create_pkg packge_name depend1 depend2 depend3
+# packge_name 测试文件名字
+#depend 依赖名字，是功能包所要依赖的其他功能包
+#同一个工作空间下，不允许存在同名功能包
+#不同工作空间下，允许存在同名功能包
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line"></span><br><span class="line">- 编译功能包</span><br><span class="line"></span><br><span class="line">  - ```</span><br><span class="line">    cd ~/catkin_ws</span><br><span class="line">    catkin_make</span><br><span class="line">    source ~/catkin_ws/devel/setup.bash</span><br></pre></td></tr></table></figure>
+</code></pre>
+</li>
+</ul>
+</li>
+<li><p>cmakelists.list -编译规则</p>
+</li>
+</ul>
+<h2 id="发布者Publisher的编程实现"><a href="#发布者Publisher的编程实现" class="headerlink" title="发布者Publisher的编程实现"></a>发布者Publisher的编程实现</h2><ul>
+<li><p><img src="/year-07-12-ROS%E4%BB%8B%E7%BB%8D/2.png" alt="发布者"></p>
+</li>
+<li><p>通过程序控制发布速度指令</p>
+</li>
+<li><p>ROS MAster管理所有节点</p>
+</li>
+<li><p>创建功能包</p>
+<ul>
+<li><pre><code>cd ~/catkin_ws/src
+catkin_create_pkg learning_topic rpscpp rospy std_msgs geometry_msgs turtlesim
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line"></span><br><span class="line"></span><br><span class="line">- 配置发布者代码编译规则</span><br><span class="line"></span><br><span class="line">  - ```</span><br><span class="line">    add_executable(velocity_publisher src/velocity_publisher.cpp)</span><br><span class="line">    target_link_libraries(velocity_publisher$&#123;catkin_LIBRARIES&#125;)</span><br></pre></td></tr></table></figure>
+</code></pre>
+</li>
+</ul>
+</li>
+<li><p>编译并运行发布者</p>
+<ul>
+<li><pre><code>cd ~/catkin_ws
+catkin_make
+source devel/setup.bash
+roscore
+rosrun turtlesim turtlesim_node
+rosrun learning_topic velocity_publisher
+</code></pre>
 </li>
 </ul>
 </li>
