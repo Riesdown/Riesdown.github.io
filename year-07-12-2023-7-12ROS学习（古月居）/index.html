@@ -22,18 +22,18 @@
 
 
 
-    <meta name="description" content="ROS课程学习-2023年5月ROS工作空间的覆盖 ROS工作空间的建立，需要配置相应的环境配置，如此才能从每次的工作路径中查找到对应的功能包，否则就会报功能包缺失的问题  命令行进入bashrc文件  gedit ~&#x2F;.bashrc 12345- 添加自己工作包名字的路径放进去保存  - &#96;&#96;&#96;    source ~&#x2F;工作空间的名字&#x2F;devel&#x2F;setup.bash      如何自定义话题消">
+    <meta name="description" content="ROS课程学习-2023年5月ROS工作空间的覆盖 ROS工作空间的建立，需要配置相应的环境配置，如此才能从每次的工作路径中查找到对应的功能包，否则就会报功能包缺失的问题">
 <meta property="og:type" content="article">
 <meta property="og:title" content="ROS学习（古月居）">
 <meta property="og:url" content="http://riesdown.github.io/year-07-12-2023-7-12ROS%E5%AD%A6%E4%B9%A0%EF%BC%88%E5%8F%A4%E6%9C%88%E5%B1%85%EF%BC%89/index.html">
 <meta property="og:site_name" content="BiuBiu驿站">
-<meta property="og:description" content="ROS课程学习-2023年5月ROS工作空间的覆盖 ROS工作空间的建立，需要配置相应的环境配置，如此才能从每次的工作路径中查找到对应的功能包，否则就会报功能包缺失的问题  命令行进入bashrc文件  gedit ~&#x2F;.bashrc 12345- 添加自己工作包名字的路径放进去保存  - &#96;&#96;&#96;    source ~&#x2F;工作空间的名字&#x2F;devel&#x2F;setup.bash      如何自定义话题消">
+<meta property="og:description" content="ROS课程学习-2023年5月ROS工作空间的覆盖 ROS工作空间的建立，需要配置相应的环境配置，如此才能从每次的工作路径中查找到对应的功能包，否则就会报功能包缺失的问题">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="http://riesdown.github.io/year-07-12-2023-7-12ROS%E5%AD%A6%E4%B9%A0%EF%BC%88%E5%8F%A4%E6%9C%88%E5%B1%85%EF%BC%89/%E8%87%AA%E5%AE%9A%E4%B9%89%E6%9C%8D%E5%8A%A1.png">
 <meta property="og:image" content="http://riesdown.github.io/year-07-12-2023-7-12ROS%E5%AD%A6%E4%B9%A0%EF%BC%88%E5%8F%A4%E6%9C%88%E5%B1%85%EF%BC%89/%E8%87%AA%E5%AE%9A%E4%B9%89%E6%9C%8D%E5%8A%A12.png">
 <meta property="og:image" content="http://riesdown.github.io/year-07-12-2023-7-12ROS%E5%AD%A6%E4%B9%A0%EF%BC%88%E5%8F%A4%E6%9C%88%E5%B1%85%EF%BC%89/%E5%8A%A8%E4%BD%9C%E7%BC%96%E7%A8%8B.png">
 <meta property="article:published_time" content="2023-07-12T06:10:16.000Z">
-<meta property="article:modified_time" content="2023-07-12T06:15:37.276Z">
+<meta property="article:modified_time" content="2023-07-12T06:38:57.361Z">
 <meta property="article:author" content="Li">
 <meta property="article:tag" content="ROS">
 <meta name="twitter:card" content="summary">
@@ -163,7 +163,7 @@
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
         <a href="/archives/">
-          <span class="site-state-item-count">13</span>
+          <span class="site-state-item-count">15</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -174,7 +174,7 @@
       </div>
       <div class="site-state-item site-state-tags">
           <a href="/tags/">
-        <span class="site-state-item-count">9</span>
+        <span class="site-state-item-count">8</span>
         <span class="site-state-item-name">标签</span></a>
       </div>
   </nav>
@@ -247,7 +247,7 @@
       <span class="post-meta-item-text">发表于</span>
       
 
-      <time title="创建时间：2023-07-12 14:10:16 / 修改时间：14:15:37" itemprop="dateCreated datePublished" datetime="2023-07-12T14:10:16+08:00">2023-07-12</time>
+      <time title="创建时间：2023-07-12 14:10:16 / 修改时间：14:38:57" itemprop="dateCreated datePublished" datetime="2023-07-12T14:10:16+08:00">2023-07-12</time>
     </span>
     <span class="post-meta-item">
       <span class="post-meta-item-icon">
@@ -291,16 +291,16 @@
     
     
     <div class="post-body" itemprop="articleBody"><h2 id="ROS课程学习-2023年5月"><a href="#ROS课程学习-2023年5月" class="headerlink" title="ROS课程学习-2023年5月"></a>ROS课程学习-2023年5月</h2><h3 id="ROS工作空间的覆盖"><a href="#ROS工作空间的覆盖" class="headerlink" title="ROS工作空间的覆盖"></a>ROS工作空间的覆盖</h3><ul>
-<li><p>ROS工作空间的建立，需要配置相应的环境配置，如此才能从每次的工作路径中查找到对应的功能包，否则就会报功能包缺失的问题</p>
-</li>
-<li><p>命令行进入bashrc文件</p>
-<ul>
-<li><pre><code>gedit ~/.bashrc
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">- 添加自己工作包名字的路径放进去保存</span><br><span class="line"></span><br><span class="line">  - ```</span><br><span class="line">    source ~/工作空间的名字/devel/setup.bash</span><br></pre></td></tr></table></figure>
-</code></pre>
-</li>
+<li>ROS工作空间的建立，需要配置相应的环境配置，如此才能从每次的工作路径中查找到对应的功能包，否则就会报功能包缺失的问题</li>
 </ul>
+<span id="more"></span>
+
+<ul>
+<li><p>命令行进入bashrc文件</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">gedit ~/.bashrc</span><br></pre></td></tr></table></figure>
 </li>
+<li><p>添加自己工作包名字的路径放进去保存</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">source ~/工作空间的名字/devel/setup.bash</span><br></pre></td></tr></table></figure></li>
 </ul>
 <h3 id="如何自定义话题消息"><a href="#如何自定义话题消息" class="headerlink" title="如何自定义话题消息"></a>如何自定义话题消息</h3><ul>
 <li><p>定义msg文件</p>
@@ -308,14 +308,10 @@
 <li><p>创建msg文件夹，在文件夹下创建person.msg文件</p>
 </li>
 <li><p>在package.xml文件下添加依赖功能包</p>
-<ul>
-<li><pre><code>&lt;build_depend&gt;message_generation&lt;/build_depend&gt;
-&lt;exec_depend&gt;message_runtime&lt;/exec_depend&gt;
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">- ​	在Cmakelist.txt添加编译选项</span><br><span class="line"></span><br><span class="line">  - ```</span><br><span class="line">    find_package( ...... message_generation)</span><br><span class="line">    </span><br><span class="line">    • catkin_package(CATKIN_DEPENDS geometry_msgs roscpp</span><br><span class="line">    rospy std_msgs message_runtime)</span><br><span class="line">    </span><br><span class="line">    • add_message_files(FILES Person.msg)</span><br><span class="line">    generate_messages(DEPENDENCIES std_msgs)</span><br></pre></td></tr></table></figure>
-</code></pre>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">&lt;build_depend&gt;message_generation&lt;/build_depend&gt;</span><br><span class="line">&lt;exec_depend&gt;message_runtime&lt;/exec_depend&gt;</span><br></pre></td></tr></table></figure>
 </li>
-</ul>
-</li>
+<li><p>​	在Cmakelist.txt添加编译选项</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">find_package( ...... message_generation)</span><br><span class="line"></span><br><span class="line"> catkin_package(CATKIN_DEPENDS geometry_msgs roscpp</span><br><span class="line">rospy std_msgs message_runtime)</span><br><span class="line"></span><br><span class="line"> add_message_files(FILES Person.msg)</span><br><span class="line">generate_messages(DEPENDENCIES std_msgs)</span><br></pre></td></tr></table></figure></li>
 </ul>
 <h3 id="如何自定义服务请求与应答"><a href="#如何自定义服务请求与应答" class="headerlink" title="如何自定义服务请求与应答"></a>如何自定义服务请求与应答</h3><ul>
 <li><img src="/year-07-12-2023-7-12ROS%E5%AD%A6%E4%B9%A0%EF%BC%88%E5%8F%A4%E6%9C%88%E5%B1%85%EF%BC%89/%E8%87%AA%E5%AE%9A%E4%B9%89%E6%9C%8D%E5%8A%A1.png" alt="1"></li>
@@ -382,8 +378,8 @@
                 </a>
             </div>
             <div class="post-nav-item">
-                <a href="/year-07-12-2023-7-12ROS%E5%AD%A6%E4%B9%A0%EF%BC%88B%E7%AB%99%EF%BC%89/" rel="next" title="2023-7-12ROS学习（B站）">
-                  2023-7-12ROS学习（B站） <i class="fa fa-chevron-right"></i>
+                <a href="/year-07-12-2023-7-12ROS%E5%AD%A6%E4%B9%A0%EF%BC%88B%E7%AB%99%EF%BC%89/" rel="next" title="ROS学习（B站）">
+                  ROS学习（B站） <i class="fa fa-chevron-right"></i>
                 </a>
             </div>
           </div>
@@ -426,13 +422,13 @@
     <span class="post-meta-item-icon">
       <i class="fa fa-chart-line"></i>
     </span>
-    <span title="站点总字数">32k</span>
+    <span title="站点总字数">28k</span>
   </span>
   <span class="post-meta-item">
     <span class="post-meta-item-icon">
       <i class="fa fa-coffee"></i>
     </span>
-    <span title="站点阅读时长">58 分钟</span>
+    <span title="站点阅读时长">51 分钟</span>
   </span>
 </div>
 <div class="busuanzi-count">
