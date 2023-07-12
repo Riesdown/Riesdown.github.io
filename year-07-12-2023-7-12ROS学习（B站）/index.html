@@ -22,31 +22,30 @@
 
 
 
-    <meta name="description" content="ROS ROS&#x3D;通信机制+开发工具+应用功能+生态系统  通信机制 松耦合分布式通信  开发工具 QT工具箱 RVIZ GAZEBO TF坐标变换  应用功能 Navigation SLAM Movelt  生态系统 发行版——可以直接安装 软件源——Repository，依赖于共享网络上的开源代码，不同的组织机构可以开发或者共享自己的机器人软件 ROS wiki——记录ROS信息文档的">
+    <meta name="description" content="B站-ROS学习ubuntu系统简单操作 添加到收藏夹——类似windows固定到任务栏  win+空格键——输入法切换，shift键也可  CTRL+alt+t，终端打开  简单命令  ls，简单查看当前所有目录内容 cd ..回到上一级目录 mkdir 创建新的目录 cd ~回到主文件夹 tab键，补全指令内容，且只有唯一内容 gedit 文本编辑器 source 执行文件中的指令序列   .">
 <meta property="og:type" content="article">
-<meta property="og:title" content="ROS介绍">
-<meta property="og:url" content="http://riesdown.github.io/year-07-12-ROS%E4%BB%8B%E7%BB%8D/index.html">
+<meta property="og:title" content="2023-7-12ROS学习（B站）">
+<meta property="og:url" content="http://riesdown.github.io/year-07-12-2023-7-12ROS%E5%AD%A6%E4%B9%A0%EF%BC%88B%E7%AB%99%EF%BC%89/index.html">
 <meta property="og:site_name" content="BiuBiu驿站">
-<meta property="og:description" content="ROS ROS&#x3D;通信机制+开发工具+应用功能+生态系统  通信机制 松耦合分布式通信  开发工具 QT工具箱 RVIZ GAZEBO TF坐标变换  应用功能 Navigation SLAM Movelt  生态系统 发行版——可以直接安装 软件源——Repository，依赖于共享网络上的开源代码，不同的组织机构可以开发或者共享自己的机器人软件 ROS wiki——记录ROS信息文档的">
+<meta property="og:description" content="B站-ROS学习ubuntu系统简单操作 添加到收藏夹——类似windows固定到任务栏  win+空格键——输入法切换，shift键也可  CTRL+alt+t，终端打开  简单命令  ls，简单查看当前所有目录内容 cd ..回到上一级目录 mkdir 创建新的目录 cd ~回到主文件夹 tab键，补全指令内容，且只有唯一内容 gedit 文本编辑器 source 执行文件中的指令序列   .">
 <meta property="og:locale" content="zh_CN">
-<meta property="og:image" content="http://riesdown.github.io/year-07-12-ROS%E4%BB%8B%E7%BB%8D/1.png">
-<meta property="og:image" content="http://riesdown.github.io/year-07-12-ROS%E4%BB%8B%E7%BB%8D/2.png">
-<meta property="article:published_time" content="2023-07-11T16:36:32.000Z">
-<meta property="article:modified_time" content="2023-07-11T16:51:09.879Z">
+<meta property="og:image" content="http://riesdown.github.io/year-07-12-2023-7-12ROS%E5%AD%A6%E4%B9%A0%EF%BC%88B%E7%AB%99%EF%BC%89/9.png">
+<meta property="article:published_time" content="2023-07-12T06:16:38.000Z">
+<meta property="article:modified_time" content="2023-07-12T06:18:59.750Z">
 <meta property="article:author" content="Li">
 <meta property="article:tag" content="ROS">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="http://riesdown.github.io/year-07-12-ROS%E4%BB%8B%E7%BB%8D/1.png">
+<meta name="twitter:image" content="http://riesdown.github.io/year-07-12-2023-7-12ROS%E5%AD%A6%E4%B9%A0%EF%BC%88B%E7%AB%99%EF%BC%89/9.png">
 
 
-<link rel="canonical" href="http://riesdown.github.io/year-07-12-ROS%E4%BB%8B%E7%BB%8D/">
+<link rel="canonical" href="http://riesdown.github.io/year-07-12-2023-7-12ROS%E5%AD%A6%E4%B9%A0%EF%BC%88B%E7%AB%99%EF%BC%89/">
 
 
 
-<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"http://riesdown.github.io/year-07-12-ROS%E4%BB%8B%E7%BB%8D/","path":"year-07-12-ROS介绍/","title":"ROS介绍"}</script>
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"http://riesdown.github.io/year-07-12-2023-7-12ROS%E5%AD%A6%E4%B9%A0%EF%BC%88B%E7%AB%99%EF%BC%89/","path":"year-07-12-2023-7-12ROS学习（B站）/","title":"2023-7-12ROS学习（B站）"}</script>
 
 <script class="next-config" data-name="calendar" type="application/json">""</script>
-<title>ROS介绍 | BiuBiu驿站</title>
+<title>2023-7-12ROS学习（B站） | BiuBiu驿站</title>
   
 
 
@@ -147,7 +146,7 @@
       <div class="sidebar-panel-container">
         <!--noindex-->
         <div class="post-toc-wrap sidebar-panel">
-            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#ROS"><span class="nav-number">1.</span> <span class="nav-text">ROS</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%80%9A%E4%BF%A1%E6%9C%BA%E5%88%B6"><span class="nav-number">1.1.</span> <span class="nav-text">通信机制</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%BC%80%E5%8F%91%E5%B7%A5%E5%85%B7"><span class="nav-number">1.2.</span> <span class="nav-text">开发工具</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%BA%94%E7%94%A8%E5%8A%9F%E8%83%BD"><span class="nav-number">1.3.</span> <span class="nav-text">应用功能</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%94%9F%E6%80%81%E7%B3%BB%E7%BB%9F"><span class="nav-number">1.4.</span> <span class="nav-text">生态系统</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A0%B8%E5%BF%83%E6%A6%82%E5%BF%B5"><span class="nav-number">2.</span> <span class="nav-text">核心概念</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#ROS%E5%91%BD%E4%BB%A4%E8%A1%8C%E5%B7%A5%E5%85%B7%E7%9A%84%E4%BD%BF%E7%94%A8"><span class="nav-number">3.</span> <span class="nav-text">ROS命令行工具的使用</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%88%9B%E5%BB%BA%E5%B7%A5%E4%BD%9C%E7%A9%BA%E9%97%B4%E5%92%8C%E5%8A%9F%E8%83%BD%E5%8C%85"><span class="nav-number">4.</span> <span class="nav-text">创建工作空间和功能包</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8F%91%E5%B8%83%E8%80%85Publisher%E7%9A%84%E7%BC%96%E7%A8%8B%E5%AE%9E%E7%8E%B0"><span class="nav-number">5.</span> <span class="nav-text">发布者Publisher的编程实现</span></a></li></ol></div>
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#B%E7%AB%99-ROS%E5%AD%A6%E4%B9%A0"><span class="nav-number">1.</span> <span class="nav-text">B站-ROS学习</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#ubuntu%E7%B3%BB%E7%BB%9F%E7%AE%80%E5%8D%95%E6%93%8D%E4%BD%9C"><span class="nav-number">1.1.</span> <span class="nav-text">ubuntu系统简单操作</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%BA%90%E7%A0%81%E7%BC%96%E8%AF%91"><span class="nav-number">1.2.</span> <span class="nav-text">源码编译</span></a></li></ol></li></ol></div>
         </div>
         <!--/noindex-->
 
@@ -162,7 +161,7 @@
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
         <a href="/archives/">
-          <span class="site-state-item-count">11</span>
+          <span class="site-state-item-count">13</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -216,7 +215,7 @@
   
 
   <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://riesdown.github.io/year-07-12-ROS%E4%BB%8B%E7%BB%8D/">
+    <link itemprop="mainEntityOfPage" href="http://riesdown.github.io/year-07-12-2023-7-12ROS%E5%AD%A6%E4%B9%A0%EF%BC%88B%E7%AB%99%EF%BC%89/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/hexo.jpg">
@@ -229,12 +228,12 @@
     </span>
 
     <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
-      <meta itemprop="name" content="ROS介绍 | BiuBiu驿站">
+      <meta itemprop="name" content="2023-7-12ROS学习（B站） | BiuBiu驿站">
       <meta itemprop="description" content="">
     </span>
       <header class="post-header">
         <h1 class="post-title" itemprop="name headline">
-          ROS介绍
+          2023-7-12ROS学习（B站）
         </h1>
 
         <div class="post-meta-container">
@@ -246,7 +245,7 @@
       <span class="post-meta-item-text">发表于</span>
       
 
-      <time title="创建时间：2023-07-12 00:36:32 / 修改时间：00:51:09" itemprop="dateCreated datePublished" datetime="2023-07-12T00:36:32+08:00">2023-07-12</time>
+      <time title="创建时间：2023-07-12 14:16:38 / 修改时间：14:18:59" itemprop="dateCreated datePublished" datetime="2023-07-12T14:16:38+08:00">2023-07-12</time>
     </span>
     <span class="post-meta-item">
       <span class="post-meta-item-icon">
@@ -272,14 +271,14 @@
         <i class="far fa-file-word"></i>
       </span>
       <span class="post-meta-item-text">本文字数：</span>
-      <span>2.1k</span>
+      <span>1.7k</span>
     </span>
     <span class="post-meta-item" title="阅读时长">
       <span class="post-meta-item-icon">
         <i class="far fa-clock"></i>
       </span>
       <span class="post-meta-item-text">阅读时长 &asymp;</span>
-      <span>4 分钟</span>
+      <span>3 分钟</span>
     </span>
 </div>
 
@@ -289,193 +288,75 @@
     
     
     
-    <div class="post-body" itemprop="articleBody"><h2 id="ROS"><a href="#ROS" class="headerlink" title="ROS"></a>ROS</h2><ul>
-<li>ROS&#x3D;通信机制+开发工具+应用功能+生态系统</li>
-</ul>
-<h3 id="通信机制"><a href="#通信机制" class="headerlink" title="通信机制"></a>通信机制</h3><ul>
-<li>松耦合分布式通信</li>
-</ul>
-<h3 id="开发工具"><a href="#开发工具" class="headerlink" title="开发工具"></a>开发工具</h3><ul>
-<li>QT工具箱</li>
-<li>RVIZ</li>
-<li>GAZEBO</li>
-<li>TF坐标变换</li>
-</ul>
-<h3 id="应用功能"><a href="#应用功能" class="headerlink" title="应用功能"></a>应用功能</h3><ul>
-<li>Navigation</li>
-<li>SLAM</li>
-<li>Movelt</li>
-</ul>
-<h3 id="生态系统"><a href="#生态系统" class="headerlink" title="生态系统"></a>生态系统</h3><ul>
-<li>发行版——可以直接安装</li>
-<li>软件源——Repository，依赖于共享网络上的开源代码，不同的组织机构可以开发或者共享自己的机器人软件</li>
-<li>ROS wiki——记录ROS信息文档的主要论坛</li>
-<li>邮件列表——交流ROS更新的主要渠道，同时也可以交流ROS开发的各种疑问</li>
-<li>ROS Answers——咨询ROS相关问题的网站</li>
-<li>博客——发布ROS社区新闻</li>
-</ul>
-<h2 id="核心概念"><a href="#核心概念" class="headerlink" title="核心概念"></a>核心概念</h2><ul>
-<li><p>节点（node）完成单个进程</p>
+    <div class="post-body" itemprop="articleBody"><h2 id="B站-ROS学习"><a href="#B站-ROS学习" class="headerlink" title="B站-ROS学习"></a>B站-ROS学习</h2><h3 id="ubuntu系统简单操作"><a href="#ubuntu系统简单操作" class="headerlink" title="ubuntu系统简单操作"></a>ubuntu系统简单操作</h3><ul>
+<li><p>添加到收藏夹——类似windows固定到任务栏</p>
+</li>
+<li><p>win+空格键——输入法切换，shift键也可</p>
+</li>
+<li><p>CTRL+alt+t，终端打开</p>
+</li>
+<li><p>简单命令</p>
 <ul>
-<li>执行具体任务的进程，独立运行的可执行文件</li>
-<li>不同节点可使用不同的编程语言，可分布式运行于不同的主机</li>
-<li>节点在系统的名称统一</li>
+<li>ls，简单查看当前所有目录内容</li>
+<li>cd ..回到上一级目录</li>
+<li>mkdir 创建新的目录</li>
+<li>cd ~回到主文件夹</li>
+<li>tab键，补全指令内容，且只有唯一内容</li>
+<li>gedit 文本编辑器</li>
+<li>source 执行文件中的指令序列   .sh文件                               </li>
+<li>echo   显示的意思  </li>
+<li>.bashrc  环境变量的赋值 </li>
+<li>gedit ~&#x2F;.bashrc 编辑主文件夹下的bashrc文件</li>
+<li>ls-a 显示所有文件</li>
+<li>sudo 以管理员权限执行这条指令</li>
 </ul>
 </li>
-<li><p>节点管理器（ROS Master）——控制中心</p>
+<li><p>在 ~&#x2F;catkin_ws&#x2F;src目录下执行git clone 后面添加GitHub项目网址</p>
+</li>
+<li><p>scripts 目录用于放置脚本文件和Python程序  安装依赖包</p>
+</li>
+<li><p>安装工作空间内 的依赖包后，编译完成后，在工作空间文件夹下执行source指令</p>
+</li>
+<li><p>使用source指令载入工作空间的环境设置</p>
 <ul>
-<li>为节点提供命名和注册服务</li>
-<li>跟踪和记录话题&#x2F;服务通信，辅助节点相互查找，建立链接</li>
-<li>提供参数服务器，节点使用此服务器存储和检索运行时的参数</li>
-</ul>
-</li>
-<li><p>话题通讯——异步通信机制——单向</p>
-<ul>
-<li>节点间用来传输数据的重要总线</li>
-<li>使用发布&#x2F;订阅模型，数据由发布者传输到订阅者，同一个话题的订阅者或发布者可以不唯一</li>
-</ul>
-</li>
-<li><p>消息——话题数据</p>
-<ul>
-<li>具有一定的类型和数据结构，包括ROS提供的标准类型和用户自定义类型</li>
-<li>使用编程语言无关的.msg文件定义，编译过程中生成对应的代码文件</li>
-</ul>
-</li>
-<li><p>服务——同步通信机制</p>
-<ul>
-<li>使用客户端&#x2F;服务器模型，客户端发送请求数据，服务器完成处理后返回应答数据</li>
-<li>使用编程语言无关的.srv文件定义请求和应答数据结构，编译过程中生成对应的代码文件</li>
-</ul>
-</li>
-<li><p><img src="/year-07-12-ROS%E4%BB%8B%E7%BB%8D/1.png" alt="区别"></p>
-</li>
-<li><p>参数——全局共享字典</p>
-<ul>
-<li>通过网络访问的共享，多变量字典</li>
-<li>节点使用此服务器来存储和检索运行时的参数</li>
-<li>适合存储静态，非二进制的配置参数，不适合存储动态配置的数据</li>
-</ul>
-</li>
-<li><p>文件系统</p>
-<ul>
-<li>功能包（package)<ul>
-<li>ROS软件中的基本单元，包含节点源码，配置文件，数据定义等</li>
-</ul>
-</li>
-<li>功能包清单（Packge manifest）<ul>
-<li>记录功能包的基本信息，包含作者信息，许可信息，依赖选项，编译标志</li>
-</ul>
-</li>
-<li>元功能包（meta Packages）<ul>
-<li>组织多个用于同一目的的功能包</li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
-<h2 id="ROS命令行工具的使用"><a href="#ROS命令行工具的使用" class="headerlink" title="ROS命令行工具的使用"></a>ROS命令行工具的使用</h2><ul>
-<li><p>常用命令</p>
-<ul>
-<li><p>rostopic 话题参数</p>
-<ul>
-<li>rpstopic pub -r 10 &#x2F;turtle1&#x2F;cmd_vel geometry_msgs&#x2F;Twist “linear</li>
-</ul>
-</li>
-<li><p>rosservice</p>
-<ul>
-<li>rosservice——服务</li>
-</ul>
-</li>
-<li><p>rosnode   显示节点相关信息</p>
-<ul>
-<li>rosnode list  节点名字</li>
-<li>rosnode info  &#x2F;turtlesim,查看节点信息</li>
-</ul>
-</li>
-<li><p>rosparam</p>
-</li>
-<li><p>rosmsg</p>
-<ul>
-<li>显示节点数据类型，数据结构</li>
-</ul>
-</li>
-<li><p>rossrv</p>
-</li>
-<li><p>rqt_graph -rqt基于qt的可视化工具——显示系统的计算图</p>
-</li>
-</ul>
-</li>
-</ul>
-<h2 id="创建工作空间和功能包"><a href="#创建工作空间和功能包" class="headerlink" title="创建工作空间和功能包"></a>创建工作空间和功能包</h2><ul>
-<li><p>工作空间——存放工程开发相关文件的文件夹</p>
-<ul>
-<li>src：代码空间（source space）</li>
-<li>build：编译空间（build space）</li>
-<li>devel：开发空间（development space）</li>
-<li>install：安装空间（install space）</li>
-</ul>
-</li>
-<li><p>创建工作空间</p>
-<ul>
-<li><pre><code>mkdir -p ~/catkin_ws/src  #src必须确定，不能够自己改变
-cd ~/catlin_ws/src
-catkin_init_workspace
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">- 编译工作空间</span><br><span class="line"></span><br><span class="line">  - ```</span><br><span class="line">    cd ~/catkin_ws/</span><br><span class="line">    catkin_make</span><br></pre></td></tr></table></figure>
+<li><pre><code>source ~/catkin_ws/devel/setup.bash
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">- 使用roslaunch运行编译好的ROS程序</span><br><span class="line"></span><br><span class="line">- 程序终端初始化</span><br><span class="line"></span><br><span class="line">- 将source指令添加到.bashrc脚本中</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+gedit ~/.bashrc
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">- 末尾添加 source ~/catkin_ws/devel/setup.bash</span><br><span class="line"></span><br><span class="line">### 终端Terminator </span><br><span class="line"></span><br><span class="line">- CTRL+shift+E 分屏左右两个终端</span><br><span class="line">- CTRL+shift+o 分屏上下两个终端</span><br><span class="line">- alt+方向键 切换不同工作终端焦点</span><br><span class="line">- CTRL +shift +W 关闭刚分出来的端口</span><br><span class="line"></span><br><span class="line">### Package</span><br><span class="line"></span><br><span class="line">- 功能的相互独立，节点功能相对单一</span><br><span class="line"></span><br><span class="line">- CMakeLists.txt文件详解</span><br><span class="line"></span><br><span class="line">  - ![image-20230525151214286](2023-7-12ROS学习（B站）/1.png)</span><br><span class="line">    - 编译器的最低版本要求</span><br><span class="line">    - 工程名</span><br><span class="line"></span><br><span class="line">  - ![image-20230525151310856](2023-7-12ROS学习（B站）/2.png)</span><br><span class="line">    - find_package寻找依赖包</span><br><span class="line"></span><br><span class="line">  - ![image-20230525151409646](2023-7-12ROS学习（B站）/3.png)</span><br><span class="line">    - 双#号的是对文件中指令内容的说明</span><br><span class="line">    - 单#号是与注释对应的指令示例</span><br><span class="line"></span><br><span class="line">- package.xml文件详解</span><br><span class="line"></span><br><span class="line">  - ![image-20230525151736912](2023-7-12ROS学习（B站）/4.png)</span><br><span class="line"></span><br><span class="line">    - ssr_pkg 包的名字</span><br><span class="line"></span><br><span class="line">    - 包的内容描述 The ssr_pkg_package</span><br><span class="line"></span><br><span class="line">      </span><br><span class="line"></span><br><span class="line">  - ![image-20230525151801543](2023-7-12ROS学习（B站）/5.png)</span><br><span class="line"></span><br><span class="line">    - 维护者信息</span><br><span class="line"></span><br><span class="line">      </span><br><span class="line"></span><br><span class="line">  - ![image-20230525151813881](2023-7-12ROS学习（B站）/6.png)</span><br><span class="line"></span><br><span class="line">    - 开源协议</span><br><span class="line"></span><br><span class="line">      </span><br><span class="line"></span><br><span class="line">  - ![image-20230525151825365](2023-7-12ROS学习（B站）/7.png)</span><br><span class="line"></span><br><span class="line">    - 网址</span><br><span class="line"></span><br><span class="line">      </span><br><span class="line"></span><br><span class="line">  - ![image-20230525152031017](2023-7-12ROS学习（B站）/8.png)</span><br><span class="line"></span><br><span class="line">    - 依赖项</span><br><span class="line"></span><br><span class="line">- roscd 在终端中进入指定软件包的文件地址</span><br><span class="line"></span><br><span class="line">- ```</span><br><span class="line">  source /opt/ros/noetic/setup.bash</span><br></pre></td></tr></table></figure>
 </code></pre>
 </li>
+<li><p>加载的就是apt下载的那些软件包地址</p>
+</li>
 </ul>
 </li>
-<li><p>设置环境变量</p>
-<ul>
-<li><pre><code>source devel/setup.bash
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">- 检查环境变量</span><br><span class="line"></span><br><span class="line">  - ```</span><br><span class="line">    echo $ROS_PACKAGE_PATH</span><br></pre></td></tr></table></figure>
+<li><pre><code>source ~/catkin_ws/devel/setup.bash
 </code></pre>
-</li>
-</ul>
-</li>
-<li><p>创建功能包（放置源码的最小单元）</p>
 <ul>
-<li><pre><code>cd ~/catkin_ws/src
-catkin_create_pkg packge_name depend1 depend2 depend3
-# packge_name 测试文件名字
-#depend 依赖名字，是功能包所要依赖的其他功能包
-#同一个工作空间下，不允许存在同名功能包
-#不同工作空间下，允许存在同名功能包
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">- 编译功能包</span><br><span class="line"></span><br><span class="line">  - ```</span><br><span class="line">    cd ~/catkin_ws</span><br><span class="line">    catkin_make</span><br><span class="line">    source ~/catkin_ws/devel/setup.bash</span><br></pre></td></tr></table></figure>
-</code></pre>
-</li>
+<li>对应的是catkin工作空间里的软件包地址</li>
 </ul>
 </li>
-<li><p>cmakelists.list -编译规则</p>
+<li><p>尽量选择系统中存在的软件包</p>
 </li>
 </ul>
-<h2 id="发布者Publisher的编程实现"><a href="#发布者Publisher的编程实现" class="headerlink" title="发布者Publisher的编程实现"></a>发布者Publisher的编程实现</h2><ul>
-<li><p><img src="/year-07-12-ROS%E4%BB%8B%E7%BB%8D/2.png" alt="发布者"></p>
-</li>
-<li><p>通过程序控制发布速度指令</p>
-</li>
-<li><p>ROS MAster管理所有节点</p>
-</li>
-<li><p>创建功能包</p>
+<h3 id="源码编译"><a href="#源码编译" class="headerlink" title="源码编译"></a>源码编译</h3><ul>
+<li><p>CmakeList.txt文件中  Build部分</p>
 <ul>
-<li><pre><code>cd ~/catkin_ws/src
-catkin_create_pkg learning_topic rpscpp rospy std_msgs geometry_msgs turtlesim
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"></span><br><span class="line">- 配置发布者代码编译规则</span><br><span class="line"></span><br><span class="line">  - ```</span><br><span class="line">    add_executable(velocity_publisher src/velocity_publisher.cpp)</span><br><span class="line">    target_link_libraries(velocity_publisher$&#123;catkin_LIBRARIES&#125;)</span><br></pre></td></tr></table></figure>
-</code></pre>
-</li>
+<li>声明一个C++可执行文件</li>
+<li><img src="/year-07-12-2023-7-12ROS%E5%AD%A6%E4%B9%A0%EF%BC%88B%E7%AB%99%EF%BC%89/9.png" alt="image-20230525154717877"></li>
+<li>为这个包添加一个可执行程序</li>
+<li>可执行文件与包的名字保持一个名字</li>
+<li>CTRL + S保存</li>
+<li>CTRL+shift +B进行编译</li>
 </ul>
 </li>
-<li><p>编译并运行发布者</p>
+<li><p>运行节点</p>
 <ul>
-<li><pre><code>cd ~/catkin_ws
-catkin_make
-source devel/setup.bash
-roscore
-rosrun turtlesim turtlesim_node
-rosrun learning_topic velocity_publisher
-</code></pre>
-</li>
+<li>运行ros  roscore</li>
+<li>添加环境配置</li>
+<li>rosrun</li>
 </ul>
+</li>
+<li><p>ctrl + shift +w</p>
 </li>
 </ul>
 
@@ -511,8 +392,8 @@ rosrun learning_topic velocity_publisher
 
           <div class="post-nav">
             <div class="post-nav-item">
-                <a href="/year-07-12-2023-7-11ROS%E5%AE%89%E8%A3%85/" rel="prev" title="ROS安装">
-                  <i class="fa fa-chevron-left"></i> ROS安装
+                <a href="/year-07-12-2023-7-12ROS%E5%AD%A6%E4%B9%A0%EF%BC%88%E5%8F%A4%E6%9C%88%E5%B1%85%EF%BC%89/" rel="prev" title="ROS学习（古月居）">
+                  <i class="fa fa-chevron-left"></i> ROS学习（古月居）
                 </a>
             </div>
             <div class="post-nav-item">
@@ -557,13 +438,13 @@ rosrun learning_topic velocity_publisher
     <span class="post-meta-item-icon">
       <i class="fa fa-chart-line"></i>
     </span>
-    <span title="站点总字数">29k</span>
+    <span title="站点总字数">32k</span>
   </span>
   <span class="post-meta-item">
     <span class="post-meta-item-icon">
       <i class="fa fa-coffee"></i>
     </span>
-    <span title="站点阅读时长">52 分钟</span>
+    <span title="站点阅读时长">58 分钟</span>
   </span>
 </div>
 <div class="busuanzi-count">

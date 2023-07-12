@@ -22,36 +22,32 @@
 
 
 
-    <meta name="description" content="电赛历程实践历程分析 ​	前言：每一次的飞机炸机之后，都必须校准一遍电调和六面校准加速度计，必须校准机架水平">
+    <meta name="description" content="ROS课程学习-2023年5月ROS工作空间的覆盖 ROS工作空间的建立，需要配置相应的环境配置，如此才能从每次的工作路径中查找到对应的功能包，否则就会报功能包缺失的问题  命令行进入bashrc文件  gedit ~&#x2F;.bashrc 12345- 添加自己工作包名字的路径放进去保存  - &#96;&#96;&#96;    source ~&#x2F;工作空间的名字&#x2F;devel&#x2F;setup.bash      如何自定义话题消">
 <meta property="og:type" content="article">
-<meta property="og:title" content="电赛分析">
-<meta property="og:url" content="http://riesdown.github.io/year-07-06-2023-5-4/index.html">
+<meta property="og:title" content="ROS学习（古月居）">
+<meta property="og:url" content="http://riesdown.github.io/year-07-12-2023-7-12ROS%E5%AD%A6%E4%B9%A0%EF%BC%88%E5%8F%A4%E6%9C%88%E5%B1%85%EF%BC%89/index.html">
 <meta property="og:site_name" content="BiuBiu驿站">
-<meta property="og:description" content="电赛历程实践历程分析 ​	前言：每一次的飞机炸机之后，都必须校准一遍电调和六面校准加速度计，必须校准机架水平">
+<meta property="og:description" content="ROS课程学习-2023年5月ROS工作空间的覆盖 ROS工作空间的建立，需要配置相应的环境配置，如此才能从每次的工作路径中查找到对应的功能包，否则就会报功能包缺失的问题  命令行进入bashrc文件  gedit ~&#x2F;.bashrc 12345- 添加自己工作包名字的路径放进去保存  - &#96;&#96;&#96;    source ~&#x2F;工作空间的名字&#x2F;devel&#x2F;setup.bash      如何自定义话题消">
 <meta property="og:locale" content="zh_CN">
-<meta property="og:image" content="http://riesdown.github.io/year-07-06-2023-5-4/%E8%B0%83%E8%AF%951.png">
-<meta property="og:image" content="http://riesdown.github.io/year-07-06-2023-5-4/%E8%B0%83%E8%AF%952.png">
-<meta property="og:image" content="http://riesdown.github.io/year-07-06-2023-5-4/%E8%B0%83%E8%AF%953.png">
-<meta property="og:image" content="http://riesdown.github.io/year-07-06-2023-5-4/%E4%BB%A3%E7%A0%811.png">
-<meta property="og:image" content="http://riesdown.github.io/year-07-06-2023-5-4/%E4%BB%A3%E7%A0%812.png">
-<meta property="og:image" content="http://riesdown.github.io/year-07-06-2023-5-4/%E5%AE%9E%E8%B7%B51.png">
-<meta property="article:published_time" content="2023-07-06T07:20:14.000Z">
-<meta property="article:modified_time" content="2023-07-07T15:15:32.991Z">
+<meta property="og:image" content="http://riesdown.github.io/year-07-12-2023-7-12ROS%E5%AD%A6%E4%B9%A0%EF%BC%88%E5%8F%A4%E6%9C%88%E5%B1%85%EF%BC%89/%E8%87%AA%E5%AE%9A%E4%B9%89%E6%9C%8D%E5%8A%A1.png">
+<meta property="og:image" content="http://riesdown.github.io/year-07-12-2023-7-12ROS%E5%AD%A6%E4%B9%A0%EF%BC%88%E5%8F%A4%E6%9C%88%E5%B1%85%EF%BC%89/%E8%87%AA%E5%AE%9A%E4%B9%89%E6%9C%8D%E5%8A%A12.png">
+<meta property="og:image" content="http://riesdown.github.io/year-07-12-2023-7-12ROS%E5%AD%A6%E4%B9%A0%EF%BC%88%E5%8F%A4%E6%9C%88%E5%B1%85%EF%BC%89/%E5%8A%A8%E4%BD%9C%E7%BC%96%E7%A8%8B.png">
+<meta property="article:published_time" content="2023-07-12T06:10:16.000Z">
+<meta property="article:modified_time" content="2023-07-12T06:15:37.276Z">
 <meta property="article:author" content="Li">
-<meta property="article:tag" content="无人机">
-<meta property="article:tag" content="调试经验">
+<meta property="article:tag" content="ROS">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="http://riesdown.github.io/year-07-06-2023-5-4/%E8%B0%83%E8%AF%951.png">
+<meta name="twitter:image" content="http://riesdown.github.io/year-07-12-2023-7-12ROS%E5%AD%A6%E4%B9%A0%EF%BC%88%E5%8F%A4%E6%9C%88%E5%B1%85%EF%BC%89/%E8%87%AA%E5%AE%9A%E4%B9%89%E6%9C%8D%E5%8A%A1.png">
 
 
-<link rel="canonical" href="http://riesdown.github.io/year-07-06-2023-5-4/">
+<link rel="canonical" href="http://riesdown.github.io/year-07-12-2023-7-12ROS%E5%AD%A6%E4%B9%A0%EF%BC%88%E5%8F%A4%E6%9C%88%E5%B1%85%EF%BC%89/">
 
 
 
-<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"http://riesdown.github.io/year-07-06-2023-5-4/","path":"year-07-06-2023-5-4/","title":"电赛分析"}</script>
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"http://riesdown.github.io/year-07-12-2023-7-12ROS%E5%AD%A6%E4%B9%A0%EF%BC%88%E5%8F%A4%E6%9C%88%E5%B1%85%EF%BC%89/","path":"year-07-12-2023-7-12ROS学习（古月居）/","title":"ROS学习（古月居）"}</script>
 
 <script class="next-config" data-name="calendar" type="application/json">""</script>
-<title>电赛分析 | BiuBiu驿站</title>
+<title>ROS学习（古月居） | BiuBiu驿站</title>
   
 
 
@@ -152,7 +148,7 @@
       <div class="sidebar-panel-container">
         <!--noindex-->
         <div class="post-toc-wrap sidebar-panel">
-            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%94%B5%E8%B5%9B%E5%8E%86%E7%A8%8B"><span class="nav-number">1.</span> <span class="nav-text">电赛历程</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%9E%E8%B7%B5%E5%8E%86%E7%A8%8B%E5%88%86%E6%9E%90"><span class="nav-number">1.1.</span> <span class="nav-text">实践历程分析</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BB%BB%E5%8A%A1%E8%A7%84%E5%88%92%EF%BC%885%E6%9C%88%EF%BC%89"><span class="nav-number">1.2.</span> <span class="nav-text">任务规划（5月）</span></a></li></ol></li></ol></div>
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#ROS%E8%AF%BE%E7%A8%8B%E5%AD%A6%E4%B9%A0-2023%E5%B9%B45%E6%9C%88"><span class="nav-number">1.</span> <span class="nav-text">ROS课程学习-2023年5月</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#ROS%E5%B7%A5%E4%BD%9C%E7%A9%BA%E9%97%B4%E7%9A%84%E8%A6%86%E7%9B%96"><span class="nav-number">1.1.</span> <span class="nav-text">ROS工作空间的覆盖</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%A6%82%E4%BD%95%E8%87%AA%E5%AE%9A%E4%B9%89%E8%AF%9D%E9%A2%98%E6%B6%88%E6%81%AF"><span class="nav-number">1.2.</span> <span class="nav-text">如何自定义话题消息</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%A6%82%E4%BD%95%E8%87%AA%E5%AE%9A%E4%B9%89%E6%9C%8D%E5%8A%A1%E8%AF%B7%E6%B1%82%E4%B8%8E%E5%BA%94%E7%AD%94"><span class="nav-number">1.3.</span> <span class="nav-text">如何自定义服务请求与应答</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8A%A8%E4%BD%9C%E7%BC%96%E7%A8%8B"><span class="nav-number">1.4.</span> <span class="nav-text">动作编程</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#TF%E5%B9%BF%E6%92%AD"><span class="nav-number">1.5.</span> <span class="nav-text">TF广播</span></a></li></ol></li></ol></div>
         </div>
         <!--/noindex-->
 
@@ -221,7 +217,7 @@
   
 
   <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://riesdown.github.io/year-07-06-2023-5-4/">
+    <link itemprop="mainEntityOfPage" href="http://riesdown.github.io/year-07-12-2023-7-12ROS%E5%AD%A6%E4%B9%A0%EF%BC%88%E5%8F%A4%E6%9C%88%E5%B1%85%EF%BC%89/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/hexo.jpg">
@@ -234,12 +230,12 @@
     </span>
 
     <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
-      <meta itemprop="name" content="电赛分析 | BiuBiu驿站">
+      <meta itemprop="name" content="ROS学习（古月居） | BiuBiu驿站">
       <meta itemprop="description" content="">
     </span>
       <header class="post-header">
         <h1 class="post-title" itemprop="name headline">
-          电赛分析
+          ROS学习（古月居）
         </h1>
 
         <div class="post-meta-container">
@@ -249,15 +245,9 @@
         <i class="far fa-calendar"></i>
       </span>
       <span class="post-meta-item-text">发表于</span>
+      
 
-      <time title="创建时间：2023-07-06 15:20:14" itemprop="dateCreated datePublished" datetime="2023-07-06T15:20:14+08:00">2023-07-06</time>
-    </span>
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar-check"></i>
-      </span>
-      <span class="post-meta-item-text">更新于</span>
-      <time title="修改时间：2023-07-07 23:15:32" itemprop="dateModified" datetime="2023-07-07T23:15:32+08:00">2023-07-07</time>
+      <time title="创建时间：2023-07-12 14:10:16 / 修改时间：14:15:37" itemprop="dateCreated datePublished" datetime="2023-07-12T14:10:16+08:00">2023-07-12</time>
     </span>
     <span class="post-meta-item">
       <span class="post-meta-item-icon">
@@ -265,7 +255,7 @@
       </span>
       <span class="post-meta-item-text">分类于</span>
         <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-          <a href="/categories/%E7%94%B5%E8%B5%9B%E5%8E%86%E7%A8%8B/" itemprop="url" rel="index"><span itemprop="name">电赛历程</span></a>
+          <a href="/categories/ROS%E5%AD%A6%E4%B9%A0/" itemprop="url" rel="index"><span itemprop="name">ROS学习</span></a>
         </span>
     </span>
 
@@ -283,14 +273,14 @@
         <i class="far fa-file-word"></i>
       </span>
       <span class="post-meta-item-text">本文字数：</span>
-      <span>1.1k</span>
+      <span>2k</span>
     </span>
     <span class="post-meta-item" title="阅读时长">
       <span class="post-meta-item-icon">
         <i class="far fa-clock"></i>
       </span>
       <span class="post-meta-item-text">阅读时长 &asymp;</span>
-      <span>2 分钟</span>
+      <span>4 分钟</span>
     </span>
 </div>
 
@@ -300,66 +290,60 @@
     
     
     
-    <div class="post-body" itemprop="articleBody"><h1 id="电赛历程"><a href="#电赛历程" class="headerlink" title="电赛历程"></a>电赛历程</h1><h2 id="实践历程分析"><a href="#实践历程分析" class="headerlink" title="实践历程分析"></a>实践历程分析</h2><ul>
-<li><p>​	前言：每一次的飞机炸机之后，都必须校准一遍电调和六面校准加速度计，必须校准机架水平</p>
-<span id="more"></span>
+    <div class="post-body" itemprop="articleBody"><h2 id="ROS课程学习-2023年5月"><a href="#ROS课程学习-2023年5月" class="headerlink" title="ROS课程学习-2023年5月"></a>ROS课程学习-2023年5月</h2><h3 id="ROS工作空间的覆盖"><a href="#ROS工作空间的覆盖" class="headerlink" title="ROS工作空间的覆盖"></a>ROS工作空间的覆盖</h3><ul>
+<li><p>ROS工作空间的建立，需要配置相应的环境配置，如此才能从每次的工作路径中查找到对应的功能包，否则就会报功能包缺失的问题</p>
 </li>
-<li><p>前言：每一次的试飞前，注意听电机转速是否一致。确定无误后，上螺旋桨后进行解锁操作，听螺旋桨转速是否出现噪声，而后进行定高+光流操作，然后进行解锁起飞。</p>
-</li>
-<li><p>2023年4月20日，经历第一次炸机，究其原因，光流模块和定高通道未打开，出现乱飘现象。经历过后，将第五通道置位高位，打开第八通道，遂解决</p>
-</li>
-<li><p>2023年4月21日，手动解锁无人机，安全起飞且成功降落。</p>
-</li>
-<li><p>2023年4月22日，尝试进入无人机SDK模式成功，无人机成功按照既定轨迹飞行且成功降落</p>
-</li>
-<li><p>2023年4月24日，自写函数产生逻辑错误，无人机成功运行但未能达到预期效果，经过询问，得知一切任务函数均由定时器中断中产生，在控制函数中不能加delay函数进行延时，否则将控制出错从而出现炸机，猜想遂验证失败。</p>
-</li>
-<li><p><img src="/year-07-06-2023-5-4/%E8%B0%83%E8%AF%951.png"></p>
-</li>
-<li><p><img src="/year-07-06-2023-5-4/%E8%B0%83%E8%AF%952.png"></p>
-</li>
-<li><p>2023年4月26日，程序烧写失败，查看原因，发现固件烧写错误，遂查询原因，诸多方法均未能解决，后查看一篇帖子说明ST_LINK烧写器固件未成绩，遂对其进行升级，后成功解决错误</p>
+<li><p>命令行进入bashrc文件</p>
 <ul>
-<li><img src="/year-07-06-2023-5-4/%E8%B0%83%E8%AF%953.png"></li>
+<li><pre><code>gedit ~/.bashrc
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">- 添加自己工作包名字的路径放进去保存</span><br><span class="line"></span><br><span class="line">  - ```</span><br><span class="line">    source ~/工作空间的名字/devel/setup.bash</span><br></pre></td></tr></table></figure>
+</code></pre>
+</li>
 </ul>
 </li>
-<li><p>2023年4月27日，验证轨迹函数，发现无人机跳过执行第三个线程，但能够执行第四个线程降落。</p>
+</ul>
+<h3 id="如何自定义话题消息"><a href="#如何自定义话题消息" class="headerlink" title="如何自定义话题消息"></a>如何自定义话题消息</h3><ul>
+<li><p>定义msg文件</p>
+</li>
+<li><p>创建msg文件夹，在文件夹下创建person.msg文件</p>
+</li>
+<li><p>在package.xml文件下添加依赖功能包</p>
 <ul>
-<li><img src="/year-07-06-2023-5-4/%E4%BB%A3%E7%A0%811.png"></li>
-<li>仔细分析，跟师兄讨论出两个方向，一个是当无人机执行完向前1m的轨迹飞行后，重新刷新其位置信息并赋值给无人机，后验证失败，目的是研究出无人机的坐标系是根据起飞原点位置建立一个坐标系还是依靠自身作为一个坐标系。</li>
-<li>根据师兄所说，可对其进行延时函数，规划好子任务执行时间<ul>
-<li><img src="/year-07-06-2023-5-4/%E4%BB%A3%E7%A0%812.png"></li>
-<li>将此语句放入子线程函数中，不放入前进轨迹函数中，因为子任务时间是对下一个线程的时间规划，验证可行</li>
-<li>剩余最后一个问题，还是未能够执行第三个线程，后溯源函数，发现旋转函数结束标志位一直无法判断，所以导致if语句切换到下一线程无法执行，后添加一句或语句，等待子任务执行时间结束后执行下一线程，不管是否旋转角度成功。后轨迹验证函数成功。</li>
-</ul>
+<li><pre><code>&lt;build_depend&gt;message_generation&lt;/build_depend&gt;
+&lt;exec_depend&gt;message_runtime&lt;/exec_depend&gt;
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">- ​	在Cmakelist.txt添加编译选项</span><br><span class="line"></span><br><span class="line">  - ```</span><br><span class="line">    find_package( ...... message_generation)</span><br><span class="line">    </span><br><span class="line">    • catkin_package(CATKIN_DEPENDS geometry_msgs roscpp</span><br><span class="line">    rospy std_msgs message_runtime)</span><br><span class="line">    </span><br><span class="line">    • add_message_files(FILES Person.msg)</span><br><span class="line">    generate_messages(DEPENDENCIES std_msgs)</span><br></pre></td></tr></table></figure>
+</code></pre>
 </li>
 </ul>
 </li>
-<li><p>进行openmv循迹时，注意检测俯视openmv是否能够检测到黑线，颜色阈值可以在openmv函数中进行相关调整，可以在openmv ide软件中进行分析。</p>
-</li>
-<li><p>2023年5月1日，循迹函数验证成功</p>
-<ul>
-<li><img src="/year-07-06-2023-5-4/%E5%AE%9E%E8%B7%B51.png"></li>
 </ul>
-</li>
+<h3 id="如何自定义服务请求与应答"><a href="#如何自定义服务请求与应答" class="headerlink" title="如何自定义服务请求与应答"></a>如何自定义服务请求与应答</h3><ul>
+<li><img src="/year-07-12-2023-7-12ROS%E5%AD%A6%E4%B9%A0%EF%BC%88%E5%8F%A4%E6%9C%88%E5%B1%85%EF%BC%89/%E8%87%AA%E5%AE%9A%E4%B9%89%E6%9C%8D%E5%8A%A1.png" alt="1"></li>
+<li><img src="/year-07-12-2023-7-12ROS%E5%AD%A6%E4%B9%A0%EF%BC%88%E5%8F%A4%E6%9C%88%E5%B1%85%EF%BC%89/%E8%87%AA%E5%AE%9A%E4%B9%89%E6%9C%8D%E5%8A%A12.png" alt="image-20230510214651559"></li>
+<li>三条横杠是为了将数据区分开</li>
+<li>为后面提供编程使用</li>
 </ul>
-<h2 id="任务规划（5月）"><a href="#任务规划（5月）" class="headerlink" title="任务规划（5月）"></a>任务规划（5月）</h2><ul>
-<li>ROS操作系统进行学习，自带资料共九讲，远远不够，想要初步上手需要更多的理解<ul>
-<li>时间：为期20天，时间截止于5月24日</li>
-<li>目标：学会建立工程包，在一定程度上能够复现电赛上位机解锁无人机进行轨迹飞行</li>
+<h3 id="动作编程"><a href="#动作编程" class="headerlink" title="动作编程"></a>动作编程</h3><ul>
+<li><img src="/year-07-12-2023-7-12ROS%E5%AD%A6%E4%B9%A0%EF%BC%88%E5%8F%A4%E6%9C%88%E5%B1%85%EF%BC%89/%E5%8A%A8%E4%BD%9C%E7%BC%96%E7%A8%8B.png" alt="image-20230511135718729"></li>
 </ul>
-</li>
-<li>激光雷达的运用，资料较少，学会利用激光雷达进行建图<ul>
-<li>时间：为期15天，时间截止于5月20日</li>
-<li>目标：将SLAM定位进行相结合，并能够对其进行数据运算，尽可能实现路径规划</li>
-</ul>
-</li>
-<li>openmv模块的调用<ul>
-<li>理解阈值的调整，分辨率的修改，掌握大致函数的调用</li>
-</ul>
-</li>
-<li>未尽事宜，后续规划</li>
-</ul>
+<h3 id="TF广播"><a href="#TF广播" class="headerlink" title="TF广播"></a>TF广播</h3><p>launch文件</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&lt;node pkg=&quot;包名&quot; type=&quot;节点类型&quot; name=&quot;节点名&quot; /&gt;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">&lt;launch&gt;</span><br><span class="line">   &lt;!-- 海龟仿真器 --&gt;</span><br><span class="line">   &lt;node pkg=&quot;turtlesim&quot; type=&quot;turtlesim_node&quot; name=&quot;sim&quot;/&gt;</span><br><span class="line">  </span><br><span class="line">   &lt;!-- 键盘控制 --&gt;</span><br><span class="line">   &lt;node pkg=&quot;turtlesim&quot; type=&quot;turtle_teleop_key&quot; name=&quot;teleop&quot; output=&quot;screen&quot;/&gt;</span><br><span class="line">  </span><br><span class="line">   &lt;!-- 两只海龟的tf广播 --&gt;</span><br><span class="line">   &lt;node pkg=&quot;learning_tf&quot; type=&quot;turtle_tf_broadcaster&quot;</span><br><span class="line">         args=&quot;/turtle1&quot; name=&quot;turtle1_tf_broadcaster&quot; /&gt;</span><br><span class="line">   &lt;node pkg=&quot;learning_tf&quot; type=&quot;turtle_tf_broadcaster&quot;</span><br><span class="line">         args=&quot;/turtle2&quot; name=&quot;turtle2_tf_broadcaster&quot; /&gt;</span><br><span class="line">  </span><br><span class="line">   &lt;!-- 监听tf广播，并且控制turtle2移动 --&gt;</span><br><span class="line">   &lt;node pkg=&quot;learning_tf&quot; type=&quot;turtle_tf_listener&quot;</span><br><span class="line">         name=&quot;listener&quot; /&gt;</span><br><span class="line">  </span><br><span class="line">&lt;/launch&gt;</span><br></pre></td></tr></table></figure>
+
+
+
+<p>节点类型是在包中已经存在的，并且由该包的作者指定。</p>
+<p>在ROS中，包是功能模块的基本单位，通常会包含一个或多个节点，还可能包含其它ROS特定的文件，如消息定义、服务定义、参数配置等。</p>
+<p>每个节点都有一个特定的类型，类型指定了节点的实现方式，例如turtlesim_node就是turtlesim包中预定义的节点类型，用于仿真一只乌龟。节点类型可以在节点的C++源文件中指定，也可以在CMakeLists.txt文件中进行指定。</p>
+<p>在ROS中，节点的输出可以分为两种类型：输出到终端和输出到ROS网络中的话题。<code>output</code>属性可以指定节点输出的类型，其可选的值包括：</p>
+<p><code>log</code>：输出到节点的日志中（默认值）。</p>
+<p><code>screen</code>：输出到终端上。</p>
+<p><code>both</code>：同时输出到节点日志和终端上。</p>
+<p>在这里，<code>output=&quot;screen&quot;</code>表示将节点的输出输出到终端上，方便调试。</p>
+<p>​	<code>args</code>标签用于向节点传递命令行参数。在启动节点时，可以使用<code>args</code>标签传递任意数量和类型的参数。</p>
+<p>这些参数在节点启动时会被传递给节点，并且可以在节点内部进行访问和使用。</p>
+<p>在上面的例子中，<code>turtle_tf_broadcaster</code>节点使用<code>args</code>标签传递了一个参数，即<code>/turtle1</code>或<code>/turtle2</code>，用于指定广播的TF坐标系名称。<code>turtle_tf_listener</code>节点没有使用<code>args</code>标签，因为它不需要传递任何参数。</p>
 
     </div>
 
@@ -386,21 +370,20 @@
 </div>
 
           <div class="post-tags">
-              <a href="/tags/%E6%97%A0%E4%BA%BA%E6%9C%BA/" rel="tag"<i class="fa fa-tag"></i>># 无人机</a>
-              <a href="/tags/%E8%B0%83%E8%AF%95%E7%BB%8F%E9%AA%8C/" rel="tag"<i class="fa fa-tag"></i>># 调试经验</a>
+              <a href="/tags/ROS/" rel="tag"<i class="fa fa-tag"></i>># ROS</a>
           </div>
 
         
 
           <div class="post-nav">
             <div class="post-nav-item">
-                <a href="/year-07-06-2023-5-25%20ROS%E5%AD%A6%E4%B9%A0%E8%AE%B0%E5%BD%95%EF%BC%88%E5%8F%82%E8%80%83%E2%80%94%E5%8F%A4%E6%9C%88%E5%B1%85%EF%BC%89%20160959/" rel="prev" title="ROS学习">
-                  <i class="fa fa-chevron-left"></i> ROS学习
+                <a href="/year-07-12-2023-7-12ROS%E4%BB%8B%E7%BB%8D/" rel="prev" title="ROS介绍">
+                  <i class="fa fa-chevron-left"></i> ROS介绍
                 </a>
             </div>
             <div class="post-nav-item">
-                <a href="/year-07-07-2023-7-7%E6%97%A0%E4%BA%BA%E6%9C%BA%E4%BD%93%E7%B3%BB%E6%90%AD%E5%BB%BA/" rel="next" title="2023-7-7无人机体系搭建">
-                  2023-7-7无人机体系搭建 <i class="fa fa-chevron-right"></i>
+                <a href="/year-07-12-2023-7-12ROS%E5%AD%A6%E4%B9%A0%EF%BC%88B%E7%AB%99%EF%BC%89/" rel="next" title="2023-7-12ROS学习（B站）">
+                  2023-7-12ROS学习（B站） <i class="fa fa-chevron-right"></i>
                 </a>
             </div>
           </div>
