@@ -1,182 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <search>
   <entry>
-    <title>基于ROS框架下PX4环境仿真</title>
-    <url>/year-07-07-2023-5-18%E5%9F%BA%E4%BA%8EROS%E6%A1%86%E6%9E%B6%E4%B8%8BPX4%E7%8E%AF%E5%A2%83%E4%BB%BF%E7%9C%9F/</url>
-    <content><![CDATA[<h1 id="无人机仿真—PX4编译，gazebo仿真及简单off-board控制模式下无人机起飞"><a href="#无人机仿真—PX4编译，gazebo仿真及简单off-board控制模式下无人机起飞" class="headerlink" title="无人机仿真—PX4编译，gazebo仿真及简单off board控制模式下无人机起飞"></a>无人机仿真—PX4编译，gazebo仿真及简单off board控制模式下无人机起飞</h1><h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><ul>
-<li><p>在上篇记录中，已经对整体的PX4仿真环境有了一定的了解，现如今就要开始对无人机进行起飞等仿真环境工作，在整体虚拟环境中如果程序能够安稳起飞降落，即可对无人机进行实飞操作。</p>
-<span id="more"></span>
-</li>
-<li><p>需要做的是，通过PX4官网提供的基本程序包，在ROS工作空间下新建程序包对其进行运行，再打开仿真环境即可</p>
-</li>
-</ul>
-<h2 id="PX4编译"><a href="#PX4编译" class="headerlink" title="PX4编译"></a>PX4编译</h2><ul>
-<li><pre><code>cd /Firmware  #进入PX4文件夹内
-make px4_sitl_default gazebo  # 编译固件并加载仿真环境
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line"></span><br><span class="line">- 如果想进行自动起飞，可运行以下命令</span><br><span class="line"></span><br><span class="line">  - ```</span><br><span class="line">    commander takeoff</span><br></pre></td></tr></table></figure>
-</code></pre>
-</li>
-</ul>
-<h2 id="利用ROS启动仿真环境（正式）"><a href="#利用ROS启动仿真环境（正式）" class="headerlink" title="利用ROS启动仿真环境（正式）"></a>利用ROS启动仿真环境（正式）</h2><ul>
-<li><p>老规矩先加载ROS，运行命令</p>
-<ul>
-<li><pre><code>roscore
-
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line"></span><br><span class="line">- ![image-20230318131652853](2023-5-18基于ROS框架下PX4环境仿真/ROS1.png)</span><br><span class="line"></span><br><span class="line">  - 出现红色警告，说明ROS本地缓存大于1GB，可以忽视，如果需要清理可以使用</span><br><span class="line"></span><br><span class="line">    - ```</span><br><span class="line">      rosclean purge</span><br></pre></td></tr></table></figure>
-</code></pre>
-</li>
-</ul>
-</li>
-<li><p>在PX4文件夹内用mavros连接到本地ros，运行以下命令打开gazebo仿真环境</p>
-<ul>
-<li><pre><code>roslaunch px4 mavros_posix_sitl.launch
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line"></span><br><span class="line">- ![image-20230318132048422](2023-5-18基于ROS框架下PX4环境仿真/gazebo1.png)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"></span><br><span class="line">## 编写外部程序包</span><br><span class="line"></span><br><span class="line">首先需要在ROS工作空间下，在src目录下新建功能包</span><br><span class="line"></span><br></pre></td></tr></table></figure>
-cd ~/catkin_ws/src
-catkin_create_pkg offboard roscpp mavros geometry_msgs
-//catkin_create_pkg 是ROS命令，新建一个功能包
-//offboard 功能包名字
-//roscpp mavros geometry_msgs功能包依赖
-//命令格式catkin_create_pkg &lt;package_name&gt; [depend1] [depend2] [depend3]
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line"></span><br><span class="line">在offboard功能包src目录下新建cpp文件，将外部程序控制文件写入保存</span><br><span class="line"></span><br><span class="line">- 新建cpp文件</span><br><span class="line"></span><br><span class="line">- ```</span><br><span class="line">  touch offboard_node.cpp </span><br></pre></td></tr></table></figure>
-
-![image-20230318132937051](2023-5-18基于ROS框架下PX4环境仿真/ROS2.png)
-</code></pre>
-</li>
-<li><p>将以下程序写入到cpp文件，此程序参考的是PX4官网给出的例程。</p>
-</li>
-<li><pre><code class="c++">/**
- * @file offb_node.cpp
- * @brief Offboard control example node, written with MAVROS version 0.19.x, PX4 Pro Flight
- * Stack and tested in Gazebo SITL
- */
-
-#include &lt;ros/ros.h&gt;
-#include &lt;geometry_msgs/PoseStamped.h&gt;
-#include &lt;mavros_msgs/CommandBool.h&gt;
-#include &lt;mavros_msgs/SetMode.h&gt;
-#include &lt;mavros_msgs/State.h&gt;
-
-mavros_msgs::State current_state;
-void state_cb(const mavros_msgs::State::ConstPtr&amp; msg)&#123;
-    current_state = *msg;
-&#125;
-
-int main(int argc, char **argv)
-&#123;
-    ros::init(argc, argv, &quot;offb_node&quot;);
-    ros::NodeHandle nh;
-
-    //订阅mavros状态
-    ros::Subscriber state_sub = nh.subscribe&lt;mavros_msgs::State&gt;
-            (&quot;mavros/state&quot;, 10, state_cb);
-    //发布无人机位姿信息
-    ros::Publisher local_pos_pub = nh.advertise&lt;geometry_msgs::PoseStamped&gt;
-            (&quot;mavros/setpoint_position/local&quot;, 10);
-    //定义起飞服务客户端（起飞，降落）
-    ros::ServiceClient arming_client = nh.serviceClient&lt;mavros_msgs::CommandBool&gt;
-            (&quot;mavros/cmd/arming&quot;);
-    //定义设置模式服务客户端（设置offboard模式）
-    ros::ServiceClient set_mode_client = nh.serviceClient&lt;mavros_msgs::SetMode&gt;
-            (&quot;mavros/set_mode&quot;);
-
-    //the setpoint publishing rate MUST be faster than 2Hz
-    ros::Rate rate(20.0);
-
-    // wait for FCU connection
-    while(ros::ok() &amp;&amp; !current_state.connected)&#123;
-        ros::spinOnce();
-        rate.sleep();
-    &#125;
-
-    geometry_msgs::PoseStamped pose;
-    pose.pose.position.x = 0;
-    pose.pose.position.y = 0;
-    pose.pose.position.z = 10;
-
-    //send a few setpoints before starting
-    for(int i = 100; ros::ok() &amp;&amp; i &gt; 0; --i)&#123;
-        local_pos_pub.publish(pose);
-        ros::spinOnce();
-        rate.sleep();
-    &#125;
-
-    mavros_msgs::SetMode offb_set_mode;
-    offb_set_mode.request.custom_mode = &quot;OFFBOARD&quot;;
-
-    mavros_msgs::CommandBool arm_cmd;
-    arm_cmd.request.value = true;
-
-    ros::Time last_request = ros::Time::now();
-
-    while(ros::ok())&#123;
-        if( current_state.mode != &quot;OFFBOARD&quot; &amp;&amp;
-            (ros::Time::now() - last_request &gt; ros::Duration(5.0)))&#123;
-            if( set_mode_client.call(offb_set_mode) &amp;&amp;
-                offb_set_mode.response.mode_sent)&#123;
-                ROS_INFO(&quot;Offboard enabled&quot;);
-            &#125;
-            last_request = ros::Time::now();
-        &#125; else &#123;
-            if( !current_state.armed &amp;&amp;
-                (ros::Time::now() - last_request &gt; ros::Duration(5.0)))&#123;
-                if( arming_client.call(arm_cmd) &amp;&amp;
-                    arm_cmd.response.success)&#123;
-                    ROS_INFO(&quot;Vehicle armed&quot;);
-                &#125;
-                last_request = ros::Time::now();
-            &#125;
-        &#125;
-
-        local_pos_pub.publish(pose);
-
-        ros::spinOnce();
-        rate.sleep();
-    &#125;
-
-    return 0;
-&#125;
-
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line"></span><br><span class="line">  - 在offboard目录下找到Cmakelists.txt文件，并设置程序运行节点，不然rosrun命令无法找到该节点，从而报错</span><br><span class="line"></span><br><span class="line">  - ![image-20230318133424551](2023-5-18基于ROS框架下PX4环境仿真/ROS3.png)</span><br><span class="line"></span><br><span class="line">  - ![image-20230318133518636](2023-5-18基于ROS框架下PX4环境仿真/ROS4.png)</span><br><span class="line"></span><br><span class="line">  - 编辑好后即可进行编译</span><br><span class="line"></span><br><span class="line">## 编译</span><br><span class="line"></span><br><span class="line">- 进入到catkin_ws目录下，运行终端</span><br><span class="line"></span><br><span class="line">- ```</span><br><span class="line">  cd /catkin_ws</span><br><span class="line">  catkin_make</span><br><span class="line">  </span><br></pre></td></tr></table></figure>
-</code></pre>
-</li>
-</ul>
-<p><img src="/year-07-07-2023-5-18%E5%9F%BA%E4%BA%8EROS%E6%A1%86%E6%9E%B6%E4%B8%8BPX4%E7%8E%AF%E5%A2%83%E4%BB%BF%E7%9C%9F/ROS5.png" alt="image-20230318133814424"></p>
-</li>
-<li><p>如上图显示编译成功</p>
-</li>
-<li><p>运行程序包</p>
-</li>
-<li><pre><code>rosrun offboard offboard_node
-</code></pre>
-<p><img src="/year-07-07-2023-5-18%E5%9F%BA%E4%BA%8EROS%E6%A1%86%E6%9E%B6%E4%B8%8BPX4%E7%8E%AF%E5%A2%83%E4%BB%BF%E7%9C%9F/gazebo2.png" alt="image-20230318133943643"></p>
-</li>
-<li><p>无人机实现自动起飞10米高，程序运行成功。</p>
-</li>
-</ul>
-<h2 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h2><ul>
-<li>之所以要记录本次的过程，是因为自己对ROS工作模式的进一步了解，当然，实验这篇前需要去了解一下ROS语法，这里推荐古月居博主，可以在B站和csdn上都可以搜到。</li>
-<li>踩坑总结：<ul>
-<li>在已经 建立工作空间的情况下，如果需要新建程序包，不要在工作空间目录（catkin_ws）下新建，而是要了解ros环境后在src目录下使用命令新建程序包，不然编译就会出错</li>
-<li>运行程序包的命令，不需要添加文件后缀名</li>
-<li>之所以会产生各种错误，是基于自己并不了解ros的工作模式和原理，实际上，只要自己有了经验，有了教训，下一次的建立会相比较第一次都会顺手很多。</li>
-<li>错误的不断产生让我一度以为自己的ros环境产生了怀疑，认为自己的环境搭建出错，但一切的根源就是自己的工作路径添加错误，对系统产生的错误需要自己一点点去啃。</li>
-<li>因为ROS系统产生错误显示的是英文，对于一些不常见的错误，可以利用有道词典的划词功能，对错误进行翻译，只有自己真正了解到这个错误，最终才能够有根据的去寻求答案。</li>
-</ul>
-</li>
-<li>最后送句话给自己吧。“海压竹枝低复举，风吹山角晦还明”</li>
-</ul>
-]]></content>
-      <categories>
-        <category>ROS学习</category>
-        <category>环境仿真</category>
-      </categories>
-      <tags>
-        <tag>PX4</tag>
-        <tag>无人机</tag>
-        <tag>ROS</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>基于PX4在Ubuntu系统中的搭建</title>
     <url>/year-07-07-2023-3-4%E5%9F%BA%E4%BA%8EPX4%E5%9C%A8Ubuntu%E7%B3%BB%E7%BB%9F%E4%B8%AD%E7%9A%84%E6%90%AD%E5%BB%BA/</url>
     <content><![CDATA[<h1 id="基于PX4在Ubuntu仿真环境中的搭建（ROS-Gazebo-Mavros-PX4-QGC）"><a href="#基于PX4在Ubuntu仿真环境中的搭建（ROS-Gazebo-Mavros-PX4-QGC）" class="headerlink" title="基于PX4在Ubuntu仿真环境中的搭建（ROS+Gazebo+Mavros+PX4+QGC）"></a>基于PX4在Ubuntu仿真环境中的搭建（ROS+Gazebo+Mavros+PX4+QGC）</h1><h2 id="虚拟机的安装（VMware-Ubuntu18-04）"><a href="#虚拟机的安装（VMware-Ubuntu18-04）" class="headerlink" title="虚拟机的安装（VMware+Ubuntu18.04）"></a>虚拟机的安装（VMware+Ubuntu18.04）</h2><h3 id="VMware的安装"><a href="#VMware的安装" class="headerlink" title="VMware的安装"></a>VMware的安装</h3><span id="more"></span>
@@ -379,9 +203,185 @@ bash ./Tools/setup/ubuntu.sh --no-nuttx --no-sim-tools
         <category>环境搭建</category>
       </categories>
       <tags>
-        <tag>PX4</tag>
         <tag>无人机</tag>
+        <tag>PX4</tag>
         <tag>Ubuntu</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>基于ROS框架下PX4环境仿真</title>
+    <url>/year-07-07-2023-5-18%E5%9F%BA%E4%BA%8EROS%E6%A1%86%E6%9E%B6%E4%B8%8BPX4%E7%8E%AF%E5%A2%83%E4%BB%BF%E7%9C%9F/</url>
+    <content><![CDATA[<h1 id="无人机仿真—PX4编译，gazebo仿真及简单off-board控制模式下无人机起飞"><a href="#无人机仿真—PX4编译，gazebo仿真及简单off-board控制模式下无人机起飞" class="headerlink" title="无人机仿真—PX4编译，gazebo仿真及简单off board控制模式下无人机起飞"></a>无人机仿真—PX4编译，gazebo仿真及简单off board控制模式下无人机起飞</h1><h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><ul>
+<li><p>在上篇记录中，已经对整体的PX4仿真环境有了一定的了解，现如今就要开始对无人机进行起飞等仿真环境工作，在整体虚拟环境中如果程序能够安稳起飞降落，即可对无人机进行实飞操作。</p>
+<span id="more"></span>
+</li>
+<li><p>需要做的是，通过PX4官网提供的基本程序包，在ROS工作空间下新建程序包对其进行运行，再打开仿真环境即可</p>
+</li>
+</ul>
+<h2 id="PX4编译"><a href="#PX4编译" class="headerlink" title="PX4编译"></a>PX4编译</h2><ul>
+<li><pre><code>cd /Firmware  #进入PX4文件夹内
+make px4_sitl_default gazebo  # 编译固件并加载仿真环境
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line"></span><br><span class="line">- 如果想进行自动起飞，可运行以下命令</span><br><span class="line"></span><br><span class="line">  - ```</span><br><span class="line">    commander takeoff</span><br></pre></td></tr></table></figure>
+</code></pre>
+</li>
+</ul>
+<h2 id="利用ROS启动仿真环境（正式）"><a href="#利用ROS启动仿真环境（正式）" class="headerlink" title="利用ROS启动仿真环境（正式）"></a>利用ROS启动仿真环境（正式）</h2><ul>
+<li><p>老规矩先加载ROS，运行命令</p>
+<ul>
+<li><pre><code>roscore
+
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line"></span><br><span class="line">- ![image-20230318131652853](2023-5-18基于ROS框架下PX4环境仿真/ROS1.png)</span><br><span class="line"></span><br><span class="line">  - 出现红色警告，说明ROS本地缓存大于1GB，可以忽视，如果需要清理可以使用</span><br><span class="line"></span><br><span class="line">    - ```</span><br><span class="line">      rosclean purge</span><br></pre></td></tr></table></figure>
+</code></pre>
+</li>
+</ul>
+</li>
+<li><p>在PX4文件夹内用mavros连接到本地ros，运行以下命令打开gazebo仿真环境</p>
+<ul>
+<li><pre><code>roslaunch px4 mavros_posix_sitl.launch
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line"></span><br><span class="line">- ![image-20230318132048422](2023-5-18基于ROS框架下PX4环境仿真/gazebo1.png)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"></span><br><span class="line">## 编写外部程序包</span><br><span class="line"></span><br><span class="line">首先需要在ROS工作空间下，在src目录下新建功能包</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+cd ~/catkin_ws/src
+catkin_create_pkg offboard roscpp mavros geometry_msgs
+//catkin_create_pkg 是ROS命令，新建一个功能包
+//offboard 功能包名字
+//roscpp mavros geometry_msgs功能包依赖
+//命令格式catkin_create_pkg &lt;package_name&gt; [depend1] [depend2] [depend3]
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line"></span><br><span class="line">在offboard功能包src目录下新建cpp文件，将外部程序控制文件写入保存</span><br><span class="line"></span><br><span class="line">- 新建cpp文件</span><br><span class="line"></span><br><span class="line">- ```</span><br><span class="line">  touch offboard_node.cpp </span><br></pre></td></tr></table></figure>
+
+![image-20230318132937051](2023-5-18基于ROS框架下PX4环境仿真/ROS2.png)
+</code></pre>
+</li>
+<li><p>将以下程序写入到cpp文件，此程序参考的是PX4官网给出的例程。</p>
+</li>
+<li><pre><code class="c++">/**
+ * @file offb_node.cpp
+ * @brief Offboard control example node, written with MAVROS version 0.19.x, PX4 Pro Flight
+ * Stack and tested in Gazebo SITL
+ */
+
+#include &lt;ros/ros.h&gt;
+#include &lt;geometry_msgs/PoseStamped.h&gt;
+#include &lt;mavros_msgs/CommandBool.h&gt;
+#include &lt;mavros_msgs/SetMode.h&gt;
+#include &lt;mavros_msgs/State.h&gt;
+
+mavros_msgs::State current_state;
+void state_cb(const mavros_msgs::State::ConstPtr&amp; msg)&#123;
+    current_state = *msg;
+&#125;
+
+int main(int argc, char **argv)
+&#123;
+    ros::init(argc, argv, &quot;offb_node&quot;);
+    ros::NodeHandle nh;
+
+    //订阅mavros状态
+    ros::Subscriber state_sub = nh.subscribe&lt;mavros_msgs::State&gt;
+            (&quot;mavros/state&quot;, 10, state_cb);
+    //发布无人机位姿信息
+    ros::Publisher local_pos_pub = nh.advertise&lt;geometry_msgs::PoseStamped&gt;
+            (&quot;mavros/setpoint_position/local&quot;, 10);
+    //定义起飞服务客户端（起飞，降落）
+    ros::ServiceClient arming_client = nh.serviceClient&lt;mavros_msgs::CommandBool&gt;
+            (&quot;mavros/cmd/arming&quot;);
+    //定义设置模式服务客户端（设置offboard模式）
+    ros::ServiceClient set_mode_client = nh.serviceClient&lt;mavros_msgs::SetMode&gt;
+            (&quot;mavros/set_mode&quot;);
+
+    //the setpoint publishing rate MUST be faster than 2Hz
+    ros::Rate rate(20.0);
+
+    // wait for FCU connection
+    while(ros::ok() &amp;&amp; !current_state.connected)&#123;
+        ros::spinOnce();
+        rate.sleep();
+    &#125;
+
+    geometry_msgs::PoseStamped pose;
+    pose.pose.position.x = 0;
+    pose.pose.position.y = 0;
+    pose.pose.position.z = 10;
+
+    //send a few setpoints before starting
+    for(int i = 100; ros::ok() &amp;&amp; i &gt; 0; --i)&#123;
+        local_pos_pub.publish(pose);
+        ros::spinOnce();
+        rate.sleep();
+    &#125;
+
+    mavros_msgs::SetMode offb_set_mode;
+    offb_set_mode.request.custom_mode = &quot;OFFBOARD&quot;;
+
+    mavros_msgs::CommandBool arm_cmd;
+    arm_cmd.request.value = true;
+
+    ros::Time last_request = ros::Time::now();
+
+    while(ros::ok())&#123;
+        if( current_state.mode != &quot;OFFBOARD&quot; &amp;&amp;
+            (ros::Time::now() - last_request &gt; ros::Duration(5.0)))&#123;
+            if( set_mode_client.call(offb_set_mode) &amp;&amp;
+                offb_set_mode.response.mode_sent)&#123;
+                ROS_INFO(&quot;Offboard enabled&quot;);
+            &#125;
+            last_request = ros::Time::now();
+        &#125; else &#123;
+            if( !current_state.armed &amp;&amp;
+                (ros::Time::now() - last_request &gt; ros::Duration(5.0)))&#123;
+                if( arming_client.call(arm_cmd) &amp;&amp;
+                    arm_cmd.response.success)&#123;
+                    ROS_INFO(&quot;Vehicle armed&quot;);
+                &#125;
+                last_request = ros::Time::now();
+            &#125;
+        &#125;
+
+        local_pos_pub.publish(pose);
+
+        ros::spinOnce();
+        rate.sleep();
+    &#125;
+
+    return 0;
+&#125;
+
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line"></span><br><span class="line">  - 在offboard目录下找到Cmakelists.txt文件，并设置程序运行节点，不然rosrun命令无法找到该节点，从而报错</span><br><span class="line"></span><br><span class="line">  - ![image-20230318133424551](2023-5-18基于ROS框架下PX4环境仿真/ROS3.png)</span><br><span class="line"></span><br><span class="line">  - ![image-20230318133518636](2023-5-18基于ROS框架下PX4环境仿真/ROS4.png)</span><br><span class="line"></span><br><span class="line">  - 编辑好后即可进行编译</span><br><span class="line"></span><br><span class="line">## 编译</span><br><span class="line"></span><br><span class="line">- 进入到catkin_ws目录下，运行终端</span><br><span class="line"></span><br><span class="line">- ```</span><br><span class="line">  cd /catkin_ws</span><br><span class="line">  catkin_make</span><br><span class="line">  </span><br></pre></td></tr></table></figure>
+</code></pre>
+</li>
+</ul>
+<p><img src="/year-07-07-2023-5-18%E5%9F%BA%E4%BA%8EROS%E6%A1%86%E6%9E%B6%E4%B8%8BPX4%E7%8E%AF%E5%A2%83%E4%BB%BF%E7%9C%9F/ROS5.png" alt="image-20230318133814424"></p>
+</li>
+<li><p>如上图显示编译成功</p>
+</li>
+<li><p>运行程序包</p>
+</li>
+<li><pre><code>rosrun offboard offboard_node
+</code></pre>
+<p><img src="/year-07-07-2023-5-18%E5%9F%BA%E4%BA%8EROS%E6%A1%86%E6%9E%B6%E4%B8%8BPX4%E7%8E%AF%E5%A2%83%E4%BB%BF%E7%9C%9F/gazebo2.png" alt="image-20230318133943643"></p>
+</li>
+<li><p>无人机实现自动起飞10米高，程序运行成功。</p>
+</li>
+</ul>
+<h2 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h2><ul>
+<li>之所以要记录本次的过程，是因为自己对ROS工作模式的进一步了解，当然，实验这篇前需要去了解一下ROS语法，这里推荐古月居博主，可以在B站和csdn上都可以搜到。</li>
+<li>踩坑总结：<ul>
+<li>在已经 建立工作空间的情况下，如果需要新建程序包，不要在工作空间目录（catkin_ws）下新建，而是要了解ros环境后在src目录下使用命令新建程序包，不然编译就会出错</li>
+<li>运行程序包的命令，不需要添加文件后缀名</li>
+<li>之所以会产生各种错误，是基于自己并不了解ros的工作模式和原理，实际上，只要自己有了经验，有了教训，下一次的建立会相比较第一次都会顺手很多。</li>
+<li>错误的不断产生让我一度以为自己的ros环境产生了怀疑，认为自己的环境搭建出错，但一切的根源就是自己的工作路径添加错误，对系统产生的错误需要自己一点点去啃。</li>
+<li>因为ROS系统产生错误显示的是英文，对于一些不常见的错误，可以利用有道词典的划词功能，对错误进行翻译，只有自己真正了解到这个错误，最终才能够有根据的去寻求答案。</li>
+</ul>
+</li>
+<li>最后送句话给自己吧。“海压竹枝低复举，风吹山角晦还明”</li>
+</ul>
+]]></content>
+      <categories>
+        <category>ROS学习</category>
+        <category>环境仿真</category>
+      </categories>
+      <tags>
+        <tag>无人机</tag>
+        <tag>PX4</tag>
+        <tag>ROS</tag>
       </tags>
   </entry>
   <entry>
@@ -666,8 +666,8 @@ gedit ~/.bashrc
         <category>ROS学习</category>
       </categories>
       <tags>
-        <tag>ROS</tag>
         <tag>Ubuntu</tag>
+        <tag>ROS</tag>
         <tag>Linux</tag>
       </tags>
   </entry>
@@ -1071,88 +1071,6 @@ rosrun learning_topic velocity_publisher
       </tags>
   </entry>
   <entry>
-    <title>2023-7-12ROS学习（B站）</title>
-    <url>/year-07-12-2023-7-12ROS%E5%AD%A6%E4%B9%A0%EF%BC%88B%E7%AB%99%EF%BC%89/</url>
-    <content><![CDATA[<h2 id="B站-ROS学习"><a href="#B站-ROS学习" class="headerlink" title="B站-ROS学习"></a>B站-ROS学习</h2><h3 id="ubuntu系统简单操作"><a href="#ubuntu系统简单操作" class="headerlink" title="ubuntu系统简单操作"></a>ubuntu系统简单操作</h3><ul>
-<li><p>添加到收藏夹——类似windows固定到任务栏</p>
-</li>
-<li><p>win+空格键——输入法切换，shift键也可</p>
-</li>
-<li><p>CTRL+alt+t，终端打开</p>
-</li>
-<li><p>简单命令</p>
-<ul>
-<li>ls，简单查看当前所有目录内容</li>
-<li>cd ..回到上一级目录</li>
-<li>mkdir 创建新的目录</li>
-<li>cd ~回到主文件夹</li>
-<li>tab键，补全指令内容，且只有唯一内容</li>
-<li>gedit 文本编辑器</li>
-<li>source 执行文件中的指令序列   .sh文件                               </li>
-<li>echo   显示的意思  </li>
-<li>.bashrc  环境变量的赋值 </li>
-<li>gedit ~&#x2F;.bashrc 编辑主文件夹下的bashrc文件</li>
-<li>ls-a 显示所有文件</li>
-<li>sudo 以管理员权限执行这条指令</li>
-</ul>
-</li>
-<li><p>在 ~&#x2F;catkin_ws&#x2F;src目录下执行git clone 后面添加GitHub项目网址</p>
-</li>
-<li><p>scripts 目录用于放置脚本文件和Python程序  安装依赖包</p>
-</li>
-<li><p>安装工作空间内 的依赖包后，编译完成后，在工作空间文件夹下执行source指令</p>
-</li>
-<li><p>使用source指令载入工作空间的环境设置</p>
-<ul>
-<li><pre><code>source ~/catkin_ws/devel/setup.bash
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line"></span><br><span class="line">- 使用roslaunch运行编译好的ROS程序</span><br><span class="line"></span><br><span class="line">- 程序终端初始化</span><br><span class="line"></span><br><span class="line">- 将source指令添加到.bashrc脚本中</span><br><span class="line"></span><br></pre></td></tr></table></figure>
-gedit ~/.bashrc
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line"></span><br><span class="line">- 末尾添加 source ~/catkin_ws/devel/setup.bash</span><br><span class="line"></span><br><span class="line">### 终端Terminator </span><br><span class="line"></span><br><span class="line">- CTRL+shift+E 分屏左右两个终端</span><br><span class="line">- CTRL+shift+o 分屏上下两个终端</span><br><span class="line">- alt+方向键 切换不同工作终端焦点</span><br><span class="line">- CTRL +shift +W 关闭刚分出来的端口</span><br><span class="line"></span><br><span class="line">### Package</span><br><span class="line"></span><br><span class="line">- 功能的相互独立，节点功能相对单一</span><br><span class="line"></span><br><span class="line">- CMakeLists.txt文件详解</span><br><span class="line"></span><br><span class="line">  - ![image-20230525151214286](2023-7-12ROS学习（B站）/1.png)</span><br><span class="line">    - 编译器的最低版本要求</span><br><span class="line">    - 工程名</span><br><span class="line"></span><br><span class="line">  - ![image-20230525151310856](2023-7-12ROS学习（B站）/2.png)</span><br><span class="line">    - find_package寻找依赖包</span><br><span class="line"></span><br><span class="line">  - ![image-20230525151409646](2023-7-12ROS学习（B站）/3.png)</span><br><span class="line">    - 双#号的是对文件中指令内容的说明</span><br><span class="line">    - 单#号是与注释对应的指令示例</span><br><span class="line"></span><br><span class="line">- package.xml文件详解</span><br><span class="line"></span><br><span class="line">  - ![image-20230525151736912](2023-7-12ROS学习（B站）/4.png)</span><br><span class="line"></span><br><span class="line">    - ssr_pkg 包的名字</span><br><span class="line"></span><br><span class="line">    - 包的内容描述 The ssr_pkg_package</span><br><span class="line"></span><br><span class="line">      </span><br><span class="line"></span><br><span class="line">  - ![image-20230525151801543](2023-7-12ROS学习（B站）/5.png)</span><br><span class="line"></span><br><span class="line">    - 维护者信息</span><br><span class="line"></span><br><span class="line">      </span><br><span class="line"></span><br><span class="line">  - ![image-20230525151813881](2023-7-12ROS学习（B站）/6.png)</span><br><span class="line"></span><br><span class="line">    - 开源协议</span><br><span class="line"></span><br><span class="line">      </span><br><span class="line"></span><br><span class="line">  - ![image-20230525151825365](2023-7-12ROS学习（B站）/7.png)</span><br><span class="line"></span><br><span class="line">    - 网址</span><br><span class="line"></span><br><span class="line">      </span><br><span class="line"></span><br><span class="line">  - ![image-20230525152031017](2023-7-12ROS学习（B站）/8.png)</span><br><span class="line"></span><br><span class="line">    - 依赖项</span><br><span class="line"></span><br><span class="line">- roscd 在终端中进入指定软件包的文件地址</span><br><span class="line"></span><br><span class="line">- ```</span><br><span class="line">  source /opt/ros/noetic/setup.bash</span><br></pre></td></tr></table></figure>
-</code></pre>
-</li>
-<li><p>加载的就是apt下载的那些软件包地址</p>
-</li>
-</ul>
-</li>
-<li><pre><code>source ~/catkin_ws/devel/setup.bash
-</code></pre>
-<ul>
-<li>对应的是catkin工作空间里的软件包地址</li>
-</ul>
-</li>
-<li><p>尽量选择系统中存在的软件包</p>
-</li>
-</ul>
-<h3 id="源码编译"><a href="#源码编译" class="headerlink" title="源码编译"></a>源码编译</h3><ul>
-<li><p>CmakeList.txt文件中  Build部分</p>
-<ul>
-<li>声明一个C++可执行文件</li>
-<li><img src="/year-07-12-2023-7-12ROS%E5%AD%A6%E4%B9%A0%EF%BC%88B%E7%AB%99%EF%BC%89/9.png" alt="image-20230525154717877"></li>
-<li>为这个包添加一个可执行程序</li>
-<li>可执行文件与包的名字保持一个名字</li>
-<li>CTRL + S保存</li>
-<li>CTRL+shift +B进行编译</li>
-</ul>
-</li>
-<li><p>运行节点</p>
-<ul>
-<li>运行ros  roscore</li>
-<li>添加环境配置</li>
-<li>rosrun</li>
-</ul>
-</li>
-<li><p>ctrl + shift +w</p>
-</li>
-</ul>
-]]></content>
-      <categories>
-        <category>ROS学习</category>
-      </categories>
-      <tags>
-        <tag>ROS</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>ROS学习（古月居）</title>
     <url>/year-07-12-2023-7-12ROS%E5%AD%A6%E4%B9%A0%EF%BC%88%E5%8F%A4%E6%9C%88%E5%B1%85%EF%BC%89/</url>
     <content><![CDATA[<h2 id="ROS课程学习-2023年5月"><a href="#ROS课程学习-2023年5月" class="headerlink" title="ROS课程学习-2023年5月"></a>ROS课程学习-2023年5月</h2><h3 id="ROS工作空间的覆盖"><a href="#ROS工作空间的覆盖" class="headerlink" title="ROS工作空间的覆盖"></a>ROS工作空间的覆盖</h3><ul>
@@ -1241,9 +1159,91 @@ gedit ~/.bashrc
       </tags>
   </entry>
   <entry>
-    <title>2023-7-7无人机体系搭建</title>
-    <url>/year-07-07-2023-7-7%E6%97%A0%E4%BA%BA%E6%9C%BA%E4%BD%93%E7%B3%BB%E6%90%AD%E5%BB%BA/</url>
-    <content><![CDATA[]]></content>
+    <title>2023-7-12ROS学习（B站）</title>
+    <url>/year-07-12-2023-7-12ROS%E5%AD%A6%E4%B9%A0%EF%BC%88B%E7%AB%99%EF%BC%89/</url>
+    <content><![CDATA[<h2 id="B站-ROS学习"><a href="#B站-ROS学习" class="headerlink" title="B站-ROS学习"></a>B站-ROS学习</h2><h3 id="ubuntu系统简单操作"><a href="#ubuntu系统简单操作" class="headerlink" title="ubuntu系统简单操作"></a>ubuntu系统简单操作</h3><ul>
+<li><p>添加到收藏夹——类似windows固定到任务栏</p>
+</li>
+<li><p>win+空格键——输入法切换，shift键也可</p>
+</li>
+<li><p>CTRL+alt+t，终端打开</p>
+</li>
+<li><p>简单命令</p>
+<ul>
+<li>ls，简单查看当前所有目录内容</li>
+<li>cd ..回到上一级目录</li>
+<li>mkdir 创建新的目录</li>
+<li>cd ~回到主文件夹</li>
+<li>tab键，补全指令内容，且只有唯一内容</li>
+<li>gedit 文本编辑器</li>
+<li>source 执行文件中的指令序列   .sh文件                               </li>
+<li>echo   显示的意思  </li>
+<li>.bashrc  环境变量的赋值 </li>
+<li>gedit ~&#x2F;.bashrc 编辑主文件夹下的bashrc文件</li>
+<li>ls-a 显示所有文件</li>
+<li>sudo 以管理员权限执行这条指令</li>
+</ul>
+</li>
+<li><p>在 ~&#x2F;catkin_ws&#x2F;src目录下执行git clone 后面添加GitHub项目网址</p>
+</li>
+<li><p>scripts 目录用于放置脚本文件和Python程序  安装依赖包</p>
+</li>
+<li><p>安装工作空间内 的依赖包后，编译完成后，在工作空间文件夹下执行source指令</p>
+</li>
+<li><p>使用source指令载入工作空间的环境设置</p>
+<ul>
+<li><pre><code>source ~/catkin_ws/devel/setup.bash
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line"></span><br><span class="line">​			</span><br><span class="line"></span><br><span class="line">------</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"></span><br><span class="line">- 使用roslaunch运行编译好的ROS程序</span><br><span class="line"></span><br><span class="line">- 程序终端初始化</span><br><span class="line"></span><br><span class="line">- 将source指令添加到.bashrc脚本中</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+gedit ~/.bashrc
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line"></span><br><span class="line">------</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"></span><br><span class="line">- 末尾添加 source ~/catkin_ws/devel/setup.bash</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">### 终端Terminator </span><br><span class="line"></span><br><span class="line">- CTRL+shift+E 分屏左右两个终端</span><br><span class="line">- CTRL+shift+o 分屏上下两个终端</span><br><span class="line">- alt+方向键 切换不同工作终端焦点</span><br><span class="line">- CTRL +shift +W 关闭刚分出来的端口</span><br><span class="line"></span><br><span class="line">------</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"></span><br><span class="line">### Package</span><br><span class="line"></span><br><span class="line">- 功能的相互独立，节点功能相对单一</span><br><span class="line">- CMakeLists.txt文件详解</span><br><span class="line"></span><br><span class="line">  - ![image-20230525151214286](2023-7-12ROS学习（B站）/1.png)</span><br><span class="line">    - 编译器的最低版本要求</span><br><span class="line">    - 工程名</span><br><span class="line"></span><br><span class="line">------</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"></span><br><span class="line">- ![image-20230525151310856](2023-7-12ROS学习（B站）/2.png)</span><br><span class="line">  - find_package寻找依赖包</span><br><span class="line"></span><br><span class="line">------</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"></span><br><span class="line">- ![image-20230525151409646](2023-7-12ROS学习（B站）/3.png)</span><br><span class="line">  - 双#号的是对文件中指令内容的说明</span><br><span class="line">  - 单#号是与注释对应的指令示例</span><br><span class="line"></span><br><span class="line">------</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"></span><br><span class="line">- package.xml文件详解</span><br><span class="line"></span><br><span class="line">  - ![image-20230525151736912](2023-7-12ROS学习（B站）/4.png)</span><br><span class="line"></span><br><span class="line">    - ssr_pkg 包的名字</span><br><span class="line">    - 包的内容描述 The ssr_pkg_package</span><br><span class="line"></span><br><span class="line">------</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"></span><br><span class="line">- ![image-20230525151801543](2023-7-12ROS学习（B站）/5.png)</span><br><span class="line"></span><br><span class="line">  - 维护者信息</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">------</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"></span><br><span class="line">- ![image-20230525151813881](2023-7-12ROS学习（B站）/6.png)</span><br><span class="line"></span><br><span class="line">  - 开源协议</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">------</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"></span><br><span class="line">- ![image-20230525151825365](2023-7-12ROS学习（B站）/7.png)</span><br><span class="line"></span><br><span class="line">  - 网址</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">------</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"></span><br><span class="line">- ![image-20230525152031017](2023-7-12ROS学习（B站）/8.png)</span><br><span class="line"></span><br><span class="line">  - 依赖项</span><br><span class="line"></span><br><span class="line">------</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"></span><br><span class="line">- roscd 在终端中进入指定软件包的文件地址</span><br><span class="line"></span><br><span class="line">- ```</span><br><span class="line">  source /opt/ros/noetic/setup.bash</span><br></pre></td></tr></table></figure>
+</code></pre>
+</li>
+<li><p>加载的就是apt下载的那些软件包地址</p>
+</li>
+</ul>
+</li>
+</ul>
+<hr>
+<ul>
+<li><pre><code>source ~/catkin_ws/devel/setup.bash
+</code></pre>
+<ul>
+<li>对应的是catkin工作空间里的软件包地址</li>
+</ul>
+</li>
+</ul>
+<hr>
+<ul>
+<li>尽量选择系统中存在的软件包</li>
+</ul>
+<h3 id="源码编译"><a href="#源码编译" class="headerlink" title="源码编译"></a>源码编译</h3><ul>
+<li><p>CmakeList.txt文件中  Build部分</p>
+<ul>
+<li>声明一个C++可执行文件</li>
+<li><img src="/year-07-12-2023-7-12ROS%E5%AD%A6%E4%B9%A0%EF%BC%88B%E7%AB%99%EF%BC%89/9.png" alt="image-20230525154717877"></li>
+<li>为这个包添加一个可执行程序</li>
+<li>可执行文件与包的名字保持一个名字</li>
+<li>CTRL + S保存</li>
+<li>CTRL+shift +B进行编译</li>
+</ul>
+</li>
+<li><p>运行节点</p>
+<ul>
+<li>运行ros  roscore</li>
+<li>添加环境配置</li>
+<li>rosrun</li>
+</ul>
+</li>
+<li><p>ctrl + shift +w</p>
+</li>
+</ul>
+]]></content>
+      <categories>
+        <category>ROS学习</category>
+      </categories>
+      <tags>
+        <tag>ROS</tag>
+      </tags>
   </entry>
   <entry>
     <title>随笔（二）</title>
@@ -1268,6 +1268,11 @@ gedit ~/.bashrc
       <tags>
         <tag>随笔</tag>
       </tags>
+  </entry>
+  <entry>
+    <title>2023-7-7无人机体系搭建</title>
+    <url>/year-07-07-2023-7-7%E6%97%A0%E4%BA%BA%E6%9C%BA%E4%BD%93%E7%B3%BB%E6%90%AD%E5%BB%BA/</url>
+    <content><![CDATA[]]></content>
   </entry>
   <entry>
     <title>Publisher发布者的python实现</title>
