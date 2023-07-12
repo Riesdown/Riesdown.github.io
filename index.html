@@ -282,7 +282,7 @@
       <span class="post-meta-item-text">发表于</span>
       
 
-      <time title="创建时间：2023-07-12 14:47:58 / 修改时间：14:49:06" itemprop="dateCreated datePublished" datetime="2023-07-12T14:47:58+08:00">2023-07-12</time>
+      <time title="创建时间：2023-07-12 14:47:58 / 修改时间：14:49:49" itemprop="dateCreated datePublished" datetime="2023-07-12T14:47:58+08:00">2023-07-12</time>
     </span>
     <span class="post-meta-item">
       <span class="post-meta-item-icon">
@@ -319,23 +319,15 @@
     
     
     <div class="post-body" itemprop="articleBody">
-          <h2 id="激光雷达"><a href="#激光雷达" class="headerlink" title="激光雷达"></a>激光雷达</h2><h3 id="工作原理"><a href="#工作原理" class="headerlink" title="工作原理"></a>工作原理</h3><ul>
-<li>红外激光反射</li>
-<li>时长*光速&#x3D;飞行长度，飞行长度&#x2F;2&#x3D;激光雷达到障碍物的距离</li>
-<li>旋转一周，实时更新周围环境</li>
-<li><img src="/year-07-12-2023-7-12%E6%BF%80%E5%85%89%E9%9B%B7%E8%BE%BE/%E6%BF%80%E5%85%89%E9%9B%B7%E8%BE%BE.png"></li>
-</ul>
-<h3 id="RVIZ观测传感器"><a href="#RVIZ观测传感器" class="headerlink" title="RVIZ观测传感器"></a>RVIZ观测传感器</h3><ul>
-<li>可视化工具，对机器人状态显示的辅助工具</li>
-<li>修改Fixed Frame为base_footprint</li>
-<li>add添加机器人模型RobotModel</li>
-<li>添加激光雷达显示条目LaserScan</li>
-<li>新条目LaserScan选择Topic话题名称&#x2F;scan</li>
-</ul>
-<h3 id="激光雷达消息包格式"><a href="#激光雷达消息包格式" class="headerlink" title="激光雷达消息包格式"></a>激光雷达消息包格式</h3><ul>
-<li>​	 <img src="/year-07-12-2023-7-12%E6%BF%80%E5%85%89%E9%9B%B7%E8%BE%BE/%E6%BF%80%E5%85%89%E9%9B%B7%E8%BE%BE%E6%B6%88%E6%81%AF%E5%8C%85%E6%A0%BC%E5%BC%8F.png"></li>
-</ul>
-
+          <h2 id="激光雷达"><a href="#激光雷达" class="headerlink" title="激光雷达"></a>激光雷达</h2><h3 id="工作原理"><a href="#工作原理" class="headerlink" title="工作原理"></a>工作原理</h3>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/year-07-12-2023-7-12%E6%BF%80%E5%85%89%E9%9B%B7%E8%BE%BE/#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
       
     </div>
 
@@ -392,7 +384,7 @@
       <span class="post-meta-item-text">发表于</span>
       
 
-      <time title="创建时间：2023-07-12 14:45:11 / 修改时间：14:47:17" itemprop="dateCreated datePublished" datetime="2023-07-12T14:45:11+08:00">2023-07-12</time>
+      <time title="创建时间：2023-07-12 14:45:11 / 修改时间：14:50:35" itemprop="dateCreated datePublished" datetime="2023-07-12T14:45:11+08:00">2023-07-12</time>
     </span>
     <span class="post-meta-item">
       <span class="post-meta-item-icon">
@@ -430,93 +422,16 @@
     
     <div class="post-body" itemprop="articleBody">
           <h2 id="ROS机器人运动控制"><a href="#ROS机器人运动控制" class="headerlink" title="ROS机器人运动控制"></a>ROS机器人运动控制</h2><ul>
-<li><p>矢量运动控制和旋转运动控制</p>
-<ul>
-<li><p>对速度进行量化</p>
-</li>
-<li><p>选择机器人底盘在地盘投影的中点</p>
-</li>
-<li><p>建立三维坐标系，食指指向X轴，中指指向y轴，拇指指向z轴。三个方向的矢量合成</p>
-</li>
-<li><p>沿x轴旋转正方向滚转运动，y轴俯仰运动，z轴偏航运动</p>
-</li>
-<li><p>ROS中速度控制即是矢量运动和旋转运动的三轴分量</p>
-<p><img src="/year-07-12-2023-7-12%E6%9C%BA%E5%99%A8%E4%BA%BA%E8%BF%90%E5%8A%A8%E6%8E%A7%E5%88%B6/%E9%80%9F%E5%BA%A6%E6%8E%A7%E5%88%B6.png" alt="速度控制"></p>
-</li>
+<li>矢量运动控制和旋转运动控制</li>
 </ul>
-</li>
-<li><p>流程控制</p>
-<ul>
-<li>速度控制节点—速度控制话题—机器人核心节点</li>
-<li>速度控制节点消息类型：geometry_msgs&#x2F;Twist</li>
-<li>速度控制话题：&#x2F;cmd_vel</li>
-</ul>
-</li>
-</ul>
-<h3 id="机器人运动控制的C-实现"><a href="#机器人运动控制的C-实现" class="headerlink" title="机器人运动控制的C++实现"></a>机器人运动控制的C++实现</h3><ul>
-<li><p>框架实现思路</p>
-<ul>
-<li><p>构建一个新的软件包，vel_pkg</p>
-</li>
-<li><p>在软件包中新建一个节点，节点名字叫做vel_node</p>
-</li>
-<li><p>在节点中，向ROS大管家NodeHandle申请发布话题&#x2F;cmd_vel,并拿到发布对象vel_pub</p>
-</li>
-<li><p>构建一个geometry_msgs&#x2F;Twist类型的消息包vel_msg,用来承载要发送的速度值</p>
-</li>
-<li><p>开启一个while循环，不停的使用vel_pub对象发送速度消息包vel_msg</p>
-</li>
-</ul>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">cd catkin_ws/src/</span><br><span class="line">catkin_create_pkg vel_pkg roscpp rospy geometry_msgs <span class="comment">//geometry_msgs包含了速度消息类型的软件包</span></span><br></pre></td></tr></table></figure>
-
-<hr>
-<p>打开vs code</p>
-<ul>
-<li>在创建的软件包内，src目录内创建节点代码文件vel_node.cpp</li>
-</ul>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;ros/ros.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;geometry_msgs/Twist.h&gt;</span><span class="comment">//Twist包含了linear矢量速度和angular旋转速度</span></span></span><br><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">(<span class="type">int</span> argc,<span class="type">char</span> *argv[])</span></span><br><span class="line">&#123;</span><br><span class="line">    ros::init(argc,argv.<span class="string">&quot;vel_node&quot;</span>);</span><br><span class="line">    ros::NodeHandle n;</span><br><span class="line">    ros::Publisher vcel_pub = n.advertise&lt;geometry_msgs::Twist&gt;(<span class="string">&quot;/cmd_vel&quot;</span>,<span class="number">10</span>);</span><br><span class="line">    </span><br><span class="line">    geometry_msgs::Twist vel_msg;</span><br><span class="line">    <span class="comment">//构建一个geometry_msgs/Twist类型的消息包vel_msg,用来承载要发送的速度值</span></span><br><span class="line">    vel_msg.linear.x=<span class="number">0.1</span>;</span><br><span class="line">    vel_msg.linear.y=<span class="number">0</span>;</span><br><span class="line">    vel_msg.linear.z=<span class="number">0</span>;</span><br><span class="line">    vel_msg.angular.x=<span class="number">0</span>;</span><br><span class="line">    vel_msg.angular.y=<span class="number">0</span>;</span><br><span class="line">    vel_msg.angular.z=<span class="number">0</span>;</span><br><span class="line">    </span><br><span class="line">    <span class="comment">//开启while循环，不停的使用vel_pub对象发送速度消息包vel_msg</span></span><br><span class="line">    ros::Rate <span class="title function_">r</span><span class="params">(<span class="number">30</span>)</span>;</span><br><span class="line">    <span class="keyword">while</span>(ros::ok())</span><br><span class="line">    &#123;</span><br><span class="line">        vel_pub.publish(vel_msg);</span><br><span class="line">        r.sleep();</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<hr>
-<p>对其文件进行编译</p>
-<ul>
-<li>打开软件包的CMakelist.txt文件</li>
-<li>build章节中复制三条编译规则到文件末尾，取消注释<ul>
-<li>add_executable</li>
-<li>add_dependencies</li>
-<li>target_link_libraries</li>
-</ul>
-</li>
-<li>以上三条都为编译规则开头名字</li>
-</ul>
-<p>ctrl+shift+b进行编译</p>
-<p>借助开源工程来完成机器人和环境的仿真</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">cd catkin_ws/src/</span><br><span class="line">git clone https://github.com/6-robot/wpr_simulation.git</span><br><span class="line">cd wpr_simulation/scripts</span><br><span class="line">./install_for-noetic.sh //自动下载编译项和环境依赖项</span><br></pre></td></tr></table></figure>
-
-<hr>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">roscore</span><br><span class="line">roslaunch wpr_simulation wpb_simple.launch</span><br><span class="line">//分屏</span><br><span class="line">rosrun vel_pkg vel_node</span><br></pre></td></tr></table></figure></li>
-</ul>
-<h3 id="机器人运动控制的python实现"><a href="#机器人运动控制的python实现" class="headerlink" title="机器人运动控制的python实现"></a>机器人运动控制的python实现</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">cd catkin_ws/src/wpr_simulation</span><br><span class="line">git pull//将其更新到版本的最新状态</span><br><span class="line">cd ~/catkin_ws/</span><br><span class="line">catkin_make</span><br></pre></td></tr></table></figure>
-
-<hr>
-<p>框架实现思路</p>
-<ul>
-<li><p>构建一个新的软件包，vel_pkg</p>
-</li>
-<li><p>在软件包中新建一个节点，节点名字叫做vel_node.py</p>
-</li>
-<li><p>在节点中，向ROS大管家rospy申请发布话题&#x2F;cmd_vel,并拿到发布对象vel_pub</p>
-</li>
-<li><p>构建一个geometry_msgs&#x2F;Twist类型的消息包vel_msg,用来承载要发送的速度值</p>
-</li>
-<li><p>开启一个while循环，不停的使用vel_pub对象发送速度消息包vel_msg</p>
-</li>
-</ul>
-<p><img src="/year-07-12-2023-7-12%E6%9C%BA%E5%99%A8%E4%BA%BA%E8%BF%90%E5%8A%A8%E6%8E%A7%E5%88%B6/%E4%BB%A3%E7%A0%811.png"></p>
-<p>赋予其执行权限</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">roscore</span><br><span class="line">//后续步骤和上述c++实现步骤一致</span><br></pre></td></tr></table></figure>
-
-<hr>
-
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/year-07-12-2023-7-12%E6%9C%BA%E5%99%A8%E4%BA%BA%E8%BF%90%E5%8A%A8%E6%8E%A7%E5%88%B6/#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
       
     </div>
 

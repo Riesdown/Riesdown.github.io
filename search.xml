@@ -1124,7 +1124,10 @@ rosrun learning_topic velocity_publisher
     <title>ROS机器人运动控制</title>
     <url>/year-07-12-2023-7-12%E6%9C%BA%E5%99%A8%E4%BA%BA%E8%BF%90%E5%8A%A8%E6%8E%A7%E5%88%B6/</url>
     <content><![CDATA[<h2 id="ROS机器人运动控制"><a href="#ROS机器人运动控制" class="headerlink" title="ROS机器人运动控制"></a>ROS机器人运动控制</h2><ul>
-<li><p>矢量运动控制和旋转运动控制</p>
+<li>矢量运动控制和旋转运动控制</li>
+</ul>
+<span id="more"></span>
+
 <ul>
 <li><p>对速度进行量化</p>
 </li>
@@ -1135,17 +1138,14 @@ rosrun learning_topic velocity_publisher
 <li><p>沿x轴旋转正方向滚转运动，y轴俯仰运动，z轴偏航运动</p>
 </li>
 <li><p>ROS中速度控制即是矢量运动和旋转运动的三轴分量</p>
-<p><img src="/year-07-12-2023-7-12%E6%9C%BA%E5%99%A8%E4%BA%BA%E8%BF%90%E5%8A%A8%E6%8E%A7%E5%88%B6/%E9%80%9F%E5%BA%A6%E6%8E%A7%E5%88%B6.png" alt="速度控制"></p>
 </li>
 </ul>
-</li>
-<li><p>流程控制</p>
+<p><img src="/year-07-12-2023-7-12%E6%9C%BA%E5%99%A8%E4%BA%BA%E8%BF%90%E5%8A%A8%E6%8E%A7%E5%88%B6/%E9%80%9F%E5%BA%A6%E6%8E%A7%E5%88%B6.png" alt="速度控制"></p>
+<p>流程控制</p>
 <ul>
 <li>速度控制节点—速度控制话题—机器人核心节点</li>
 <li>速度控制节点消息类型：geometry_msgs&#x2F;Twist</li>
 <li>速度控制话题：&#x2F;cmd_vel</li>
-</ul>
-</li>
 </ul>
 <h3 id="机器人运动控制的C-实现"><a href="#机器人运动控制的C-实现" class="headerlink" title="机器人运动控制的C++实现"></a>机器人运动控制的C++实现</h3><ul>
 <li><p>框架实现思路</p>
@@ -1221,7 +1221,9 @@ rosrun learning_topic velocity_publisher
   <entry>
     <title>2023-7-12激光雷达</title>
     <url>/year-07-12-2023-7-12%E6%BF%80%E5%85%89%E9%9B%B7%E8%BE%BE/</url>
-    <content><![CDATA[<h2 id="激光雷达"><a href="#激光雷达" class="headerlink" title="激光雷达"></a>激光雷达</h2><h3 id="工作原理"><a href="#工作原理" class="headerlink" title="工作原理"></a>工作原理</h3><ul>
+    <content><![CDATA[<h2 id="激光雷达"><a href="#激光雷达" class="headerlink" title="激光雷达"></a>激光雷达</h2><h3 id="工作原理"><a href="#工作原理" class="headerlink" title="工作原理"></a>工作原理</h3><span id="more"></span>
+
+<ul>
 <li>红外激光反射</li>
 <li>时长*光速&#x3D;飞行长度，飞行长度&#x2F;2&#x3D;激光雷达到障碍物的距离</li>
 <li>旋转一周，实时更新周围环境</li>
