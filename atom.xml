@@ -6,7 +6,7 @@
   <link href="https://riesdown.github.io/atom.xml" rel="self"/>
   
   <link href="https://riesdown.github.io/"/>
-  <updated>2024-05-15T10:04:06.455Z</updated>
+  <updated>2024-05-15T12:01:55.110Z</updated>
   <id>https://riesdown.github.io/</id>
   
   <author>
@@ -17,20 +17,76 @@
   <generator uri="https://hexo.io/">Hexo</generator>
   
   <entry>
-    <title>Hello World</title>
-    <link href="https://riesdown.github.io/2024/05/15/hello-world/"/>
-    <id>https://riesdown.github.io/2024/05/15/hello-world/</id>
-    <published>2024-05-15T10:04:06.455Z</published>
-    <updated>2024-05-15T10:04:06.455Z</updated>
+    <title>[object Object]</title>
+    <link href="https://riesdown.github.io/2024/05/15/%E6%B5%8B%E8%AF%95%E6%96%87%E6%A1%A3/"/>
+    <id>https://riesdown.github.io/2024/05/15/%E6%B5%8B%E8%AF%95%E6%96%87%E6%A1%A3/</id>
+    <published>2024-05-15T11:52:53.253Z</published>
+    <updated>2024-05-15T12:01:55.110Z</updated>
     
     
       
       
-    <summary type="html">&lt;p&gt;Welcome to &lt;a href=&quot;https://hexo.io/&quot;&gt;Hexo&lt;/a&gt;! This is your very first post. Check &lt;a href=&quot;https://hexo.io/docs/&quot;&gt;documentation&lt;/a&gt; for</summary>
+    <summary type="html">&lt;h1 id=&quot;测试文档&quot;&gt;&lt;a href=&quot;#测试文档&quot; class=&quot;headerlink&quot; title=&quot;测试文档&quot;&gt;&lt;/a&gt;测试文档&lt;/h1&gt;&lt;p&gt;这里是你的文章内容。&lt;/p&gt;
+</summary>
       
     
     
     
+    <category term="技术经验" scheme="https://riesdown.github.io/categories/%E6%8A%80%E6%9C%AF%E7%BB%8F%E9%AA%8C/"/>
+    
+    <category term="无人机" scheme="https://riesdown.github.io/categories/%E6%8A%80%E6%9C%AF%E7%BB%8F%E9%AA%8C/%E6%97%A0%E4%BA%BA%E6%9C%BA/"/>
+    
+    <category term="AI" scheme="https://riesdown.github.io/categories/%E6%8A%80%E6%9C%AF%E7%BB%8F%E9%AA%8C/%E6%97%A0%E4%BA%BA%E6%9C%BA/AI/"/>
+    
+    
+    <category term="嵌入式" scheme="https://riesdown.github.io/tags/%E5%B5%8C%E5%85%A5%E5%BC%8F/"/>
+    
+    <category term="无人机" scheme="https://riesdown.github.io/tags/%E6%97%A0%E4%BA%BA%E6%9C%BA/"/>
+    
+    <category term="飞行器控制" scheme="https://riesdown.github.io/tags/%E9%A3%9E%E8%A1%8C%E5%99%A8%E6%8E%A7%E5%88%B6/"/>
+    
+    <category term="Linux" scheme="https://riesdown.github.io/tags/Linux/"/>
+    
+    <category term="AI" scheme="https://riesdown.github.io/tags/AI/"/>
+    
+    <category term="Ros" scheme="https://riesdown.github.io/tags/Ros/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>测试文档1</title>
+    <link href="https://riesdown.github.io/2024/05/15/%E6%B5%8B%E8%AF%95%E6%96%87%E6%A1%A31/"/>
+    <id>https://riesdown.github.io/2024/05/15/%E6%B5%8B%E8%AF%95%E6%96%87%E6%A1%A31/</id>
+    <published>2024-05-14T16:00:00.000Z</published>
+    <updated>2024-05-15T12:08:40.015Z</updated>
+    
+    
+      
+      
+    <summary type="html">&lt;h1 id=&quot;测试文档1&quot;&gt;&lt;a href=&quot;#测试文档1&quot; class=&quot;headerlink&quot; title=&quot;测试文档1&quot;&gt;&lt;/a&gt;测试文档1&lt;/h1&gt;&lt;p&gt;这里是你的文章内容。&lt;/p&gt;
+</summary>
+      
+    
+    
+    
+    <category term="技术经验" scheme="https://riesdown.github.io/categories/%E6%8A%80%E6%9C%AF%E7%BB%8F%E9%AA%8C/"/>
+    
+    <category term="无人机" scheme="https://riesdown.github.io/categories/%E6%8A%80%E6%9C%AF%E7%BB%8F%E9%AA%8C/%E6%97%A0%E4%BA%BA%E6%9C%BA/"/>
+    
+    <category term="AI" scheme="https://riesdown.github.io/categories/%E6%8A%80%E6%9C%AF%E7%BB%8F%E9%AA%8C/%E6%97%A0%E4%BA%BA%E6%9C%BA/AI/"/>
+    
+    
+    <category term="嵌入式" scheme="https://riesdown.github.io/tags/%E5%B5%8C%E5%85%A5%E5%BC%8F/"/>
+    
+    <category term="无人机" scheme="https://riesdown.github.io/tags/%E6%97%A0%E4%BA%BA%E6%9C%BA/"/>
+    
+    <category term="飞行器控制" scheme="https://riesdown.github.io/tags/%E9%A3%9E%E8%A1%8C%E5%99%A8%E6%8E%A7%E5%88%B6/"/>
+    
+    <category term="Linux" scheme="https://riesdown.github.io/tags/Linux/"/>
+    
+    <category term="AI" scheme="https://riesdown.github.io/tags/AI/"/>
+    
+    <category term="Ros" scheme="https://riesdown.github.io/tags/Ros/"/>
     
   </entry>
   
