@@ -3,8 +3,7 @@
 <head>
   <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width">
-<meta name="theme-color" content="#222" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#222" media="(prefers-color-scheme: dark)"><meta name="generator" content="Hexo 8.1.1">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 8.1.1">
 
   <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
   <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
@@ -17,13 +16,16 @@
 
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css" integrity="sha256-VHqXKFhhMxcpubYf9xiWdCiojEbY9NexQ4jh8AxbvcM=" crossorigin="anonymous">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/fancyapps-ui/5.0.31/fancybox/fancybox.css" integrity="sha256-gkQVf8UKZgQ0HyuxL/VnacadJ+D2Kox2TCEBuNQg5+w=" crossorigin="anonymous">
 
-<script class="next-config" data-name="main" type="application/json">{"hostname":"blog.qingshanli.cn","root":"/","images":"/images","scheme":"Muse","darkmode":true,"version":"8.27.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"codeblock":{"theme":{"light":"default","dark":"stackoverflow-dark"},"prism":{"light":"prism","dark":"prism-dark"},"copy_button":{"enable":false,"style":null},"fold":{"enable":false,"height":500},"language":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"}}</script><script src="/js/config.js" defer></script>
+<script class="next-config" data-name="main" type="application/json">{"hostname":"blog.qingshanli.cn","root":"/","images":"/images","scheme":"Gemini","darkmode":false,"version":"8.27.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"codeblock":{"theme":{"light":"default","dark":"stackoverflow-dark"},"prism":{"light":"prism","dark":"prism-dark"},"copy_button":{"enable":true,"style":"mac"},"fold":{"enable":false,"height":500},"language":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":true,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"duration":300,"transition":{"menu_item":"fadeInDown","post_block":"fadeInUp","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInRight"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":1,"unescape":false,"preload":true}}</script><script src="/js/config.js" defer></script>
 
-    <meta property="og:type" content="website">
+    <meta name="description" content="青山 | 无人控制方向 Learning Researcher 的个人博客">
+<meta property="og:type" content="website">
 <meta property="og:title" content="青山笔记">
 <meta property="og:url" content="https://blog.qingshanli.cn/tags/PX4/index.html">
 <meta property="og:site_name" content="青山笔记">
+<meta property="og:description" content="青山 | 无人控制方向 Learning Researcher 的个人博客">
 <meta property="og:locale" content="zh_CN">
 <meta property="article:author" content="QingShan Li">
 <meta name="twitter:card" content="summary">
@@ -47,19 +49,57 @@
 
   
   <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous" defer></script>
-<script src="/js/utils.js" defer></script><script src="/js/motion.js" defer></script><script src="/js/sidebar.js" defer></script><script src="/js/next-boot.js" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/next-theme-pjax/0.6.0/pjax.min.js" integrity="sha256-vxLn1tSKWD4dqbMRyv940UYw4sXgMtYcK6reefzZrao=" crossorigin="anonymous" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/fancyapps-ui/5.0.31/fancybox/fancybox.umd.js" integrity="sha256-a+H7FYzJv6oU2hfsfDGM2Ohw/cR9v+hPfxHCLdmCrE8=" crossorigin="anonymous" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/lozad.js/1.16.0/lozad.min.js" integrity="sha256-mOFREFhqmHeQbXpK2lp4nA3qooVgACfh88fpJftLBbc=" crossorigin="anonymous" defer></script>
+<script src="/js/utils.js" defer></script><script src="/js/motion.js" defer></script><script src="/js/sidebar.js" defer></script><script src="/js/next-boot.js" defer></script><script src="/js/pjax.js" defer></script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/hexo-generator-searchdb/1.5.0/search.js" integrity="sha256-xFC6PJ82SL9b3WkGjFavNiA9gm5z6UBxWPiu4CYjptg=" crossorigin="anonymous" defer></script>
+<script src="/js/third-party/search/local-search.js" defer></script>
+
+
+
+
+  <script src="/js/third-party/fancybox.js" defer></script>
+
+
 
   
+  <script data-pjax async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
 
 
 
 
+<!-- Custom Head Injection for QingShan Blog -->
 
+<!-- Google Fonts: Noto Sans SC for better Chinese rendering -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
-  
+<!-- Preload background images for smooth transitions -->
+<link rel="preload" as="image" href="/images/bg-2.jpg">
 
-
-
+<!-- Custom font override -->
+<style>
+  body {
+    font-family: 'Inter', 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Inter', 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+    font-weight: 600;
+  }
+  .site-title {
+    font-family: 'Inter', 'Noto Sans SC', sans-serif;
+    font-weight: 700;
+    letter-spacing: 2px;
+  }
+  .site-subtitle {
+    font-family: 'Inter', 'Noto Sans SC', sans-serif;
+    font-weight: 300;
+    letter-spacing: 1px;
+  }
+</style>
 
 
   <noscript>
@@ -75,6 +115,9 @@
       <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
   <div class="site-nav-toggle">
     <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
     </div>
   </div>
 
@@ -85,20 +128,51 @@
       <p class="site-title">青山笔记</p>
       <i class="logo-line"></i>
     </a>
-      <p class="site-subtitle" itemprop="description">QingShan Notes</p>
+      <p class="site-subtitle" itemprop="description">探索无人控制的边界</p>
   </div>
 
   <div class="site-nav-right">
     <div class="toggle popup-trigger" aria-label="搜索" role="button">
+        <i class="fa fa-search fa-fw fa-lg"></i>
     </div>
   </div>
 </div>
 
 
 
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签<span class="badge">7</span></a></li><li class="menu-item menu-item-discover"><a href="/categories/" rel="section"><i class="fa fa-compass fa-fw"></i>发现</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档<span class="badge">2</span></a></li><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
 
 
 
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+      <div class="search-header">
+        <span class="search-icon">
+          <i class="fa fa-search"></i>
+        </span>
+        <div class="search-input-container">
+          <input autocomplete="off" autocapitalize="off" maxlength="80"
+                placeholder="搜索..." spellcheck="false"
+                type="search" class="search-input">
+        </div>
+        <span class="popup-btn-close" role="button">
+          <i class="fa fa-times-circle"></i>
+        </span>
+      </div>
+      <div class="search-result-container">
+        <div class="search-result-icon">
+          <i class="fa fa-spinner fa-pulse fa-5x"></i>
+        </div>
+      </div>
+    </div>
+  </div>
 
 </header>
         
@@ -123,8 +197,10 @@
 
         <div class="site-overview-wrap sidebar-panel">
           <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="QingShan Li"
+      src="/images/avatar.jpg">
   <p class="site-author-name" itemprop="name">QingShan Li</p>
-  <div class="site-description" itemprop="description"></div>
+  <div class="site-description" itemprop="description">青山 | 无人控制方向 Learning Researcher 的个人博客</div>
 </div>
 <div class="site-state-wrap animated">
   <nav class="site-state">
@@ -146,9 +222,21 @@
       </div>
   </nav>
 </div>
+  <div class="links-of-author animated">
+      <span class="links-of-author-item">
+        <a href="https://github.com/Riesdown" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;Riesdown" rel="noopener me" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:QingShanLi1970@qq.com" title="E-Mail → mailto:QingShanLi1970@qq.com" rel="noopener me" target="_blank"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+  </div>
 
         </div>
       </div>
+        <div class="back-to-top animated" role="button" aria-label="返回顶部">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
     </div>
 
     
@@ -229,15 +317,31 @@
     <div class="footer-inner">
 
   <div class="copyright">
-    &copy; 
+    &copy; 2025 – 
     <span itemprop="copyrightYear">2026</span>
     <span class="with-love">
       <i class="fa fa-heart"></i>
     </span>
     <span class="author" itemprop="copyrightHolder">QingShan Li</span>
   </div>
-  <div class="powered-by">由 <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/muse/" rel="noopener" target="_blank">NexT.Muse</a> 强力驱动
-  </div>
+<div class="busuanzi-count">
+    <span class="post-meta-item" id="busuanzi_container_site_uv">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
 
     </div>
   </footer>
@@ -249,14 +353,270 @@
     <span class="toggle-line"></span>
   </div>
   <div class="sidebar-dimmer"></div>
-  <div class="back-to-top" role="button" aria-label="返回顶部">
-    <i class="fa fa-arrow-up fa-lg"></i>
-    <span>0%</span>
-  </div>
+  <div class="reading-progress-bar"></div>
 
 <noscript>
   <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
 </noscript>
+<!-- QingShan Blog - 顶部Banner背景图轮播 + 增强功能 -->
+
+<script>
+(function() {
+  'use strict';
+
+  // ============================================
+  // 顶部 Banner 背景图轮播
+  // ============================================
+  var bannerImages = [
+    '/images/bg-2.jpg',
+    '/images/bg-3.jpg',
+    '/images/bg-4.png',
+    '/images/bg-5.png'
+  ];
+
+  var currentBannerIndex = 0;
+  var bannerInterval = 10000; // 10秒切换
+
+  function preloadImages(urls) {
+    urls.forEach(function(url) {
+      var img = new Image();
+      img.src = url;
+    });
+  }
+
+  function createBanner() {
+    // 检查是否已存在
+    if (document.getElementById('hero-banner')) return;
+
+    var banner = document.createElement('div');
+    banner.id = 'hero-banner';
+
+    var bgLayer = document.createElement('div');
+    bgLayer.className = 'banner-bg';
+
+    var bgNextLayer = document.createElement('div');
+    bgNextLayer.className = 'banner-bg-next';
+
+    banner.appendChild(bgLayer);
+    banner.appendChild(bgNextLayer);
+
+    // 插入到 .main 之前（全宽独立元素，不进入 flex 容器）
+    var mainEl = document.querySelector('main.main');
+    if (mainEl) {
+      mainEl.parentNode.insertBefore(banner, mainEl);
+    } else {
+      // 备选：插到 headband 之后
+      var headband = document.querySelector('.headband');
+      if (headband && headband.nextSibling) {
+        headband.parentNode.insertBefore(banner, headband.nextSibling);
+      } else {
+        document.body.insertBefore(banner, document.body.firstChild);
+      }
+    }
+
+    return banner;
+  }
+
+  function initBanner() {
+    if (bannerImages.length === 0) return;
+
+    var banner = createBanner();
+    if (!banner) return;
+
+    var bgLayer = banner.querySelector('.banner-bg');
+    var bgNextLayer = banner.querySelector('.banner-bg-next');
+    if (!bgLayer || !bgNextLayer) return;
+
+    // 随机起始
+    currentBannerIndex = Math.floor(Math.random() * bannerImages.length);
+    bgLayer.style.backgroundImage = 'url(' + bannerImages[currentBannerIndex] + ')';
+
+    preloadImages(bannerImages);
+
+    // 开始轮播
+    if (bannerImages.length > 1) {
+      setInterval(function() {
+        var nextIndex = (currentBannerIndex + 1) % bannerImages.length;
+        bgNextLayer.style.backgroundImage = 'url(' + bannerImages[nextIndex] + ')';
+        bgNextLayer.style.opacity = '1';
+        bgLayer.style.opacity = '0';
+
+        setTimeout(function() {
+          bgLayer.style.transition = 'none';
+          bgLayer.style.backgroundImage = 'url(' + bannerImages[nextIndex] + ')';
+          bgLayer.style.opacity = '1';
+          bgNextLayer.style.opacity = '0';
+
+          setTimeout(function() {
+            bgLayer.style.transition = 'opacity 2s ease-in-out';
+          }, 50);
+
+          currentBannerIndex = nextIndex;
+        }, 2100);
+      }, bannerInterval);
+    }
+  }
+
+  // ============================================
+  // Scroll Reveal Animation
+  // ============================================
+  function initScrollReveal() {
+    var selectors = '.post-block, .pagination, .comments, .sub-menu';
+    var elements = document.querySelectorAll(selectors);
+    if (!elements.length) return;
+
+    if ('IntersectionObserver' in window) {
+      var observer = new IntersectionObserver(function(entries) {
+        entries.forEach(function(entry) {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('revealed');
+            observer.unobserve(entry.target);
+          }
+        });
+      }, {
+        threshold: 0.08,
+        rootMargin: '0px 0px -40px 0px'
+      });
+
+      elements.forEach(function(el) {
+        el.classList.add('scroll-reveal');
+        observer.observe(el);
+      });
+    } else {
+      elements.forEach(function(el) {
+        el.style.opacity = '1';
+      });
+    }
+  }
+
+  // ============================================
+  // Typing Effect for Subtitle
+  // ============================================
+  function initSubtitleEffect() {
+    var subtitle = document.querySelector('.site-subtitle');
+    if (!subtitle || subtitle.dataset.typed) return;
+    subtitle.dataset.typed = 'true';
+
+    var text = subtitle.textContent;
+    subtitle.textContent = '';
+    subtitle.style.borderRight = '2px solid #c0956c';
+    subtitle.style.display = 'inline-block';
+
+    var i = 0;
+    var timer = setInterval(function() {
+      if (i < text.length) {
+        subtitle.textContent += text.charAt(i);
+        i++;
+      } else {
+        clearInterval(timer);
+        setTimeout(function() {
+          subtitle.style.borderRight = 'none';
+        }, 1500);
+      }
+    }, 100);
+  }
+
+  // ============================================
+  // Search Popup Enhancement: 显示最近文章
+  // ============================================
+  function initSearchEnhancement() {
+    var searchContainer = document.querySelector('.search-result-container');
+    var searchInput = document.querySelector('.search-input');
+    if (!searchContainer || !searchInput) return;
+
+    function showRecentPosts() {
+      fetch('/search.xml')
+        .then(function(res) { return res.text(); })
+        .then(function(xmlText) {
+          var parser = new DOMParser();
+          var doc = parser.parseFromString(xmlText, 'text/xml');
+          var entries = doc.querySelectorAll('entry');
+          if (!entries.length) return;
+
+          var html = '<div class="search-recent-posts">';
+          html += '<div class="search-recent-title">📄 最近发布的文章</div>';
+          html += '<ul class="search-recent-list">';
+
+          var count = Math.min(entries.length, 10);
+          for (var i = 0; i < count; i++) {
+            var entry = entries[i];
+            var title = entry.querySelector('title') ? entry.querySelector('title').textContent : '';
+            var url = entry.querySelector('url') ? entry.querySelector('url').textContent : '#';
+            var dateNode = entry.querySelector('date');
+            var dateStr = '';
+            if (dateNode) {
+              var d = new Date(dateNode.textContent);
+              dateStr = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+            }
+            html += '<li class="search-recent-item">';
+            html += '<a href="' + url + '">';
+            html += '<div class="search-recent-item-title">' + title + '</div>';
+            if (dateStr) html += '<div class="search-recent-item-date">' + dateStr + '</div>';
+            html += '</a></li>';
+          }
+          html += '</ul></div>';
+
+          window._recentPostsHTML = html;
+          if (!searchInput.value.trim()) {
+            searchContainer.innerHTML = html;
+          }
+        })
+        .catch(function() {});
+    }
+
+    // 监听搜索弹窗打开
+    var observer = new MutationObserver(function(mutations) {
+      mutations.forEach(function(mutation) {
+        if (mutation.target.classList && mutation.target.classList.contains('search-active')) {
+          setTimeout(function() {
+            if (!searchInput.value.trim()) {
+              if (window._recentPostsHTML) {
+                searchContainer.innerHTML = window._recentPostsHTML;
+              } else {
+                showRecentPosts();
+              }
+            }
+          }, 300);
+        }
+      });
+    });
+    observer.observe(document.body, { attributes: true, attributeFilter: ['class'] });
+
+    searchInput.addEventListener('input', function() {
+      if (!searchInput.value.trim() && window._recentPostsHTML) {
+        setTimeout(function() {
+          if (!searchInput.value.trim()) {
+            searchContainer.innerHTML = window._recentPostsHTML;
+          }
+        }, 100);
+      }
+    });
+
+    showRecentPosts();
+  }
+
+  // ============================================
+  // Initialize
+  // ============================================
+  function init() {
+    initBanner();
+    initScrollReveal();
+    initSubtitleEffect();
+    initSearchEnhancement();
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+
+  document.addEventListener('pjax:complete', function() {
+    initScrollReveal();
+    initSearchEnhancement();
+  });
+})();
+</script>
 
 </body>
 </html>
