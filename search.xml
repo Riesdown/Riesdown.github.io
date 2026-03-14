@@ -1,31 +1,488 @@
 <?xml version="1.0" encoding="utf-8"?>
 <search>
   <entry>
-    <title>电磁干扰下飞控SO3+LADRC抗干扰设计</title>
-    <url>/2025/11/30/2025-11-30%20%E7%94%B5%E7%A3%81%E5%B9%B2%E6%89%B0/</url>
-    <content><![CDATA[一、前言
-本文要解决的问题：
-适用读者：
-使用环境 &#x2F; 依赖（系统、硬件、软件版本等）：
+    <title>PX4 Board 层硬件配置</title>
+    <url>/2026/01/06/01-Board%E5%B1%82%E7%A1%AC%E4%BB%B6%E9%85%8D%E7%BD%AE/</url>
+    <content><![CDATA[一、Board 层的定位PX4 在 boards/&lt;vendor&gt;/&lt;model&gt; 路径下为每块飞控硬件维护一套独立的配置文件。第二层是厂家名，第三层是型号。这套机制的意义在于：将同一份 PX4 源码绑定到具体的硬件板，把硬件差异集中收敛到一个目录内，避免其扩散进驱动层、算法层与应用层，从而保证代码的可维护性与可移植性。
+每块飞控的差异信息分为四类：
 
-二、问题背景 &#x2F; 理论准备
-场景介绍：
-相关概念：
-已有方案对比（如有）：
 
-三、实现步骤 &#x2F; 配置过程1. 环境搭建2. 核心配置 &#x2F; 核心代码示例命令&#x2F;&#x2F; 示例代码### 3. 验证与测试
 
-测试用例：
-期望结果：
-实际结果截图 &#x2F; 日志片段：
+类别
+内容
 
-四、常见坑与解决方案
-坑 1：问题现象、原因、解决办法
-坑 2：……
 
-五、经验总结与建议
-总结 3～5 条自己觉得最关键的经验点；
-可列出 “下一步可以怎么优化 &#x2F; 深挖”。
+
+硬件事实
+引脚分配、外设实例、总线拓扑、Flash&#x2F;RAM 布局、是否含 IO MCU
+
+
+RTOS 配置
+NuttX 内核裁剪、驱动开关、堆栈&#x2F;内存区、链接脚本
+
+
+系统装配
+默认启动哪些驱动、传感器、参数覆盖
+
+
+可选变体
+同一板的不同固件组合：default&#x2F;protected&#x2F;cyphal&#x2F;debug&#x2F;test 等
+
+
+
+二、目录文件结构以 boards/px4/fmu-v5/ 为例：
+boards/px4/fmu-v5/├── board_config.h          # 核心：GPIO/ADC/定时器/外设宏定义├── CMakeLists.txt          # 板级 CMake├── src/│   ├── init.c              # NuttX bringup 入口（stm32_boardinitialize）│   ├── board_config.h      # 同上│   └── timer_config.cpp    # PWM 通道到 TIM 的映射表├── extras/                 # bootloader bin、IO MCU 固件等├── init/                   # 启动脚本（rc.board_sensors 等）└── nuttx-config/           # NuttX defconfig 变体    ├── nsh/defconfig       # 常规调试配置（带 NSH Shell）    ├── debug/defconfig     # 调试版：严格断言、符号表    ├── protected/defconfig # 内存保护版：kernel/user 分离    ├── cyphal/defconfig    # Cyphal 网络栈配置    └── stackcheck/defconfig# 栈水位检测配置
+
+extras&#x2F; 目录该目录存放板级配套镜像，会被打包进 ROMFS，属于硬件生命周期管理的一部分，不参与模块逻辑：
+
+px4_fmu-v5_bootloader.bin：bootloader，比固件先运行，负责固件升级
+PX4_io-v2_default.bin：IO MCU 侧的固件镜像
+
+FMU-v5 采用 FMU + IO 双 MCU 架构：FMU 运行 PX4 主系统，IO 专职处理 PWM&#x2F;RC 等实时 IO，分担 FMU 负载。
+init&#x2F; 目录存放启动装配脚本。不同板的传感器配置不同，例如 CUAV 7nano 与 FMU-v5 的默认 IMU 驱动存在差异。关键文件：
+
+rc.board_defaults：设置该板的默认参数与环境变量
+rc.board_sensors：启动并配置传感器驱动，指定总线、片选、安装方向
+
+
+三、.px4board 与 defconfig 的关系.px4board 是板级 defconfig 配方，用于生成最终的 .config，包含：
+
+CONFIG_MODULES_*：哪些 PX4 模块编译进固件
+Drivers：驱动配置
+SYSCMDS：命令
+BOARD：默认串口映射、架构、工具链
+
+Kconfig 定义所有可选项与依赖规则，default.px4board 给出 FMU-v5 的默认配置快照，依赖求解后生成最终的 .config，CMake&#x2F;编译器再消费 .config 与 autoconf.h，决定固件内容。
+板级变体的两个维度相互配套但不绝对一一对应：
+
+
+
+维度
+说明
+
+
+
+NuttX Profile（defconfig）
+RTOS 形态变体，决定 NuttX 如何编译
+
+
+PX4 board variant（.px4board）
+决定固件包含哪些模块&#x2F;ROMFS&#x2F;参数
+
+
+
+四、GPIO 常量定义板级 GPIO 宏本质是一个位域常量，将每个引脚的端口、复用、编号、上下拉、速度、默认电平编码为一个 uint32_t：
+// 位域编码示意// 端口与引脚号GPIO_PORTx | GPIO_PINn// 模式GPIO_INPUT / GPIO_OUTPUT / GPIO_ALT / GPIO_ANALOG// 上下拉GPIO_PULLUP / GPIO_PULLDOWN / GPIO_FLOAT// 输出类型GPIO_PUSHPULL / GPIO_OPENDRAIN// 速度GPIO_SPEED_*// 默认输出电平GPIO_OUTPUT_SET / GPIO_OUTPUT_CLEAR// 复用功能号 AF
+
+n 前缀（如 GPIO_nARMED）表示该信号硬件上低有效，board 层会封装一层 True_logic 宏屏蔽反相细节：
+// GPIO_nxxx 低有效：on_true 时执行 !(value)// GPIO_xxx  正相：on_true 时执行 value
+
+boards/px4/fmu-v5/src/board_config.h 集中定义了所有引脚宏，位域编码由 platforms/nuttx/Nuttx/nuttx/arch/arm/src/stm32f7/stm32_gpio.h 提供。
+
+五、ADC 通道映射Board 层将对应 GPIO 配成模拟输入，并为每个采样功能分配逻辑通道。ADC_CHANNELS 位图决定驱动实际采样哪些通道，该位图会配合 BOARD_HAS_NBAT_V &#x2F; BOARD_HAS_NBAT_T 条件编译生成不同结果，以适配不同的电池监控配置。
+
+六、HRT&#x2F;PPM 定时器HRT（High Resolution Timer）提供系统微秒级时间基准：
+
+hrt_absolute_time()：整个系统的唯一微秒时间戳来源
+定时回调：周期任务触发
+与传感器&#x2F;控制周期相关的精确定时
+
+选择一个硬件定时器作 free-running 基准与比较中断，以 FMU-v5 为例：
+#define HRT_TIMER           8      // 使用 TIM8#define HRT_TIMER_CHANNEL   3      // CH3 做比较捕获#define HRT_PPM_CHANNEL     1      // CH1 做 PPM 输入捕获
+
+PPM 捕获与 HRT 时基共用同一颗定时器：PPM 捕获依赖输入捕获记录脉冲时刻，挂在 HRT 的 TIM 上可保证时间域一致。
+PWM 输入（PWMIN）单通道 PWM 捕获使用独立定时器：
+#define PWMIN_TIMER         4      // TIM4#define PWMIN_TIMER_CHANNEL 2      // CH2（T4C2）// GPIO_PWM_IN 配置为 TIM4_CH2 输入
+
+区别：PPM 一条线上串多个通道信息，解析帧间隔与通道脉宽序列；PWMIN 单路 PWM，直接测占空比与高电平脉宽。
+
+七、蜂鸣器定时器蜂鸣器采用脚复用切换方式控制：
+#define TONE_ALARM_TIMER    9     // TIM9#define TONE_ALARM_CHANNEL  1     // CH1（PE5）
+
+
+不响时：配置为 GPIO 输出固定电平，避免漂浮&#x2F;杂音
+要响时：切换到 TIM9_CH1，由定时器改变频率与占空比产生音调
+
+
+八、PX4IO 串口链路FMU-v5 将 FMU 与 IO MCU 之间的高速通信链路固定为 UART8：
+#define BOARD_USES_PX4IO_VERSION     2#define PX4IO_SERIAL_DEVICE          &quot;/dev/ttyS6&quot;    // NuttX 设备节点#define PX4IO_SERIAL_BASE            STM32_UART8_BASE#define PX4IO_SERIAL_VECTOR          STM32_IRQ_UART8#define PX4IO_SERIAL_BITRATE         1500000          // 1.5 Mbps
+
+完整宏集合还包括 TX&#x2F;RX 引脚复用宏、DMA 映射、RCC 时钟门控寄存器等。
+ttyS6 到 UART8 的映射链NuttX 串口驱动层在启动时根据 nuttx-config 决定启用哪些 UART 实例，注册顺序决定编号。board_config.h 通过宏将关键链路固定到具体设备节点，并同时提供底层寄存器信息供驱动直接使用，不依赖 NuttX 通用串口驱动层的动态查找。
+
+九、PX4_GPIO_INIT_LIST上电阶段一次性将关键引脚配置到正确状态，主要工作：
+
+
+
+操作
+目的
+
+
+
+ADC 引脚切模拟输入
+避免数字模式造成错误电压读取与噪声耦合
+
+
+板版本驱动引脚初始化
+配合 ADC 读数识别硬件版本
+
+
+CAN TX&#x2F;RX 复用 AF，收发器静默脚默认电平
+保证总线上电后不被错误驱动
+
+
+I2C SCL&#x2F;SDA 强制拉低
+清理可能挂死的 I2C 总线
+
+
+I2C 总线恢复原理：外设异常复位或上电顺序不一致时，SCL&#x2F;SDA 可能被拉住导致总线挂死。将线路临时改为 GPIO 并输出低&#x2F;释放序列，可抢回总线控制权，随后再切换到 I2C 复用模式由驱动接管。
+
+十、I2C 功能实现I2C 功能的最小闭环：
+传感器驱动调用 I2C transfer -&gt; 写寄存器地址（参照数据手册 WHOAMI 等） -&gt; 读数据-&gt; 驱动解析数据并发布 uORB（磁力计、气压计、距离传感器）-&gt; 上层模块订阅 uORB 使用
+
+常见 I2C 挂死原因：
+
+传输过程中外设掉电&#x2F;复位，状态机停在等待时钟或拉住 SDA
+外设时钟拉伸异常或内部卡死（调试期不要打印大量日志，否则 WorkQueue 阻塞后 I2C 超时概率上升）
+上电时序导致外设误识别起始条件
+
+
+十一、Board 层梳理board_config.h 是板级硬件抽象层，被 NuttX bringup、PX4 平台层、驱动层共同使用，集中定义：
+
+GPIO 配置宏：LED、电源使能、过流输入、PPM&#x2F;PWMIN、蜂鸣器等
+ADC 通道定义与位图
+HRT&#x2F;PPM&#x2F;TONE alarm&#x2F;PWMIN 的定时器选择
+PX4IO 串口链路完整参数
+
+init.c 作为 NuttX 板级 bringup 的入口，执行顺序：
+stm32_boardinitialize()（早期）  -&gt; board_on_reset(-1)：PWM 引脚到安全态  -&gt; board_autoled_initialize()：最早可用的 LED 输出  -&gt; px4_gpio_init(PX4_GPIO_INIT_LIST)：引脚初始化到确定状态  -&gt; board_control_spi_sensor_power_configgpio：SPI 传感器供电配置  -&gt; stm32_usbinitialize()：USB 早期初始化board_app_initialize()（应用层初始化，PX4 起来前的最后板级准备）  -&gt; 打开各路电源 rail（SD、5V 外设、5V hipower、RC 等）  -&gt; px4_platform_init()：要求 HRT 已可用  -&gt; board_determine_hw_info()：读取 HW version/revision  -&gt; stm32_spiinitialize()：确定 HW 版本后配置 SPI  -&gt; board_dma_alloc_init()：DMA allocator  -&gt; drv_led_start()：进入 PX4 LED 驱动  -&gt; stm32_sdio_initialize()：SD 卡初始化
+
+
+下一篇：SOC 与 BSP 层平台抽象
+
+]]></content>
+      <categories>
+        <category>技术</category>
+        <category>飞控PX4</category>
+        <category>PX4平台层</category>
+      </categories>
+      <tags>
+        <tag>技术博文</tag>
+        <tag>PX4</tag>
+        <tag>Board</tag>
+        <tag>NuttX</tag>
+        <tag>硬件配置</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>PX4 v1.16 源码解读总目录</title>
+    <url>/2026/03/14/00-%E6%80%BB%E7%9B%AE%E5%BD%95/</url>
+    <content><![CDATA[一、系列说明本系列基于 PX4 Autopilot v1.16.0 源码展开，围绕多旋翼飞控的核心执行链路，分五大模块逐层剖析。
+覆盖模块：
+
+平台层（Board&#x2F;SOC&#x2F;BSP&#x2F;uORB&#x2F;WorkQueue）
+Commander 决策层（飞行模式状态机）
+EKF2 状态估计（延迟时间融合卡尔曼滤波）
+Navigator 导航（自动任务&#x2F;RTL&#x2F;围栏）
+mc_pos_control 位置控制（串级 PID + 推力映射）
+
+文档约定：
+
+代码块以 PX4 v1.16.0 为准，不同版本细节可能存在差异
+数学公式以 LaTeX 形式展示
+Mermaid 流程图用于替代丢失的原始截图
+文中链接均为本系列内部交叉引用
+
+
+二、全局控制链路flowchart TB    subgraph Platform[&quot;平台层&quot;]        HW[&quot;Board/SOC/BSP\n硬件抽象&quot;]        UORB[&quot;uORB\n发布订阅通信&quot;]        WQ[&quot;WorkQueue\n任务调度&quot;]        MOD[&quot;Module 框架\nModuleBase&lt;T&gt;&quot;]    end    subgraph EKF2_[&quot;EKF2 状态估计层&quot;]        SENS[&quot;传感器输入\nIMU/GPS/Mag/Baro/EV&quot;]        PRED[&quot;状态预测\npredictState() + predictCovariance()&quot;]        FUSE[&quot;融合调度\ncontrolFusionModes()&quot;]        OUT_EKF[&quot;估计输出\nvehicle_local_position\nvehicle_attitude&quot;]    end    subgraph CMD[&quot;Commander 决策层&quot;]        ARM[&quot;解锁/上锁\narm() / disarm()&quot;]        MODE[&quot;飞行模式状态机\nnav_state&quot;]        CTL[&quot;控制模式生成\nvehicle_control_mode&quot;]    end    subgraph NAV[&quot;Navigator 导航层&quot;]        MISSION[&quot;Mission/RTL/Loiter\n具体导航模式&quot;]        MBLOCK[&quot;MissionBlock\n任务语义翻译&quot;]        GF[&quot;Geofence\n围栏安全&quot;]        TRIP[&quot;position_setpoint_triplet&quot;]    end    subgraph MPC[&quot;位置控制层&quot;]        FMM[&quot;FlightTask\n轨迹生成&quot;]        POSCTL[&quot;PositionControl\n串级PID&quot;]        ATT_SP[&quot;vehicle_attitude_setpoint&quot;]    end    HW --&gt; UORB    UORB --&gt; WQ    SENS --&gt; EKF2_    EKF2_ --&gt; OUT_EKF    OUT_EKF --&gt; CMD    OUT_EKF --&gt; NAV    OUT_EKF --&gt; MPC    CMD --&gt; MODE    MODE --&gt; NAV    NAV --&gt; TRIP    TRIP --&gt; FMM    FMM --&gt; POSCTL    POSCTL --&gt; ATT_SP    ATT_SP --&gt; mc_att[&quot;mc_att_control\n姿态控制&quot;]    mc_att --&gt; mixer[&quot;电机混控\n输出 PWM/DShot&quot;]
+
+
+三、阅读路径建议路径一：从底层到顶层（推荐新手）01-平台层 → 02-Commander → 03-EKF2 → 04-Navigator → 05-位置控制
+
+按照信号流方向，先理解硬件抽象和通信机制，再理解估计、决策、导航、控制。
+路径二：跟随控制链路（推荐控制工程师）EKF2（状态输入） → Commander（模式选择） → Navigator（目标生成）→ mc_pos_control（位置速度控制） → mc_att_control（姿态角速度控制）
+
+路径三：专项深入（推荐已有基础）
+只关注通信机制：01-06 uORB上、01-07 uORB下
+只关注状态估计：03-01 ~ 03-10 EKF2 全部
+只关注导航逻辑：04-01 ~ 04-04 Navigator 全部
+只关注控制算法：05-03 串级控制算法
+
+
+四、各模块文档索引01-平台层（8 篇）
+
+
+序号
+标题
+关键概念
+
+
+
+01
+Board 层硬件配置
+GPIO&#x2F;ADC&#x2F;PWM&#x2F;HRT&#x2F;PX4IO
+
+
+02
+SOC 与 BSP 层平台抽象
+STM32F7&#x2F;NUTTX&#x2F;HAL
+
+
+03
+固件编译与烧写流程
+make&#x2F;CMake&#x2F;Bootloader
+
+
+04
+交叉编译顺序详解
+Kconfig&#x2F;CMake&#x2F;Ninja&#x2F;链接
+
+
+05
+模块入口与运行模式
+ModuleBase&#x2F;WorkQueue&#x2F;线程
+
+
+06
+uORB 通信机制（上）
+Topic&#x2F;DeviceNode&#x2F;Manager
+
+
+07
+uORB 通信机制（下）
+WorkQueue集成&#x2F;dt&#x2F;HRT
+
+
+08
+DShot 电机转向修改
+DShot&#x2F;MAVLink&#x2F;NSH
+
+
+02-Commander 决策层（7 篇）
+
+
+序号
+标题
+关键概念
+
+
+
+01
+Commander 模块框架
+主循环&#x2F;状态机&#x2F;健康监控
+
+
+02
+参数系统与 Kconfig
+PARAM_DEFINE&#x2F;Kconfig
+
+
+03
+飞行模式编码与映射
+nav_state&#x2F;MAVLink custom_mode
+
+
+04
+控制模式生成逻辑
+vehicle_control_mode flags
+
+
+05
+模式需求位图
+mode_req_bitmask&#x2F;传感器依赖
+
+
+06
+Commander 核心调度
+arm&#x2F;disarm&#x2F;failsafe&#x2F;mode切换
+
+
+07
+HomePosition 管理
+Home设定&#x2F;RTL基准&#x2F;Failsafe
+
+
+03-状态估计-EKF2（10 篇）
+
+
+序号
+标题
+关键概念
+
+
+
+01
+EKF2 目录与层级架构
+延迟融合架构&#x2F;目录结构
+
+
+02
+common.h 数据结构
+imuSample&#x2F;gnssSample&#x2F;parameters
+
+
+03
+RingBuffer 环形缓冲区
+延迟对齐&#x2F;pop_first_older_than
+
+
+04
+State.h 状态向量
+24维状态&#x2F;ESKF&#x2F;协方差P
+
+
+05
+EKF2 应用管理层
+EKF2.cpp&#x2F;多实例&#x2F;Selector
+
+
+06
+ekf.cpp 核心主循环
+update&#x2F;predictState&#x2F;初始化
+
+
+07
+协方差矩阵预测
+P&#x3D;FPF’+Q&#x2F;初始化&#x2F;约束
+
+
+08
+融合调度 control.cpp
+controlFusionModes&#x2F;新息门
+
+
+09
+高度融合与多源仲裁
+多高度源&#x2F;参考切换&#x2F;航向融合
+
+
+10
+辅助函数与卡尔曼更新
+measurementUpdate&#x2F;精度报告
+
+
+04-Navigator 导航（4 篇）
+
+
+序号
+标题
+关键概念
+
+
+
+01
+Navigator 模块架构总览
+7 层架构&#x2F;输入输出&#x2F;与上下游接口
+
+
+02
+navigation.h 与数据协议
+NAV_CMD&#x2F;mission_item_s
+
+
+03
+Navigator 主循环与模式调度
+run()&#x2F;MissionBase&#x2F;RTL策略树
+
+
+04
+围栏安全与精确降落
+Geofence&#x2F;PrecLand状态机
+
+
+05-位置控制（3 篇）
+
+
+序号
+标题
+关键概念
+
+
+
+01
+mc_pos_control 总览
+全局控制链路&#x2F;模块架构
+
+
+02
+MulticopterPositionControl 主循环
+多级滤波&#x2F;EKF重置保护&#x2F;起飞状态机
+
+
+03
+PositionControl 串级控制算法
+位置P+速度PID+推力映射+抗饱和
+
+
+
+五、核心数据流索引以下是各模块之间的关键 uORB 话题连接：
+
+
+
+话题
+发布者
+主要订阅者
+
+
+
+vehicle_attitude
+EKF2
+Commander, mc_att_control
+
+
+vehicle_local_position
+EKF2
+Commander, Navigator, mc_pos_control
+
+
+vehicle_global_position
+EKF2
+Navigator, GCS
+
+
+vehicle_status
+Commander
+Navigator, mc_pos_control, 所有模块
+
+
+vehicle_control_mode
+Commander
+mc_pos_control, mc_att_control
+
+
+home_position
+Commander
+Navigator, EKF2
+
+
+position_setpoint_triplet
+Navigator
+FlightTaskAuto (flight_mode_manager)
+
+
+trajectory_setpoint
+FlightTask
+mc_pos_control
+
+
+vehicle_attitude_setpoint
+mc_pos_control
+mc_att_control
+
+
+estimator_status
+EKF2
+Commander (健康监控)
+
+
+geofence_result
+Navigator
+Commander (failsafe 触发)
+
+
+
+
+本系列持续更新中，内容以 PX4 v1.16.0 为基准。如有错误或遗漏，欢迎在评论区指出。
 
 ]]></content>
       <categories>
@@ -35,9 +492,4097 @@
       <tags>
         <tag>技术博文</tag>
         <tag>PX4</tag>
-        <tag>抗干扰</tag>
-        <tag>SO3</tag>
-        <tag>LADRC</tag>
+        <tag>源码解读</tag>
+        <tag>总目录</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>PX4 Commander 模块框架</title>
+    <url>/2026/02/28/01-Commander%E6%A8%A1%E5%9D%97%E6%A1%86%E6%9E%B6/</url>
+    <content><![CDATA[一、模块定位Commander 是 PX4 的飞行状态中央调度器。负责将全系统的输入事件流（RC、MAVLink、健康状态、链路状态、着陆状态、VTOL 状态、电源按钮）转化为三类核心输出：
+
+
+
+输出
+内容
+
+
+
+vehicle_status
+当前模式&#x2F;arming 状态、各类系统状态
+
+
+vehicle_control_mode
+当前模式对应的控制器&#x2F;控制环开关（谁该运行）
+
+
+actuator_armed
+解锁&#x2F;预解锁&#x2F;lockdown&#x2F;强制 failsafe 等执行器门禁状态
+
+
+
+相关上下文：uORB 通信机制（上） — Commander 通过 uORB 订阅&#x2F;发布与其他模块通信
+
+
+二、目录结构src/modules/commander/├── CMakeLists.txt├── Kconfig├── module.yaml│├── Commander.hpp / Commander.cpp         # ★ 核心主类（中央调度器）├── commander_helper.h / .cpp             # 辅助函数（LED/蜂鸣器/机型判断）├── commander_params.c                    # 参数定义├── px4_custom_mode.h                     # PX4↔MAVLink 模式映射│├── ModeManagement.hpp / .cpp             # 模式管理（外部模式注册/替换）├── UserModeIntention.hpp / .cpp          # 用户模式意图管理├── Safety.hpp / .cpp                     # 安全开关管理├── HomePosition.hpp / .cpp               # Home 位置管理│├── worker_thread.hpp / .cpp              # 后台工作线程（校准/参数操作）├── calibration_routines.h / .cpp         # 校准通用框架├── accelerometer_calibration.*├── gyro_calibration.*├── mag_calibration.*├── baro_calibration.*├── airspeed_calibration.*├── esc_calibration.*├── level_calibration.*├── rc_calibration.*├── lm_fit.*                              # Levenberg-Marquardt 拟合（磁力计校准用）│├── Arming/│   └── ArmAuthorization/                 # 外部解锁授权（UTM 等）│├── failsafe/                             # ★ 故障安全状态机│   ├── framework.h / .cpp│   └── failsafe.h / .cpp│├── failure_detector/                     # ★ 故障检测器│   ├── FailureDetector.hpp / .cpp│   └── failure_detector_params.c│├── HealthAndArmingChecks/                # ★ 健康与解锁检查（33+ 个检查项）│   ├── HealthAndArmingChecks.cpp│   └── checks/│└── ModeUtil/    ├── mode_requirements.*               # 模式需求位图    ├── control_mode.*                    # 控制模式标志设置    └── conversions.hpp
+
+
+三、架构图graph TD    subgraph Commander主类        UMI[&quot;UserModeIntention\n用户模式意图&quot;]        MM[&quot;ModeManagement\n外部模式注册&quot;]        HP[&quot;HomePosition\nHome位置管理&quot;]        Safety[&quot;Safety\n安全开关&quot;]                Core[&quot;handleModeIntentionAndFailsafe()\n★核心决策函数★&quot;]                UMI --&gt; Core        MM --&gt; Core        HP --&gt; Core        Safety --&gt; Core                FS[&quot;Failsafe\n故障安全状态机&quot;]        HAC[&quot;HealthAndArmingChecks\n健康与解锁检查(33个)&quot;]                Core --&gt; FS        Core --&gt; HAC                FD[&quot;FailureDetector\n物理故障检测&quot;]        FSF[&quot;failsafe_flags\n故障安全标志&quot;]        WT[&quot;WorkerThread\n后台校准/参数&quot;]                FS --&gt; FD        FS --&gt; FSF    end    subgraph uORB输出        VS[&quot;vehicle_status&quot;]        AA[&quot;actuator_armed&quot;]        VCM[&quot;vehicle_control_mode&quot;]    end    subgraph 其他模块        NAV[&quot;navigator&quot;]        POS[&quot;mc_pos_control&quot;]        EKF[&quot;ekf2&quot;]        MAV[&quot;mavlink&quot;]    end    Core --&gt; VS    Core --&gt; AA    Core --&gt; VCM    VS --&gt; NAV    VS --&gt; POS    VCM --&gt; POS    AA --&gt; EKF
+
+
+四、主循环 run() 执行流程（100 Hz）
+
+
+步骤
+操作
+说明
+
+
+
+1
+参数更新
+检测参数变化并同步
+
+
+2
+电源按钮处理
+处理硬件电源按钮事件
+
+
+3
+系统供电检查
+监控供电状态
+
+
+4
+着陆检测更新
+读取 vehicle_land_detected
+
+
+5
+安全按钮更新
+读取 Safety 按钮状态
+
+
+6
+抛飞起飞更新
+MulticopterThrowLaunch 状态机
+
+
+7
+VTOL 状态更新
+MC&#x2F;FW&#x2F;过渡状态
+
+
+8
+Home 位置更新
+自动&#x2F;手动设置 Home
+
+
+9
+自动 Disarm
+着陆后&#x2F;起飞前超时自动锁定
+
+
+10
+电池检查
+电池状态监控
+
+
+11
+任务更新
+检查任务状态变化
+
+
+12
+手动控制检查
+RC Override 逻辑
+
+
+13
+Offboard 检查
+Offboard 信号监控
+
+
+14
+数据链路检查
+GCS&#x2F;OBC 连接监控
+
+
+15
+故障检测更新
+FailureDetector 物理故障检测
+
+
+16
+模式管理更新
+外部模式注册&#x2F;注销
+
+
+17
+★ 模式意图与故障安全
+核心决策：合并用户意图 + 故障安全 → 最终 nav_state
+
+
+18
+健康检查（10 Hz）
+HealthAndArmingChecks 全量检查
+
+
+19
+处理命令
+vehicle_command &#x2F; action_request
+
+
+20
+发布状态
+vehicle_status、actuator_armed、vehicle_control_mode
+
+
+21
+声光反馈
+LED&#x2F;蜂鸣器更新
+
+
+
+五、八阶段学习路径flowchart TD    A[&quot;第一阶段：基础概念\nCMakeLists → Kconfig → commander_params → px4_custom_mode\n问：Commander长什么样？有哪些模式？&quot;]    B[&quot;第二阶段：工具层\nmode_requirements → control_mode → commander_helper → worker_thread\n问：每个模式需要什么？控制器怎么激活？&quot;]    C[&quot;第三阶段：独立子系统\nSafety → HomePosition → FailureDetector → HealthAndArmingChecks\n问：谁在做检查？结果存在哪？&quot;]    D[&quot;第四阶段：故障安全\nframework.h/.cpp → failsafe.h/.cpp\n问：出了问题怎么办？如何逐级降级？&quot;]    E[&quot;第五阶段：模式管理\nUserModeIntention → ModeManagement → ArmAuthorization\n问：谁在控制？模式怎么切换？&quot;]    F[&quot;第六阶段：核心主类\nCommander.hpp → Commander.cpp\n问：大脑如何把一切串起来？&quot;]    G[&quot;第七阶段（按需）：校准子系统&quot;]    H[&quot;第八阶段（按需）：特殊功能 MulticopterThrowLaunch&quot;]    A --&gt; B --&gt; C --&gt; D --&gt; E --&gt; F --&gt; G --&gt; H
+
+
+六、关键数据流汇总
+
+
+子系统
+输入
+输出
+
+
+
+HealthAndArmingChecks
+大量传感器&#x2F;估计器&#x2F;链路话题
+failsafe_flags（*_invalid + mode_req_* 位图）、canArm&#x2F;canRun 结果
+
+
+ModeUtil/control_mode
+nav_state、vehicle_type、offboard_control_mode
+vehicle_control_mode 开关位
+
+
+UserModeIntention
+RC mode slot、MAVLink DO_SET_MODE、action_request
+用户意图 nav_state
+
+
+Failsafe
+系统状态、failsafe_flags、override request
+selected action + 改写后的 intended mode
+
+
+ModeManagement
+nav_state_user_intention、外部模式执行器信息
+replacement 后的实际 nav_state
+
+
+HomePosition
+local&#x2F;global&#x2F;GNSS + failsafe_flags
+home_position 话题
+
+
+最终输出（run() 统一发布）
+上述所有子系统结果
+actuator_armed → vehicle_control_mode → vehicle_status → failure_detector_status
+
+
+
+
+下一篇：参数系统与 Kconfig系列总目录：PX4 v1.16 源码解读总目录
+
+]]></content>
+      <categories>
+        <category>技术</category>
+        <category>飞控PX4</category>
+        <category>Commander决策层</category>
+      </categories>
+      <tags>
+        <tag>技术博文</tag>
+        <tag>PX4</tag>
+        <tag>Commander</tag>
+        <tag>状态机</tag>
+        <tag>故障安全</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>PX4 Navigator 模块架构总览</title>
+    <url>/2026/03/06/01-Navigator%E6%A8%A1%E5%9D%97%E6%9E%B6%E6%9E%84%E6%80%BB%E8%A7%88/</url>
+    <content><![CDATA[一、Navigator 的定位src/modules/navigator 是 PX4 的自动导航执行层。
+它不负责：
+
+姿态控制、角速度控制、电机混控、状态估计
+
+它负责：
+
+接收上游状态与任务信息（来自 Commander 的 nav_state）
+根据当前导航状态选择合适的导航模式（Mission &#x2F; Loiter &#x2F; RTL 等）
+把高层任务语义翻译为下游位置控制器能执行的 position_setpoint_triplet
+输出任务执行结果、围栏状态、导航状态等 uORB 消息
+
+
+一句话概括：Navigator 是 PX4 自动任务&#x2F;返航&#x2F;盘旋&#x2F;降落&#x2F;围栏&#x2F;精降的统一导航执行器。
+
+
+相关上游：Commander 核心调度，HomePosition 管理相关下游：mc_pos_control 位置控制
+
+
+二、纵向层级结构L0 任务数据协议层     navigation.h / safe_point_land.hppL1 总控入口层         navigator.h / navigator_main.cppL2 模式生命周期层     navigator_mode.h / navigator_mode.cppL3 公共任务语义层     mission_block.h / mission_block.cppL4 Mission 执行框架层 mission_base.h / mission_base.cppL5 具体导航模式层     mission / loiter / takeoff / land / precland / vtol_takeoff / rtl*L6 安全与验证层       geofence / GeofenceBreachAvoidance / mission_feasibility_checkerL7 参数定义层         navigator_params.c / mission_params.c / geofence_params.c / rtl_params.c
+
+主执行链：
+flowchart TB    A[&quot;L0 数据协议层\nnavigation.h&quot;] --&gt; B[&quot;L1 总控入口层\nNavigator::run()&quot;]    B --&gt; C[&quot;L2 生命周期层\nNavigatorMode::run()&quot;]    C --&gt; D[&quot;L5 具体模式层\nMission/Loiter/RTL/...&quot;]    D --&gt; E[&quot;L3 公共任务语义层\nMissionBlock&quot;]    E --&gt; F[&quot;position_setpoint_triplet&quot;]    F --&gt; G[&quot;下游位置控制器\nFlightTaskAuto / mc_pos_control&quot;]    B --&gt; H[&quot;L6 围栏安全层\nGeofence / BreachAvoidance&quot;]    D --&gt; I[&quot;L4 Mission 执行框架层\nMissionBase&quot;]    I --&gt; J[&quot;L6 任务合法性检查层&quot;]    D --&gt; K[&quot;RTL 策略树&quot;]    L[&quot;L7 参数定义层&quot;] --&gt; B    L --&gt; D    L --&gt; H    L --&gt; K
+
+
+三、各层级文件说明3.1 L0 — 任务数据协议层
+
+
+文件
+职责
+
+
+
+navigation.h
+定义 NAV_CMD、NAV_FRAME 枚举、mission_item_s 统一任务结构体、mission_fence_point_s 围栏点结构
+
+
+safe_point_land.hpp
+定义 loiter_point_s、land_approaches_s，服务 RTL 目的地和着陆进近描述
+
+
+mission_item_s 是整个 Navigator 目录的核心中间语言，所有模式几乎都在围绕它进行：构造 → 修改 → 判断是否完成 → 翻译为 position_setpoint_s。
+3.2 L1 — 总控入口层Navigator 类是所有模式的总控调度器，持有：
+
+所有模式对象：_mission、_loiter、_rtl、_takeoff、_land、_precland、_vtol_takeoff
+安全对象：_geofence、_gf_breach_avoidance
+共享输入状态：vehicle_status、vehicle_local_position、home_position 等
+核心输出：position_setpoint_triplet
+
+Navigator::run() 执行顺序：
+
+初始化&#x2F;参数更新
+轮询核心 topic（位置、状态、任务、命令）
+执行 geofence_breach_check()（安全优先）
+根据 vehicle_status.nav_state 选择当前模式
+调用所有模式的生命周期函数
+发布输出（position_setpoint_triplet、mission_result 等）
+
+3.3 L2 — 模式生命周期层所有具体模式均继承 NavigatorMode，通过四种钩子函数执行：
+
+
+
+钩子
+时机
+用途
+
+
+
+on_activation()
+首次切入时执行一次
+初始化状态机、构造初始 mission item
+
+
+on_active()
+激活期间每轮执行
+运行主状态机、更新 setpoint、检查完成条件
+
+
+on_inactivation()
+切出时执行一次
+清理状态、记住暂停点
+
+
+on_inactive()
+未激活时后台执行
+更新缓存、维护恢复数据（如 RTL 时间估计）
+
+
+3.4 L3 — 公共任务语义层 MissionBlockMissionBlock 是整个 Navigator 的任务语义内核：
+
+
+
+函数
+作用
+
+
+
+is_mission_item_reached_or_completed()
+定义各类 nav_cmd 的完成判据（位置到达、落地检测、高度匹配等）
+
+
+mission_item_to_position_setpoint()
+将 mission_item_s 翻译为 position_setpoint_s
+
+
+issue_command()
+将 DO_* 类任务项转换为 vehicle_command 发布
+
+
+set_takeoff_item()
+构造标准起飞任务项
+
+
+set_land_item()
+构造标准降落任务项
+
+
+set_vtol_transition_item()
+构造 VTOL 模式切换任务项
+
+
+3.5 L4 — Mission 执行框架层 MissionBase解决 mission 系模式的公共问题：
+
+任务从哪读：mission_s（元信息）→ DatamanCache → mission_item_s（正文）
+索引如何推进：处理 DO_JUMP、非位置命令、reverse mission 等复杂场景
+暂停后如何恢复：记录 _inactivation_index，恢复时重新定位
+上下文命令回放：恢复时重放 gimbal&#x2F;camera&#x2F;trigger&#x2F;speed 等上下文命令
+
+3.6 L5 — 具体导航模式层
+
+
+模式
+类型
+说明
+
+
+
+Mission
+普通任务
+在 MissionBase 框架上实现普通任务业务，插入起飞&#x2F;着陆&#x2F;VTOL&#x2F;精降节点
+
+
+Loiter
+简单
+设置或重定位一个悬停点，维持不变
+
+
+Takeoff
+简单
+自动起飞，到达高度后进入 loiter
+
+
+Land
+简单
+自动降落，落地后发布 mode_completed
+
+
+PrecLand
+复杂状态机
+精确降落，依赖 landing_target_pose，包含搜索&#x2F;横向接近&#x2F;精降状态
+
+
+VtolTakeoff
+复杂状态机
+VTOL 起飞的多阶段状态机（悬停→对齐→转换→爬升）
+
+
+RTL
+策略树
+顶层返航策略选择器，分发到 RtlDirect &#x2F; RtlDirectMissionLand &#x2F; RtlMissionFast &#x2F; RtlMissionFastReverse
+
+
+3.7 L6 — 安全与验证层
+
+
+模块
+职责
+
+
+
+Geofence
+加载围栏数据，判定某点是否越界
+
+
+GeofenceBreachAvoidance
+基于速度&#x2F;加速度预测未来位置，计算安全 loiter 点
+
+
+MissionFeasibilityChecker
+将 FeasibilityChecker + Navigator 上下文 + geofence 合并做执行前验证
+
+
+FeasibilityChecker
+纯规则验证：命令合法性、机型匹配、首航点距离、起降要求
+
+
+
+四、Navigator 的输入与输出4.1 输入 uORB 话题
+
+
+话题
+说明
+
+
+
+vehicle_status.nav_state
+Commander 决定的当前导航状态，决定选哪个模式
+
+
+vehicle_local_position
+EKF2 估计的本地 NED 位置&#x2F;速度
+
+
+vehicle_global_position
+EKF2 估计的全局经纬度
+
+
+home_position
+起飞原点（用于 RTL 目的地计算）
+
+
+mission
+上传的自动任务元信息
+
+
+vehicle_command
+MAVLink 命令（用于接收 RTL&#x2F;Takeoff&#x2F;Land 等指令）
+
+
+vehicle_land_detected
+落地检测结果
+
+
+landing_target_pose
+精确降落目标位置（PrecLand 使用）
+
+
+4.2 输出 uORB 话题
+
+
+话题
+下游消费者
+关键字段
+
+
+
+position_setpoint_triplet
+FlightTaskAuto &#x2F; mc_pos_control
+前一&#x2F;当前&#x2F;下一 setpoint
+
+
+mission_result
+Commander &#x2F; GCS
+任务状态、当前序号
+
+
+navigator_status
+GCS 监控
+当前模式
+
+
+geofence_result
+Commander
+是否越界
+
+
+
+五、与上下游的接口关系flowchart LR    Commander[&quot;Commander\nvehicle_status.nav_state&quot;] --&gt; Navigator[&quot;Navigator&quot;]    EKF2[&quot;EKF2\nvehicle_local/global_position&quot;] --&gt; Navigator    MAVLink[&quot;MAVLink\nmission + vehicle_command&quot;] --&gt; Navigator    Navigator --&gt; Triplet[&quot;position_setpoint_triplet&quot;]    Triplet --&gt; FMM[&quot;flight_mode_manager\nFlightTaskAuto&quot;]    FMM --&gt; MPC[&quot;mc_pos_control\nvehicle_attitude_setpoint&quot;]    MPC --&gt; ATT[&quot;mc_att_control&quot;]
+
+注意：Navigator 的输出不是直接送到 mc_pos_control，而是先经过 flight_mode_manager 中的 FlightTaskAuto 转换为 trajectory_setpoint + vehicle_constraints，再送入位置控制器。这一层转换负责轨迹平滑（位置→带加速度约束的轨迹）。
+
+下一篇：navigation.h 与数据协议层系列总目录：PX4 v1.16 源码解读总目录
+
+]]></content>
+      <categories>
+        <category>技术</category>
+        <category>飞控PX4</category>
+        <category>Navigator导航</category>
+      </categories>
+      <tags>
+        <tag>技术博文</tag>
+        <tag>PX4</tag>
+        <tag>Navigator</tag>
+        <tag>自动导航</tag>
+        <tag>架构</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>PX4 MulticopterPositionControl 主循环详解</title>
+    <url>/2026/03/09/02-MulticopterPositionControl%E4%B8%BB%E5%BE%AA%E7%8E%AF%E8%AF%A6%E8%A7%A3/</url>
+    <content><![CDATA[一、Run() 主循环结构MulticopterPositionControl 运行在 wq:nav_and_controllers WorkQueue 上，由 vehicle_local_position 话题到达时触发（数据驱动），同时设置 100 ms 看门狗定时调度（防止 EKF 停发时模块锁死）：
+void MulticopterPositionControl::Run() &#123;    // 1. 生命周期检查    if (should_exit()) &#123; ... return; &#125;    ScheduleDelayed(100_ms);  // 看门狗    // 2. 时钟对齐与 dt 计算    vehicle_local_position_s vl_pos;    if (!_local_pos_sub.update(&amp;vl_pos)) return;    const float dt = math::constrain(        (vl_pos.timestamp_sample - _time_stamp_last_loop) * 1e-6f,        0.002f, 0.04f);  // 约束在 [2ms, 40ms]，即 [25Hz, 500Hz]    _time_stamp_last_loop = vl_pos.timestamp_sample;    // 3. 参数更新    parameters_update(false);    // 4. 模式管理与悬停推力自适应    // （见 §2）    // 5. 状态预处理（滤波）    PositionControlStates states = set_vehicle_states(vl_pos, dt);    // 6. Goto 平滑桥接（若有 goto_setpoint）    if (_goto_control.checkForSetpoint(...)) _goto_control.update(...);    // 7. 读取轨迹设定点    _trajectory_setpoint_sub.update(&amp;_setpoint);    // 8. EKF 重置补偿    adjustSetpointForEKFResets(vl_pos, _setpoint);    // 9. 失效保护初始激活    // 10. 起飞约束与状态机处理    // 11. 核心控制更新    _control.setInputSetpoint(_setpoint);    _control.setState(states);    _control.update(dt);    // 12. 发布输出    publish_local_pos_sp(); publish_attitude_sp();&#125;
+
+dt 使用物理采样时间戳（timestamp_sample）而非 CPU 接收时间，消除调度抖动对微分项的影响。
+
+二、模式管理与悬停推力自适应// 检测位置控制使能状态切换if (!previous_enabled &amp;&amp; now_enabled) &#123;    _time_position_control_enabled = _vehicle_control_mode.timestamp;&#125; else if (previous_enabled &amp;&amp; !now_enabled) &#123;    _setpoint = PositionControl::empty_trajectory_setpoint;  // 清除旧设定点&#125;// HTE 悬停推力自适应if (_param_mpc_use_hte.get()) &#123;    hover_thrust_estimate_s hte;    if (_hover_thrust_estimate_sub.update(&amp;hte) &amp;&amp; hte.valid) &#123;        _control.updateHoverThrust(hte.hover_thrust);    &#125;&#125;
+
+HTE（Hover Thrust Estimate）：EKF2 通过加速度和推力的比较估计实时悬停推力，补偿电池电压下降（推力随电压下降而降低）或载荷变化（挂载掉落导致质量减小），提高 Z 轴位置保持精度。
+
+三、set_vehicle_states() — 多级滤波数据清洗EKF2 发布的速度数据包含两类典型噪声：
+
+机架共振尖峰：机臂&#x2F;桨叶在特定频率产生强振动（如 120 Hz）
+高频白噪声：传感器和电调开关噪声，分布广泛
+
+处理策略：先陷波（精确消除共振峰），再低通（整体压制高频）
+// 水平速度处理states.velocity.xy() = _vel_xy_lp_filter.update(                        _vel_xy_notch_filter.apply(velocity_xy));// 加速度由速度差分估计（再低通）states.acceleration.xy() = _vel_deriv_xy_lp_filter.update(                            (current_vel_lp - prev_vel_lp) / dt);
+
+3.1 陷波滤波器数学二阶陷波（带阻）滤波器传递函数：
+[H(s) &#x3D; \frac{s^2 + \omega_0^2}{s^2 + 2\zeta\omega_0 s + \omega_0^2}, \quad \omega_0 &#x3D; 2\pi f_0]
+在共振频率处 ( |H(j\omega_0)| &#x3D; 0 )，精确消除该频率的振动分量，其他频率几乎不受影响。关键参数：
+
+MPC_VEL_NF_FRQ：陷波中心频率（Hz），需与实际机架共振频率匹配
+MPC_VEL_NF_BW：陷波带宽（Hz），决定 ζ，太窄则对频率漂移敏感
+
+3.2 一阶低通滤波器（EMA）离散实现为指数移动平均（EMA）：
+[y[k] &#x3D; \alpha x[k] + (1-\alpha)y[k-1], \quad \alpha &#x3D; \frac{T_s}{\tau + T_s}]
+MPC_VEL_LP 参数设置截止频率 ( f_c &#x3D; 1&#x2F;(2\pi\tau) )（Hz）。
+3.3 处理流程flowchart LR    EKF[&quot;EKF2\nvz（含机架共振+白噪声）&quot;] --&gt; NF[&quot;陷波滤波\n_vel_z_notch_filter\n消除共振尖峰&quot;]    NF --&gt; LP[&quot;低通滤波\n_vel_z_lp_filter\n压制高频白噪声&quot;]    LP --&gt; STATE[&quot;states.velocity(2)\n干净的速度信号&quot;]    LP --&gt; DIFF[&quot;差分估计\n(vel_now - vel_prev) / dt&quot;]    DIFF --&gt; LP2[&quot;加速度低通\n_vel_deriv_z_lp_filter&quot;]    LP2 --&gt; ACC[&quot;states.acceleration(2)\n用于 PID D 项&quot;]
+
+有效性保护：若 EKF 数据无效（v_z_valid == false），对应状态写入 NAN 并重置所有滤波器，防止传感器恢复时出现加速度尖峰。
+
+四、adjustSetpointForEKFResets() — EKF 重置鲁棒补偿当 EKF 发生坐标系重置（如 GPS 回环修正、SLAM 重定位，产生 1 m 量级的瞬时跳变）时，若不处理，控制器会看到巨大的瞬时误差 ( e &#x3D; \text{setpoint} - \text{state} )，导致满舵响应。
+解决方案：维持控制误差的连续性：
+[e(t) &#x3D; P_{sp}(t) - P_{obs}(t)]
+当观测值发生跳变 ( \Delta P ) 时，同步修正设定点：
+[P_{sp}^{new} &#x3D; P_{sp}^{old} + \Delta P]
+PX4 通过 reset_counter（计数器）机制实现：
+// 检测 counter 是否变化（EKF 发生了重置）if (vl_pos.xy_reset_counter != _xy_reset_counter) &#123;    setpoint.position[0] += vl_pos.delta_xy[0];  // 同步修正设定点    setpoint.position[1] += vl_pos.delta_xy[1];    // 同步重置速度滤波器内部状态    _vel_xy_lp_filter.reset(_vel_xy_lp_filter.getState() + Vector2f(vl_pos.delta_vxy));    _vel_xy_notch_filter.reset();&#125;_xy_reset_counter = vl_pos.xy_reset_counter;  // 更新计数器
+
+五种独立的 reset_counter：xy、z、vxy、vz、heading，各自独立处理。
+
+五、TakeoffHandling — 起飞状态机与保护5.1 起飞状态机stateDiagram-v2    [*] --&gt; disarmed    disarmed --&gt; spoolup : armed    spoolup --&gt; ready_for_takeoff : 电机预热完成    ready_for_takeoff --&gt; rampup : want_takeoff == true    rampup --&gt; flight : 离地高度达到    flight --&gt; [*]
+
+5.2 推力斜坡（rampup 阶段）避免离地瞬间推力突变和姿态抖动：
+[V_{z,limit}(t) &#x3D; \min!\left( V_{takeoff}, \frac{t}{T_{ramp}} \cdot V_{takeoff} \right)]
+MPC_TKO_RAMP_T 控制斜坡时间（默认 3 s）。
+5.3 关键保护机制
+地面压制：在 not_taken_off 或触地（flying_but_ground_contact）状态时，设置 100 m&#x2F;s² 向下加速度，使 PID 输出饱和在最小推力，确保不因传感器抖动而蹦跳
+积分清零：地面阶段清空 _control.resetIntegral()，防止高度误差积分导致离地时突然弹射
+倾角限制：起飞前限制最大倾角（MPC_TILTMAX_LND，默认 12°），离地后恢复正常（MPC_TILTMAX_AIR）
+悬停推力重置：未起飞时强制用参数预设值，不使用 HTE 估计（避免地面状态下 HTE 估计偏差影响起飞）
+
+// 100 m/s² 下压的控制论解释// T_cmd = SAT(PID_output + Kff * A_sp)// A_sp = 100 → 无论 PID 产生多少向上修正，结果都被钳位在 T_minVector3f(0.f, 0.f, 100.f).copyTo(_setpoint.acceleration);
+
+
+六、故障回退 generateFailsafeSetpoint()当 trajectory_setpoint 无效或 PositionControl::update() 返回失败时：
+flowchart TD    A[控制更新失败] --&gt; B&#123;上次有效设定点\n是否在 200ms 内?&#125;    B --&gt;|是| C[使用上次有效设定点\n重试 update]    B --&gt;|否| D&#123;XY 速度是否有效?&#125;    C --&gt; E&#123;重试成功?&#125;    E --&gt;|否| D    D --&gt;|是| F[&quot;生成 stop-and-wait\n水平速度设为0，等待原地&quot;]    D --&gt;|否| G&#123;Z 速度是否有效?&#125;    G --&gt;|是| H[&quot;blind land\n缓慢垂直下降&quot;]    G --&gt;|否| I[&quot;blind descent\n最大下降速度直至落地&quot;]
+
+三级故障回退确保在任何传感器失效情况下都有安全的下降策略。
+
+七、小结MulticopterPositionControl.cpp 的核心价值在于：
+
+数据清洗：多级滤波（陷波+低通）为 PID D 项提供干净信号，直接影响飞行稳定性
+EKF 重置保护：误差连续性维护机制，防止传感器重定位时的满舵响应
+起飞安全：状态机 + 斜坡 + 积分清零 + 倾角限制，处理最危险的起飞阶段
+故障容错：三级回退策略，保证任何情况下都有安全的降落路径
+
+
+上一篇：mc_pos_control 总览与控制链路下一篇：PositionControl 串级控制算法系列总目录：PX4 v1.16 源码解读总目录
+
+]]></content>
+      <categories>
+        <category>技术</category>
+        <category>飞控PX4</category>
+        <category>位置控制</category>
+      </categories>
+      <tags>
+        <tag>技术博文</tag>
+        <tag>PX4</tag>
+        <tag>mc_pos_control</tag>
+        <tag>数据清洗</tag>
+        <tag>滤波器</tag>
+        <tag>起飞保护</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>PX4 SOC 与 BSP 层平台抽象</title>
+    <url>/2026/01/15/02-SOC%E4%B8%8EBSP%E5%B1%82%E5%B9%B3%E5%8F%B0%E6%8A%BD%E8%B1%A1/</url>
+    <content><![CDATA[一、三层结构概览Board 层、BSP 层、SOC 层构成 PX4 硬件抽象的三级结构，职责各异：
+flowchart TD    Board[&quot;Board 层\nboards/px4/fmu-v5/\n提供 board_config.h 宏定义\n不直接操作寄存器&quot;]    BSP[&quot;BSP 层\nplatforms/nuttx/src/px4/stm32_common/\n实现 GPIO/ADC/TIM/SPI/UART 等外设\n暴露 px4_arch_* hrt_* io_timer_* 接口&quot;]    SOC[&quot;SOC 层\nplatforms/nuttx/src/px4/stm32f7/\n聚合 stm32_common 通用能力\n实现 F7 特定功能（DMA Cache IDLE 中断）&quot;]    NuttX[&quot;NuttX STM32 arch/HAL\nstm32_* 寄存器级实现&quot;]    Board --&gt; BSP    Board --&gt; SOC    BSP --&gt; NuttX    SOC --&gt; BSP
+
+
+相关前置知识：Board 层硬件配置
+
+
+二、构建关系platforms/nuttx/src/px4/stm32f7/CMakeLists.txt 负责将 BSP 与 SOC 组件聚合到同一编译目标：
+
+BSP 通用模块（stm32_common）：ADC、HRT、SPI、io_timer 等，被所有 STM32 系列复用
+SOC 专属（stm32f7）：
+px4io_serial：F7 特定的 DMA + DCache + IDLE 中断处理
+watchdog：F7 具体的硬件看门狗实现
+
+
+
+Board 层在更高层的 Board CMake 中被加入同一构建图谱，最终与 BSP&#x2F;SOC 一起链接成单一的 .elf 固件镜像。
+
+三、运行时调用链路3.1 stm32_boardinitialize()NuttX 启动序列最早调用的板级入口，在 init.c 中实现：
+stm32_boardinitialize()  -&gt; board_on_reset()：危险引脚/PWM 切到安全态  -&gt; board_autoled_initialize()：不依赖 NuttX 系统的 LED 初始化  -&gt; px4_gpio_init(PX4_GPIO_INIT_LIST)       Board 层提供 GPIO_xxx 宏（Pinset 位域）       BSP 层 micro_hal.h 将 px4_arch_configgpio() 映射到 stm32_configgpio()       NuttX STM32 arch 层做实际寄存器写入  -&gt; USB 相关初始化
+
+3.2 board_app_initialize()应用层初始化入口，PX4 平台起来前的最后板级准备：
+board_app_initialize()  -&gt; 上电策略：调用 board_config.h 中的 True-logic 宏  -&gt; px4_platform_init()：明确要求 HRT 先跑起来  -&gt; board_determine_hw_info()：读取 ADC 电阻梯，生成 Ver/Rev/type_name  -&gt; stm32_spiinitialize()：在确定 HW 版本后配置 SPI  -&gt; 裁剪不存在的 CAN2/CAN3：把 RX 引脚从外设复用切换成下拉输入  -&gt; board_dma_alloc_init()、串口 DMA Polling、LED 驱动、SDIO 等
+
+
+四、BSP 层核心文件4.1 micro_hal.hBSP 层将 Board 层定义的宏落地到 NuttX STM32 HAL 的关键桥接文件，统一将 px4_arch_* 映射到 NuttX STM32 的 stm32_* 实现：
+px4_arch_configgpio(pinset)  -&gt;  stm32_configgpio(pinset)px4_arch_gpioread(pinset)    -&gt;  stm32_gpioread(pinset)px4_arch_gpiowrite(pinset, value) -&gt; stm32_gpiowrite(pinset, value)px4_arch_gpiosetevent(...)   -&gt;  stm32_gpiosetevent(...)
+
+Board 层产出 Pinset 位域（端口&#x2F;引脚&#x2F;模式&#x2F;上下拉&#x2F;AF&#x2F;默认电平），BSP 层把 Pinset 写进 STM32 GPIO 寄存器。Board 层不允许直接操作寄存器。
+4.2 board_hw_rev_ver.c硬件版本识别：将 ADC 电阻梯码值转为 V5xxxx 类型信息。
+Board 层在 board_config.h 定义版本识别的引脚宏与 ADC 通道，BSP 层 determine_hw_info() 用 read_id_dn() 做两次测量（先测 revision，再测 version），将 ADC 码值 dn 转成 ordinal（离散编号），最终生成 hw_info 字符串。
+4.3 board_reset.cpp复位到 Bootloader 或应用程序，核心机制：
+
+写 RTC 备份寄存器（如 STM32_RTC_BK0R）存放模式魔数
+魔数类型：boot to BL、boot to app、CAN BL 等
+调用 up_systemreset() 触发复位
+备份域掉电保持，适合跨复位传递启动模式意图
+
+4.4 hrt.cHRT 高精度时钟与 PPM 解码绑定在同一硬件定时器上。直接占用一个 TIM，不走 NuttX 通用定时器驱动：
+
+需要稳定 1 MHz free-running 计数作微秒级时间基准
+需要比较中断，安排未来某时刻触发回调
+需要最小抖动与最小开销
+
+hrt_init() 核心流程：
+// 打开定时器时钟 RCC// 配置 TIM 为 1MHz free-runPSC = (HRT_TIMER_CLOCK / 1000000) - 1;ARR = 0xffff;  // 自由运行CR1 = CEN;     // 开始计数// 使能中断向量// 同时打开 DIER_HRT | DIER_PPM// 配置 CCMR/CCER 与 PPM 相关通道寄存器
+
+同一颗 TIM 同时承担：
+
+HRT：系统微秒时基 + callout 调度（比较中断）
+PPM：输入捕获&#x2F;边沿时间戳 → PPM 状态机解码
+
+4.5 adc.cppADC 采样抽象，单次转换、寄存器级操作：
+// 初始化接口px4_arch_adc_init(base_address);   // 对 ADC 实例做一次性初始化、校准、上电// 采样接口px4_arch_adc_sample(base_address, channel);// 配置 SQR3=channel -&gt; 启动 SWSTART -&gt; 等待 EOC -&gt; 读 DR 返回原始码值
+
+Board 层定义引脚与通道映射，board_hw_rev_ver.c 与 board_adc 驱动只关心通道编号，不关心寄存器细节。
+4.6 io_timer.cPWM&#x2F;捕获&#x2F;Oneshot&#x2F;DShot 的统一定时器框架：
+初始化流程：  io_timer_init_timer(timer, mode)    -&gt; 开 RCC 时钟    -&gt; 清零 CR1/CR2/SMCR/DIER/CCER/CCMR 等寄存器到可控初态    -&gt; 安装 IRQ handler    -&gt; 配置定时器频率与分频通道初始化：  io_timer_channel_init(channel, mode, handler, context)    -&gt; 从 timer_io_channels[]（Board 层 timer_config.cpp 生成的映射表）获取：       - 该 channel 属于哪个 timer       - 该 channel 是 timer 的 CH1/2/3/4       - 对应的 GPIO pinset（AF 复用）    -&gt; 按 mode 设置 CCMR（输入/输出比较模式）、CCER（极性、使能）、CCR（占空比/比较值）    -&gt; 配置 GPIO 为 AF 推挽或 AF 开漏
+
+Board 层 timer_config.cpp 决定”哪些 TIM 实例可用、每个通道映射到哪个引脚”，BSP io_timer.c 只负责把”映射表 + 模式”变成寄存器配置。同一套框架覆盖 PWM&#x2F;捕获&#x2F;OneShot&#x2F;DShot，差异只在 mode 与寄存器位。
+
+五、SOC 层：stm32f7 特定实现stm32f7/px4io_serial/px4io_serial.cpp 是 SOC 层的典型代表。
+ArchPX4IOSerial::init()通过 PX4IO_SERIAL_* 宏（来自 Board 层 board_config.h）拿到 UART base&#x2F;vector&#x2F;DMAMAP&#x2F;RCC 等硬件细节：
+-&gt; 申请 TX/RX DMA 通道：stm32_dmachannel(PX4IO_SERIAL_TX_DMAMAP)-&gt; 配置 UART：启用 RE/TE/UE，启用 IDLEIE（空闲线中断）与错误中断-&gt; 设置 DMA 缓冲区对齐（F7 DCache 行对齐，避免 cache 污染）
+
+ArchPX4IOSerial::_bus_exchange()每次事务流程：
+准备 RX DMA -&gt; TX DMA 发包 -&gt; 等待 RX DMA 完成或超时-&gt; CRC 校验 -&gt; 失败则重试或报错-&gt; 超时则 _abort_dma() 清理 DMA 状态-&gt; 处理 IDLE 中断触发的&quot;帧结束&quot;语义
+
+F7 有 DCache，DMA 必须处理 cache line 对齐与 invalidate&#x2F;clean。这也是 SOC 层独立于 BSP 层的原因：不同 STM32 系列的 UART&#x2F;DMA&#x2F;中断细节差异显著，通用化会引入大量条件编译。
+驱动层（src/drivers/px4io/）通过 PX4IO_serial_interface() 工厂函数拿到 ArchPX4IOSerial 实例，px4io 驱动本身不直接写寄存器，实现了驱动层与 SOC 层的解耦。
+
+六、Board&#x2F;BSP&#x2F;SOC 层宏到行为的对应关系GPIO 链路Board -&gt; 定义 GPIO_*、PX4_GPIO_INIT_LISTBSP   -&gt; micro_hal.h: px4_arch_configgpio() -&gt; stm32_configgpio()bringup -&gt; init.c 调用 px4_gpio_init(PX4_GPIO_INIT_LIST)最终效果: 上电早期每个焊盘进入确定状态
+
+ADC&#x2F;硬件版本链路Board -&gt; 定义 ADC_HW_VER_SENSE_CHANNEL 等BSP   -&gt; board_hw_rev_ver.c 调用 read_id_dn() 读码值转 ordinalBSP   -&gt; adc.cpp 完成寄存器配置与 EOC 等待，返回 raw dn最终效果: 固件启动时得到 hw_version/hw_revision/hw_type_name
+
+HRT 链路Board -&gt; 选择 HRT_TIMER=8、HRT_TIMER_CHANNEL=3、HRT_PPM_CHANNEL=1BSP   -&gt; hrt.c 用这些宏选择 TIM base/clock/IRQ vector        设 prescaler 让 CNT 以 1MHz free-run最终效果: hrt_absolute_time() 提供统一微秒时间戳；PPM 输入捕获与系统时基同域
+
+PX4IO 串口链路Board -&gt; 给出 /dev/ttyS6、UART base/vector、DMA map、RCC enable、TX/RX GPIOSOC   -&gt; ArchPX4IOSerial::init() 用这些宏配置 UART+DMA+IRQDriver-&gt; 通过 PX4IO_serial_interface() 拿到实例，执行 _bus_exchange()最终效果: PX4IO 通信的&quot;协议/事务&quot;在驱动层稳定，&quot;寄存器/DMA/Cache&quot;在 F7 SOC 层实现
+
+
+
+上一篇：Board 层硬件配置下一篇：固件编译与烧写流程
+
+]]></content>
+      <categories>
+        <category>技术</category>
+        <category>飞控PX4</category>
+        <category>PX4平台层</category>
+      </categories>
+      <tags>
+        <tag>技术博文</tag>
+        <tag>PX4</tag>
+        <tag>NuttX</tag>
+        <tag>BSP</tag>
+        <tag>STM32</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>PX4 EKF2 common.h 公共数据结构详解</title>
+    <url>/2026/02/06/02-common-h%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/</url>
+    <content><![CDATA[一、传感器样本结构体common.h 是 EKF 库的公共头文件，定义了所有模块共享的数据结构和枚举类型。这些结构体被 RingBuffer&lt;T&gt; 模板类直接实例化使用。
+1.1 IMU 样本 imuSamplestruct imuSample &#123;    uint64_t    time_us&#123;&#125;;           // 采样时间戳（微秒）    Vector3f    delta_ang&#123;&#125;;         // 角增量（rad），= ω * dt（陀螺仪积分）    Vector3f    delta_vel&#123;&#125;;         // 速度增量（m/s），= a * dt（加速度计积分）    float       delta_ang_dt&#123;&#125;;      // 角增量对应的时间间隔    float       delta_vel_dt&#123;&#125;;      // 速度增量对应的时间间隔    bool        delta_vel_clipping[3]&#123;&#125;;  // 各轴加速度削波标志&#125;;
+
+关键设计说明：
+
+存储的是增量（delta），而非原始角速度&#x2F;加速度。增量在降采样过程中累积，避免混叠。
+delta_vel_clipping 用于检测加速度计饱和，饱和时抑制对应轴的卡尔曼增益（clearInhibitedStateKalmanGains）。
+
+1.2 GNSS 样本 gnssSamplestruct gnssSample &#123;    uint64_t time_us&#123;&#125;;             // 时间戳    double   lat&#123;&#125;;                 // 纬度（度）    double   lon&#123;&#125;;                 // 经度（度）    float    alt&#123;&#125;;                 // WGS84 高度（米）    float    sacc&#123;&#125;;                // 速度精度（m/s，1σ）    float    hacc&#123;&#125;;                // 水平位置精度（m，1σ）    float    vacc&#123;&#125;;                // 垂直位置精度（m，1σ）    Vector3f vel&#123;&#125;;                 // NED 速度（m/s）    float    pdop&#123;&#125;;                // 位置精度因子    uint8_t  nsats&#123;&#125;;               // 可见卫星数    bool     fix_type&#123;&#125;;            // 定位类型（3D FIX）    float    yaw&#123;&#125;;                 // GPS 航向（需双天线）    float    yaw_acc&#123;&#125;;             // 航向精度    float    yaw_offset&#123;&#125;;          // 安装偏置&#125;;
+
+1.3 磁力计样本 magSamplestruct magSample &#123;    uint64_t time_us&#123;&#125;;    Vector3f mag&#123;&#125;;    // 机体坐标系磁场矢量（Gauss）    bool     reset&#123;&#125;;  // 传感器重置标志&#125;;
+
+磁力计在 EKF 中负责航向约束（yaw fusion）以及地球磁场矢量估计（3 维）+ 机体磁偏差估计（3 维），共 6 个状态分量。
+1.4 其他样本结构
+
+
+结构体
+主要字段
+用途
+
+
+
+baroSample
+time_us, hgt(m)
+气压计高度融合
+
+
+gpsSample（旧名）
+→ gnssSample
+—
+
+
+rangeSample
+time_us, rng(m), quality
+测距仪高度融合
+
+
+airspeedSample
+time_us, true_airspeed, eas2tas
+空速融合
+
+
+flowSample
+time_us, flow_xy_rad, gyro_xyz_rad, quality
+光流融合
+
+
+extVisionSample
+time_us, pos, vel, quat, pos_var, vel_var, angVar, reset_counter
+外部视觉融合
+
+
+dragSample
+time_us, accelXY(机体坐标系)
+阻力模型辅助风速估计
+
+
+
+二、辅助源状态结构 AidSourceStatusAidSourceStatus&lt;N&gt; 是一个模板结构，N 为观测维数（1、2 或 3 维）：
+template&lt;int N&gt;struct AidSourceStatus &#123;    // 融合决策标志    bool    fusion_enabled   &#123;false&#125;;  // 该辅助源是否使能    bool    data_available   &#123;false&#125;;  // 当前是否有有效数据    bool    innovation_rejected &#123;false&#125;; // 新息检验是否拒绝    bool    fused            &#123;false&#125;;  // 本周期是否完成融合    // 新息相关    matrix::Vector&lt;float, N&gt; innovation&#123;&#125;;           // 新息 y = z - Hx    matrix::Vector&lt;float, N&gt; innovation_variance&#123;&#125;;  // 新息方差 S = HPH&#x27;+R    matrix::Vector&lt;float, N&gt; observation&#123;&#125;;          // 观测值 z    matrix::Vector&lt;float, N&gt; observation_variance&#123;&#125;; // 观测噪声方差 R    float    test_ratio&#123;&#125;;         // 归一化新息平方 χ² 检验比率    uint64_t time_last_fuse_us&#123;&#125;;  // 上次成功融合的时间戳&#125;;
+
+设计要点：
+
+新息拒绝机制（innovation_rejected）基于归一化新息平方（NIS）检验：test_ratio = innov² / S。若超过阈值（通常 EKF2_*_GATE 参数控制），则本周期拒绝该测量。
+time_last_fuse_us 用于检测传感器超时，决定是否降级（fallback）。
+
+
+三、EKF 参数结构 parametersparameters 结构体集中存放所有 EKF 可调参数。大部分与 EKF2_* 类 PX4 参数对应，通过 EKF2.cpp 的 updateParams() 写入。
+关键参数分类struct parameters &#123;    // ---- 传感器噪声 ----    float gyro_noise        &#123;1.5e-2f&#125;;  // 陀螺仪过程噪声（rad/s）    float accel_noise       &#123;3.5e-1f&#125;;  // 加速度计过程噪声（m/s²）    float baro_noise        &#123;2.0f&#125;;     // 气压计高度噪声（m，1σ）    float gps_vel_noise     &#123;0.5f&#125;;     // GPS速度噪声（m/s）    float gps_pos_noise     &#123;0.5f&#125;;     // GPS位置噪声（m）    float mag_noise         &#123;5.0e-2f&#125;;  // 磁力计噪声（Gauss）    // ---- 新息拒绝阈值（&quot;gate&quot; = 标准差倍数的平方）----    float heading_innov_gate   &#123;2.6f&#125;;  // 航向新息门 (σ)    float gps_vel_innov_gate   &#123;5.0f&#125;;    float gps_pos_innov_gate   &#123;5.0f&#125;;    float baro_innov_gate      &#123;5.0f&#125;;    // ---- 时间延迟（ms）----    int32_t gps_delay_ms    &#123;110&#125;;    int32_t baro_delay_ms   &#123;0&#125;;    int32_t mag_delay_ms    &#123;0&#125;;    // ---- 传感器使能标志 ----    int32_t mag_fusion_type  &#123;0&#125;;  // 0=自动, 1=磁力计(3D), 4=无磁力计    bool    gnss_vel_use     &#123;true&#125;;    bool    gnss_pos_use     &#123;true&#125;;    bool    gnss_hgt_use     &#123;false&#125;;    // ---- 零偏估计限幅 ----    float gyro_bias_lim      &#123;0.349f&#125;;  // ≈20°/s，陀螺仪零偏上限（rad/s）    float accel_bias_lim     &#123;0.4f&#125;;    // 加速度计零偏上限（m/s²）    // ...&#125;;
+
+设计原则：EKF 的参数调试核心在于过程噪声 vs 观测噪声的权衡：
+
+过程噪声大 → EKF 对模型置信度低 → 更信任传感器 → 响应快但更嘈杂
+观测噪声大 → EKF 对传感器置信度低 → 更信任模型预测 → 平滑但滞后
+
+
+四、枚举类型4.1 高度传感器类型enum class HeightSensor &#123;    BARO  = 0,    GNSS  = 1,    RANGE = 2,    EV    = 3,    NONE  = 4,&#125;;
+
+4.2 偏航估计模式enum class MagFuseType &#123;    AUTO   = 0,   // 自动（室外用磁力计，室内用陀螺积分）    HEADING = 1,  // 仅航向融合    MAG_3D  = 2,  // 完整3D磁场融合    NONE    = 5,  // 无磁力计（依赖双天线GPS或EV）    // ...&#125;;
+
+
+五、小结common.h 是 EKF 内部所有模块的数据契约：
+
+样本结构体 → 规定了 RingBuffer 和 estimator_interface 如何存储传感器数据
+AidSourceStatus → 统一了各传感器融合的状态报告接口
+parameters → 集中管理调参入口，与 PX4 参数系统对接
+
+理解这些数据结构是阅读后续融合代码（control.cpp、covariance.cpp 等）的前提。
+
+相关文章：RingBuffer 环形缓冲区上一篇：EKF2 目录与层级架构系列总目录：PX4 v1.16 源码解读总目录
+
+]]></content>
+      <categories>
+        <category>技术</category>
+        <category>飞控PX4</category>
+        <category>EKF2状态估计</category>
+      </categories>
+      <tags>
+        <tag>技术博文</tag>
+        <tag>PX4</tag>
+        <tag>EKF2</tag>
+        <tag>数据结构</tag>
+        <tag>C++</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>PX4 Navigator navigation.h 与任务数据协议</title>
+    <url>/2026/03/06/02-navigation-h%E4%B8%8E%E4%BB%BB%E5%8A%A1%E6%95%B0%E6%8D%AE%E5%8D%8F%E8%AE%AE/</url>
+    <content><![CDATA[一、任务数据协议层的定位navigation.h 和 safe_point_land.hpp 是 Navigator 模块的 L0 数据协议层，不包含任何运行逻辑，只定义数据语义。后续所有模式（Mission&#x2F;RTL&#x2F;Loiter 等）都基于这里定义的结构体进行操作。
+
+二、NAV_CMD — 导航命令枚举NAV_CMD 定义了任务项的命令类型，决定了 MissionBlock 如何解释该任务项：
+
+
+
+分类
+典型值
+语义
+
+
+
+位置控制
+NAV_CMD_WAYPOINT
+飞往指定航点
+
+
+起降
+NAV_CMD_TAKEOFF &#x2F; NAV_CMD_LAND
+起飞 &#x2F; 降落
+
+
+盘旋
+NAV_CMD_LOITER_UNLIMITED &#x2F; LOITER_TIME_LIMIT &#x2F; LOITER_TO_ALT
+各类盘旋
+
+
+VTOL
+NAV_CMD_VTOL_TAKEOFF &#x2F; VTOL_LAND &#x2F; DO_VTOL_TRANSITION
+VTOL 相关
+
+
+动作
+NAV_CMD_DO_CHANGE_SPEED &#x2F; DO_SET_ROI_* &#x2F; DO_JUMP
+速度&#x2F;ROI&#x2F;跳转
+
+
+围栏
+NAV_CMD_NAV_FENCE_*
+围栏点定义
+
+
+is_mission_item_reached_or_completed() 中的第一步就是 switch(nav_cmd)，不同命令有截然不同的完成判据：
+switch (navigator-&gt;get_mission_item()-&gt;nav_cmd) &#123;    case NAV_CMD_LAND:        return vehicle_land_detected.landed;  // 以落地检测为准    case NAV_CMD_TAKEOFF:        return altitude_reached_and_yaw_ok;   // 高度+航向判断    case NAV_CMD_LOITER_UNLIMITED:        return false;  // 永不自动完成    case NAV_CMD_DO_CHANGE_SPEED:        return true;   // 立即完成（动作型命令）    // ...&#125;
+
+
+三、NAV_FRAME — 坐标系枚举NAV_FRAME 指定任务项高度的参考框架：
+
+
+
+值
+含义
+
+
+
+MAV_FRAME_GLOBAL
+WGS84 绝对高度（MSL）
+
+
+MAV_FRAME_GLOBAL_RELATIVE_ALT
+相对于 Home 的高度（最常用）
+
+
+MAV_FRAME_LOCAL_NED
+本地 NED 坐标系
+
+
+MAV_FRAME_GLOBAL_TERRAIN_ALT
+相对地形的高度（需要地形数据）
+
+
+MissionBlock::get_absolute_altitude_for_item() 根据 altitude_is_relative 字段和 frame 进行高度换算，统一转为 AMSL 绝对高度后再用于计算。
+
+四、mission_item_s — 核心数据结构mission_item_s 是整个 Navigator 的统一任务表达结构，所有导航模式都围绕它工作。
+4.1 字段分层说明struct mission_item_s &#123;    // ─── 空间位置层 ───────────────────────────────────────────    double  lat&#123;&#125;;          // 目标纬度（度）    double  lon&#123;&#125;;          // 目标经度（度）    float   altitude&#123;&#125;;     // 目标高度（m，绝对或相对，取决于 altitude_is_relative）    // ─── 轨迹与接受判据层 ─────────────────────────────────────    float   acceptance_radius&#123;&#125;;   // 水平到达接受半径（m），控制航点切换松紧    float   loiter_radius&#123;&#125;;       // 盘旋半径（m，固定翼 loiter 必须）    float   time_inside&#123;&#125;;         // 在任务点内停留时间（s）    float   yaw&#123;&#125;;                 // 目标航向角（rad）    // ─── 命令执行层 ───────────────────────────────────────────    uint16_t nav_cmd&#123;&#125;;            // 任务命令类型（NAV_CMD_*）    float    params[7]&#123;&#125;;          // MAVLink 命令参数（通用扩展字段）    // ─── 跳转/流程控制层 ──────────────────────────────────────    uint16_t do_jump_mission_index&#123;&#125;;   // DO_JUMP 跳转目标索引    uint16_t do_jump_repeat_count&#123;&#125;;    // DO_JUMP 重复次数    uint16_t do_jump_current_count&#123;&#125;;   // DO_JUMP 当前执行次数    // ─── 着陆/围栏复用层 ──────────────────────────────────────    uint8_t  land_precision&#123;&#125;;          // 着陆精度类型（0=标准，1/2=精确降落）    uint8_t  vertex_count&#123;&#125;;            // 围栏多边形顶点数    float    circle_radius&#123;&#125;;           // 围栏圆形半径（m）    // ─── 行为修饰层 ───────────────────────────────────────────    uint8_t  frame&#123;&#125;;                   // 坐标系（NAV_FRAME）    bool     loiter_exit_xtrack&#123;&#125;;      // 是否从切线方向离开盘旋    bool     force_heading&#123;&#125;;           // 是否强制控制航向    bool     altitude_is_relative&#123;&#125;;    // true=相对Home高度，false=AMSL绝对高度    bool     autocontinue&#123;&#125;;            // 完成后是否自动进入下一任务项    bool     vtol_back_transition&#123;&#125;;    // 是否属于 VTOL 回转换链路&#125;;
+
+4.2 关键字段使用位置
+
+
+字段
+主要使用函数
+说明
+
+
+
+nav_cmd
+is_mission_item_reached_or_completed(), mission_item_to_position_setpoint()
+第一个 switch 分支点
+
+
+acceptance_radius
+is_mission_item_reached_or_completed()
+普通航点水平到达判据
+
+
+loiter_radius
+mission_item_to_position_setpoint()
+固定翼 Loiter、RTL 等盘旋
+
+
+yaw
+is_mission_item_reached_or_completed(), VTOL heading align
+航向到达判据
+
+
+altitude_is_relative
+get_absolute_altitude_for_item(), MissionFeasibilityChecker
+高度换算
+
+
+autocontinue
+MissionBase::on_active(), advance_mission()
+任务自动推进控制
+
+
+vtol_back_transition
+is_mission_item_reached_or_completed(), VTOL landing
+VTOL 回转换判定
+
+
+
+五、mission_item_to_position_setpoint() 翻译过程这是从任务语义到控制量的核心翻译函数，将 mission_item_s 转为 position_setpoint_s：
+flowchart TD    MS[&quot;mission_item_s&quot;] --&gt; CMD&#123;nav_cmd 类型&#125;    CMD --&gt;|WAYPOINT/LOITER| POS[&quot;填充 lat/lon/alt\n设置 type=POSITION\n写入 acceptance_radius&quot;]    CMD --&gt;|TAKEOFF| TKO[&quot;设置 type=TAKEOFF\n填充起飞高度&quot;]    CMD --&gt;|LAND| LND[&quot;设置 type=LAND\n填充落地位置&quot;]    CMD --&gt;|DO_*| CMD2[&quot;直接发 vehicle_command\n不生成 setpoint&quot;]    POS --&gt; SP[&quot;position_setpoint_s&quot;]    TKO --&gt; SP    LND --&gt; SP    SP --&gt; TRIP[&quot;position_setpoint_triplet.current&quot;]
+
+position_setpoint_s 的核心字段：
+
+
+
+字段
+含义
+
+
+
+type
+setpoint 类型（POSITION &#x2F; VELOCITY &#x2F; LOITER &#x2F; TAKEOFF &#x2F; LAND &#x2F; IDLE）
+
+
+lat / lon / alt
+目标全局位置
+
+
+loiter_radius / loiter_direction
+盘旋参数
+
+
+yaw
+目标航向
+
+
+acceptance_radius
+到达半径
+
+
+cruising_speed
+巡航速度限制
+
+
+
+六、mission_fence_point_s — 围栏数据围栏数据存储于 dataman，通过 mission_fence_point_s 表达：
+
+多边形顶点（NAV_FRAME_GLOBAL坐标）：构成包含&#x2F;排除多边形
+圆形区域：中心 + 半径
+Rally 点：安全备降点
+
+Geofence::checkPointAgainstAllGeofences() 读取 dataman 中的围栏数据，判断目标点是否在有效飞行区域内。
+
+七、PositionYawSetpoint — 轻量化位置航向结构PositionYawSetpoint 是一个简化结构，专用于 RTL、safe point、着陆进近等不需要完整 mission_item_s 复杂语义的场景：
+struct PositionYawSetpoint &#123;    float lat&#123;&#125;;      // 纬度（度）    float lon&#123;&#125;;      // 经度（度）    float alt&#123;&#125;;      // 高度（m，AMSL）    float yaw&#123;&#125;;      // 目标航向（rad）&#125;;
+
+safe_point_land.hpp 中的 land_approaches_s 进一步描述着陆进近的几何形状（入场角、最终进近路径等），主要由 RTL 模式在选择着陆方式时使用。
+
+八、小结理解 navigation.h 的关键在于：
+
+mission_item_s 是 Navigator 内部的统一语言，所有模式构造目标时最终都填充它的字段
+nav_cmd 是最核心的分支依据，它决定了完成判据和 setpoint 翻译方式
+高度字段需要结合 altitude_is_relative 和 frame 才能正确解释
+autocontinue 控制任务是否自动推进，这是 mission 模式连续执行的基础
+
+
+上一篇：Navigator 模块架构总览下一篇：Navigator 主循环与模式调度系列总目录：PX4 v1.16 源码解读总目录
+
+]]></content>
+      <categories>
+        <category>技术</category>
+        <category>飞控PX4</category>
+        <category>Navigator导航</category>
+      </categories>
+      <tags>
+        <tag>技术博文</tag>
+        <tag>PX4</tag>
+        <tag>Navigator</tag>
+        <tag>数据结构</tag>
+        <tag>mission_item</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>PX4 EKF2 目录与层级架构</title>
+    <url>/2026/02/05/01-EKF2%E7%9B%AE%E5%BD%95%E4%B8%8E%E5%B1%82%E7%BA%A7%E6%9E%B6%E6%9E%84/</url>
+    <content><![CDATA[一、延迟时间融合架构EKF2 采用延迟时间融合架构，核心思想是：
+
+IMU 数据驱动高频预测（1 kHz → 降采样至 250 Hz）
+多传感器数据在各自的延迟时刻点进行融合（GPS 延迟 ~200 ms，视觉延迟 ~50 ms）
+OutputPredictor 将延迟时刻的状态外推到当前时刻，供控制器使用
+
+这样设计的原因：各传感器的延迟不同，直接用当前时刻的 GPS 数据校正当前 IMU 状态会引入系统性时间错误。通过 RingBuffer 保存 IMU 历史数据，在 GPS 数据到达时回溯找到对应时刻的 IMU 状态进行融合，保证时间域的一致性。
+
+相关基础：uORB 通信机制（上），模块入口与运行模式
+
+
+二、整体架构流程flowchart TB    subgraph input [输入层 - uORB订阅]        IMU[&quot;sensor_combined / vehicle_imu\nIMU加速度计+陀螺仪&quot;]        GPS[&quot;vehicle_gps_position\nGNSS位置/速度&quot;]        MAG[&quot;vehicle_magnetometer\n磁力计&quot;]        BARO[&quot;vehicle_air_data\n气压计&quot;]        FLOW[&quot;vehicle_optical_flow\n光流&quot;]        RNG[&quot;distance_sensor\n测距仪&quot;]        EV[&quot;vehicle_visual_odometry\n外部视觉VIO/MoCap&quot;]    end    subgraph wrapper [EKF2 PX4包装层]        EKF2CPP[&quot;EKF2.cpp\nRun()主循环\n传感器数据采集+格式转换+结果发布&quot;]        SELECTOR[&quot;EKF2Selector.cpp\n多实例选择器\n选择最优EKF输出&quot;]    end    subgraph interface [数据接口层]        ESTI[&quot;estimator_interface.cpp\nsetIMUData / setGpsData等\nRingBuffer延迟缓冲&quot;]        DOWNSAMP[&quot;imu_down_sampler.cpp\nIMU降采样 1kHz→250Hz&quot;]    end    subgraph core [EKF核心算法层]        EKF_UPDATE[&quot;ekf.cpp\nupdate()主循环\ninitialiseFilter()初始化\npredictState()状态预测&quot;]        COV[&quot;covariance.cpp\npredictCovariance()\nP=F*P*F&#x27;+Q&quot;]        CONTROL[&quot;control.cpp\ncontrolFusionModes()\n传感器融合调度中心&quot;]        HELPER[&quot;ekf_helper.cpp\nmeasurementUpdate()\n卡尔曼增益计算&quot;]    end    subgraph publish [输出层 - uORB发布]        ATT[&quot;vehicle_attitude\n姿态四元数&quot;]        LPOS[&quot;vehicle_local_position\n本地NED位置/速度&quot;]        GPOS[&quot;vehicle_global_position\n全局经纬度/海拔&quot;]        STATUS[&quot;estimator_status等\n估计器健康状态&quot;]    end    IMU --&gt; EKF2CPP    GPS --&gt; EKF2CPP    MAG --&gt; EKF2CPP    BARO --&gt; EKF2CPP    EKF2CPP --&gt; ESTI    ESTI --&gt; DOWNSAMP    DOWNSAMP --&gt; EKF_UPDATE    EKF_UPDATE --&gt; COV    EKF_UPDATE --&gt; CONTROL    CONTROL --&gt; HELPER    EKF_UPDATE --&gt; wrapper    wrapper --&gt; SELECTOR    SELECTOR --&gt; ATT    SELECTOR --&gt; LPOS    SELECTOR --&gt; GPOS    EKF2CPP --&gt; STATUS
+
+
+三、目录结构与功能3.1 顶层目录 /src/modules/ekf2/
+
+
+文件
+功能
+
+
+
+EKF2.cpp
+PX4 包装层主入口，Run() 主循环：采集 uORB 传感器数据，调用 EKF 库，发布估计结果
+
+
+EKF2.hpp
+EKF2 类定义，所有 uORB 订阅&#x2F;发布声明
+
+
+EKF2Selector.cpp
+多实例选择器，管理多个 EKF 实例（每个 IMU 一个），基于误差评分选择最优输出
+
+
+Kconfig
+模块编译配置，控制各传感器融合功能的启用&#x2F;禁用
+
+
+3.2 EKF 核心算法 /EKF/核心文件
+
+
+文件
+功能
+
+
+
+common.h
+公共数据结构：imuSample、gnssSample 等样本结构体，参数结构体，枚举
+
+
+ekf.h / ekf.cpp
+EKF 主循环：init()、update()、predictState()、initialiseFilter()
+
+
+estimator_interface.h/.cpp
+数据接口基类，传感器数据接收、RingBuffer 延迟缓冲、IMU 降采样
+
+
+control.cpp
+融合调度中心：controlFusionModes() 协调各传感器融合时机
+
+
+covariance.cpp
+协方差矩阵管理：初始化、预测（P&#x3D;FPF’+Q）、约束、重置
+
+
+RingBuffer.h
+环形缓冲区模板类，所有传感器数据的延迟缓冲
+
+
+ekf_helper.cpp
+辅助函数：measurementUpdate() 卡尔曼更新、状态重置、精度报告
+
+
+状态向量 /python/ekf_derivation/generated/state.h24 维状态向量（EKF 内部操作 24 维，含地形则 25 维）：
+
+
+
+分量
+维数
+说明
+
+
+
+四元数（旋转向量误差）
+3
+姿态
+
+
+速度（NED）
+3
+本地坐标系速度
+
+
+位置（NED）
+3
+本地坐标系位置
+
+
+陀螺仪零偏
+3
+角速度传感器偏差估计
+
+
+加速度计零偏
+3
+加速度传感器偏差估计
+
+
+地球磁场（NED）
+3
+磁场矢量
+
+
+磁偏差
+3
+机体磁场偏差
+
+
+风速（NE）
+2
+水平风速估计
+
+
+地形高度（可选）
+1
+HAGL
+
+
+3.3 辅助源融合 /EKF/aid_sources/
+
+
+子目录
+传感器
+主控文件
+
+
+
+gnss/
+GNSS&#x2F;GPS
+gps_control.cpp、gps_checks.cpp、gnss_height_control.cpp、gnss_yaw_control.cpp
+
+
+magnetometer/
+磁力计
+mag_control.cpp、mag_fusion.cpp
+
+
+barometer/
+气压计
+baro_height_control.cpp
+
+
+optical_flow/
+光流
+optical_flow_control.cpp、optical_flow_fusion.cpp
+
+
+range_finder/
+测距仪
+range_height_control.cpp、range_height_fusion.cpp
+
+
+external_vision/
+外部视觉
+ev_control.cpp（+ pos&#x2F;vel&#x2F;height&#x2F;yaw 子文件）
+
+
+airspeed/
+空速
+airspeed_fusion.cpp
+
+
+drag/
+阻力
+drag_fusion.cpp（多旋翼风速估计）
+
+
+3.4 通用融合函数
+
+
+文件
+功能
+
+
+
+height_control.cpp
+高度融合总调度：多高度源选择（气压&#x2F;GPS&#x2F;测距&#x2F;EV）、参考切换
+
+
+velocity_fusion.cpp
+通用速度融合函数
+
+
+position_fusion.cpp
+通用位置融合函数
+
+
+yaw_fusion.cpp
+通用航向融合函数
+
+
+terrain_control.cpp
+地形估计：初始化、伪融合、有效性判断
+
+
+wind.cpp
+风速估计：外部观测重置、协方差管理
+
+
+3.5 支撑模块
+
+
+文件
+功能
+
+
+
+EKFGSF_yaw.cpp/h
+EKF-GSF 航向估计器：多个并行 3 状态 EKF + AHRS，高斯和滤波加权，不依赖磁力计
+
+
+output_predictor.cpp/h
+输出预测器：IMU 实时积分 + 互补滤波校正（延迟 EKF 状态），提供低延迟输出
+
+
+bias_estimator.cpp/hpp
+通用偏差估计器（用于气压&#x2F;EV 高度偏差）
+
+
+generated/*.h
+Symforce 自动生成的雅可比矩阵 H、新息方差计算、协方差预测公式（25 个头文件）
+
+
+
+四、核心处理时序sequenceDiagram    participant Sensor as 传感器驱动    participant EKF2 as EKF2.cpp    participant Buffer as RingBuffer    participant Core as ekf.cpp    participant Control as control.cpp    participant AidSrc as aid_sources/*    participant Output as output_predictor    Sensor-&gt;&gt;EKF2: uORB回调(IMU数据到达)    EKF2-&gt;&gt;EKF2: Run()主循环    EKF2-&gt;&gt;Buffer: push(imu_downsampled)    EKF2-&gt;&gt;Buffer: push(sensor_sample, GPS/Mag等)    Output-&gt;&gt;Output: calculateOutputStates() 实时积分（无延迟）    EKF2-&gt;&gt;Core: update()    Core-&gt;&gt;Buffer: get_oldest() 获取延迟时刻IMU    Core-&gt;&gt;Core: predictState() 状态预测    Core-&gt;&gt;Core: predictCovariance() P=FPF&#x27;+Q    Core-&gt;&gt;Control: controlFusionModes()    Control-&gt;&gt;AidSrc: controlGpsFusion()等    AidSrc-&gt;&gt;Buffer: pop_first_older_than() 获取延迟传感器数据    AidSrc-&gt;&gt;Core: measurementUpdate() 卡尔曼更新    Core-&gt;&gt;Output: correctOutputStates() 用延迟修正量校正实时积分    EKF2-&gt;&gt;EKF2: PublishAttitude / LocalPosition / ...
+
+
+
+下一篇：common.h 数据结构系列总目录：PX4 v1.16 源码解读总目录
+
+]]></content>
+      <categories>
+        <category>技术</category>
+        <category>飞控PX4</category>
+        <category>EKF2状态估计</category>
+      </categories>
+      <tags>
+        <tag>技术博文</tag>
+        <tag>PX4</tag>
+        <tag>架构</tag>
+        <tag>EKF2</tag>
+        <tag>状态估计</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>PX4 参数系统与 Kconfig（Commander 视角）</title>
+    <url>/2026/03/02/02-%E5%8F%82%E6%95%B0%E7%B3%BB%E7%BB%9F%E4%B8%8EKconfig/</url>
+    <content><![CDATA[一、PARAM_DEFINE_* 宏的本质PARAM_DEFINE_* 是 PX4 参数系统的注册宏，将参数名和默认值写入参数表：
+PARAM_DEFINE_FLOAT(参数名, 默认值);  // 浮点参数PARAM_DEFINE_INT32(参数名, 默认值);  // 整型参数
+
+参数系统特性：
+
+参数持久化存储在 SD 卡的 params 文件中，重启后保留
+通过 MAVLink 协议可被地面站（QGroundControl）读写
+C++ 代码中通过 DEFINE_PARAMETERS 宏绑定到本地变量，updateParams() 同步最新值
+
+
+相关前置：Commander 模块框架
+
+
+二、关键参数详解2.1 手动姿态输入PARAM_DEFINE_FLOAT(TRIM_ROLL,  0.0f);PARAM_DEFINE_FLOAT(TRIM_PITCH, 0.0f);PARAM_DEFINE_FLOAT(TRIM_YAW,   0.0f);
+
+控制杆量中心点补偿，归一化控制量。用于补偿机体重心偏置或机械安装误差导致的飞行偏斜。
+2.2 数据链路监控PARAM_DEFINE_INT32(COM_DL_LOSS_T,    10);PARAM_DEFINE_INT32(COM_HLDL_LOSS_T, 120);PARAM_DEFINE_INT32(COM_HLDL_REG_T,    0);
+
+
+
+
+参数
+含义
+
+
+
+COM_DL_LOSS_T
+普通地面站数据链路连续多少秒无数据后判定为 connection lost
+
+
+COM_HLDL_LOSS_T
+高延迟链路（卫星通信等）判丢的超时阈值（秒）
+
+
+COM_HLDL_REG_T
+从已丢失状态恢复为健康的去抖&#x2F;回归时间
+
+
+设置合理的超时阈值可避免链路短暂波动触发 failsafe，同时保证真实链路丢失时的响应速度。
+2.3 RC&#x2F;遥控器信号丢失PARAM_DEFINE_FLOAT(COM_RC_LOSS_T, 0.5f);
+
+RC 或摇杆 setpoint 超过 COM_RC_LOSS_T 秒没有更新，判定手动输入失效。
+超时前系统继续执行最后一次输入，超时时间设置过长存在安全隐患：飞机可能持续执行旧杆量（持续倾斜、爬升或俯冲）。
+2.4 Home 点策略PARAM_DEFINE_INT32(COM_HOME_EN,     1);PARAM_DEFINE_INT32(COM_HOME_IN_AIR, 0);
+
+
+
+
+参数
+含义
+
+
+
+COM_HOME_EN
+允许自动设置 Home 点（解锁时）
+
+
+COM_HOME_IN_AIR
+是否允许起飞后更新 Home 点（尝试回算真实起飞点）
+
+
+COM_HOME_IN_AIR 默认关闭，更保守。若飞行过程中错误更新 Home，会导致 RTL 朝错误方向飞行。
+
+与 HomePosition 管理的关联：参见 HomePosition 管理
+
+2.5 RC 输入源选择PARAM_DEFINE_INT32(COM_RC_IN_MODE, 3);
+
+控制 RC 输入的来源模式（纯 RC、摇杆、两者兼容等）。
+2.6 RC 解锁&#x2F;锁定迟滞PARAM_DEFINE_INT32(COM_RC_ARM_HYST, 1000);
+
+通过摇杆组合（如油门最低+偏航最右）触发 ARM&#x2F;DISARM，需要保持该动作至少 1000 ms 才生效。迟滞保护防止误触发解锁。
+
+三、Kconfig 配置menuconfig MODULES_COMMANDER    bool &quot;commander&quot;    default nmenuconfig USER_COMMANDER    bool &quot;commander running as userspace module&quot;    default y    depends on BOARD_PROTECTED &amp;&amp; MODULES_COMMANDER
+
+
+
+
+配置项
+含义
+
+
+
+MODULES_COMMANDER
+是否编译 Commander 模块。若板级未启用此项，Commander 不会进入固件，相关参数修改不会生效
+
+
+USER_COMMANDER
+在支持内存保护的板子上，是否将 Commander 放到 userspace 运行
+
+
+注意：若板级的 .px4board 文件中未包含 CONFIG_MODULES_COMMANDER=y，则 Commander 模块不会被编译，修改任何 COM_* 参数都不会有实际效果。
+
+四、参数在代码中的使用方式Commander 继承 ModuleParams，通过 DEFINE_PARAMETERS 宏声明参数：
+DEFINE_PARAMETERS(    (ParamFloat&lt;px4::params::COM_RC_LOSS_T&gt;)  _param_rc_loss_t,    (ParamInt&lt;px4::params::COM_DL_LOSS_T&gt;)    _param_dl_loss_t,    (ParamInt&lt;px4::params::COM_HOME_EN&gt;)       _param_home_en)
+
+主循环中检测参数更新并同步：
+if (_parameter_update_sub.updated()) &#123;    parameter_update_s param_update;    _parameter_update_sub.copy(&amp;param_update);    updateParams();  // 将最新参数值同步到本地成员变量&#125;
+
+随后直接使用本地变量（而不是每次都查表），保证高频主循环的参数读取效率。
+
+
+上一篇：Commander 模块框架下一篇：飞行模式编码与映射
+
+]]></content>
+      <categories>
+        <category>技术</category>
+        <category>飞控PX4</category>
+        <category>Commander决策层</category>
+      </categories>
+      <tags>
+        <tag>技术博文</tag>
+        <tag>PX4</tag>
+        <tag>Commander</tag>
+        <tag>Kconfig</tag>
+        <tag>参数系统</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>PX4 mc_pos_control 总览与控制链路</title>
+    <url>/2026/03/09/01-mc_pos_control%E6%80%BB%E8%A7%88%E4%B8%8E%E6%8E%A7%E5%88%B6%E9%93%BE%E8%B7%AF/</url>
+    <content><![CDATA[一、mc_pos_control 的定位src/modules/mc_pos_control 是多旋翼位置&#x2F;速度串级控制器，负责将上游的轨迹设定点（trajectory_setpoint）转换为姿态控制器可执行的姿态设定点（vehicle_attitude_setpoint）。
+它不包含轨迹生成逻辑，轨迹由上游 flight_mode_manager 中的各 FlightTask 生成。
+
+相关上游：Navigator 主循环与模式调度
+
+
+二、全局控制链路flowchart LR    NAV[&quot;Navigator\nposition_setpoint_triplet&quot;] --&gt; FMM[&quot;flight_mode_manager\nFlightTaskAuto\ntriplet → trajectory_setpoint&quot;]    MANUAL[&quot;手动模式\nFlightTaskPosition/Altitude&quot;] --&gt;|trajectory_setpoint\nvehicle_constraints| MPC    OFFBOARD[&quot;Offboard\nmavlink_receiver&quot;] --&gt;|trajectory_setpoint| MPC    GOTO[&quot;goto_setpoint&quot;] --&gt;|goto_setpoint| MPC    FMM --&gt;|trajectory_setpoint\nvehicle_constraints| MPC[&quot;mc_pos_control&quot;]    EKF[&quot;EKF2\nvehicle_local_position&quot;] --&gt; MPC    MODE[&quot;vehicle_control_mode&quot;] --&gt; MPC    HTE[&quot;hover_thrust_estimate&quot;] --&gt; MPC    MPC --&gt;|vehicle_attitude_setpoint| ATT[&quot;mc_att_control&quot;]    MPC --&gt;|vehicle_local_position_setpoint| Land[&quot;land_detector / 其他&quot;]    MPC --&gt;|takeoff_status| FMM2[&quot;flight_mode_manager\n任务切换逻辑&quot;]
+
+关键链路说明：
+
+自动模式：Navigator → FlightTaskAuto → mc_pos_control
+手动位置模式：FlightTaskPosition → mc_pos_control（不经过 Navigator）
+Offboard 模式：mavlink_receiver 直接发布 trajectory_setpoint，绕过 Navigator
+
+
+三、模块内部层级flowchart TD    subgraph MPC[&quot;mc_pos_control&quot;]        Top[&quot;MulticopterPositionControl.cpp\n顶层调度与集成层&quot;]        Filter[&quot;set_vehicle_states\n状态预处理（陷波+低通滤波）&quot;]        EKFReset[&quot;adjustSetpointForEKFResets\nEKF重置鲁棒补偿&quot;]        Takeoff[&quot;TakeoffHandling\n起飞状态机与推力斜坡&quot;]        Goto[&quot;GotoControl\ngoto目标平滑桥接层&quot;]        Core[&quot;PositionControl.cpp\n核心串级控制算法\n位置P + 速度PID + 推力映射&quot;]        Math[&quot;ControlMath.cpp\n几何映射与向量约束&quot;]        Failsafe[&quot;generateFailsafeSetpoint\n故障回退层&quot;]    end    Top --&gt; Filter    Top --&gt; EKFReset    Top --&gt; Takeoff    Top --&gt; Goto    Top --&gt; Core    Core --&gt; Math    Top --&gt; Failsafe    Failsafe --&gt; Core
+
+
+四、目录结构
+
+
+文件
+功能
+
+
+
+MulticopterPositionControl.cpp/hpp
+主循环：状态预处理、EKF 重置补偿、起飞处理、调用核心控制器、发布输出
+
+
+PositionControl/PositionControl.cpp/hpp
+核心算法：位置 P 环 + 速度 PID 环 + 推力映射
+
+
+PositionControl/ControlMath.cpp/hpp
+几何工具：推力向量→姿态四元数、限倾角、XY 速度约束
+
+
+Takeoff/Takeoff.cpp/hpp
+起飞状态机：disarmed → spoolup → ready → rampup → flight
+
+
+GotoControl/GotoControl.cpp/hpp
+goto 平滑桥接：goto_setpoint → 带约束的 trajectory_setpoint
+
+
+*_params.c 系列
+参数定义（增益、限速、推力、滤波、起降等）
+
+
+
+五、输入输出接口5.1 订阅话题
+
+
+话题
+关键字段
+用途
+
+
+
+vehicle_local_position
+x&#x2F;y&#x2F;z, vx&#x2F;vy&#x2F;vz, reset_counter
+EKF 位置速度反馈
+
+
+trajectory_setpoint
+position[3], velocity[3], acceleration[3], yaw
+上游轨迹指令
+
+
+vehicle_constraints
+speed_up, speed_down, want_takeoff
+任务物理约束
+
+
+vehicle_control_mode
+flag_multicopter_position_control_enabled, flag_armed
+模式使能标志
+
+
+vehicle_land_detected
+landed, ground_contact
+着地状态
+
+
+hover_thrust_estimate
+hover_thrust, valid
+自适应悬停推力
+
+
+goto_setpoint
+position[3], heading, max_*_speed
+Goto 目标
+
+
+5.2 发布话题
+
+
+话题
+下游消费者
+关键字段
+
+
+
+vehicle_attitude_setpoint
+mc_att_control
+q_d（目标姿态四元数）、thrust_body[3]
+
+
+vehicle_local_position_setpoint
+land_detector, 状态机
+完整的 pos&#x2F;vel&#x2F;acc&#x2F;thrust 设定值
+
+
+takeoff_status
+flight_mode_manager
+起飞阶段标志
+
+
+
+六、串级控制结构概览position_setpoint (pos_sp)        ↓ 位置 P 环velocity_setpoint (vel_sp)  +  前馈速度        ↓ 速度 PID 环（P + I + D*vel_dot）acceleration_setpoint (acc_sp)  +  前馈加速度        ↓ 加速度到推力/姿态映射 (_accelerationControl)body_z 方向（归一化推力方向）→ 姿态四元数 q_dcollective_thrust → thrust_body        ↓ 推力分配与优先级保证（垂直优先、抗积分饱和）vehicle_attitude_setpoint
+
+设计关键：
+
+位置环只有 P（比例），无积分（位置误差长时间积累由速度 I 项补偿）
+速度环为完整 PID（P 项对速度误差、I 项消除稳态误差、D 项用滤波后加速度而非速度微分）
+推力方向（body_z）决定姿态，推力大小（collective_thrust）决定油门
+
+
+七、参数文件说明mc_pos_control 的参数分散在多个文件中，分类清晰：
+
+
+
+参数文件
+主要参数
+作用域
+
+
+
+gain_params.c
+MPC_XY_P, MPC_XY_VEL_P_ACC/I/D, MPC_Z_P, MPC_Z_VEL_P/I/D
+位置&#x2F;速度 PID 增益
+
+
+limits_params.c
+MPC_XY_VEL_MAX, MPC_Z_VEL_MAX_UP/DN, MPC_THR_MIN/MAX, MPC_TILTMAX_AIR/LND
+物理约束边界
+
+
+params.c
+MPC_THR_HOVER, MPC_USE_HTE, MPC_VEL_LP/NF
+悬停推力、滤波器
+
+
+takeoff_land_params.c
+MPC_TKO_RAMP_T, MPC_TKO_SPEED, MPC_LAND_SPEED
+起降参数
+
+
+autonomous_params.c
+MPC_XY_CRUISE, MPC_ACC_HOR, MPC_JERK_AUTO
+自动任务轨迹约束
+
+
+responsiveness_params.c
+MPC_RESPONSIVENESS
+高层响应性参数（派生底层增益）
+
+
+
+八、小结mc_pos_control 的核心设计原则：
+
+关注点分离：轨迹生成在 FlightTask，控制执行在 mc_pos_control，两层职责明确
+鲁棒性优先：EKF 重置补偿、起飞斜坡保护、故障回退层保证各种异常情况下的安全
+串级解耦：位置→速度→加速度→推力&#x2F;姿态的串级结构，各环独立调参
+自适应悬停：HTE（悬停推力估计器）实时补偿电池电压下降或载荷变化
+
+
+下一篇：MulticopterPositionControl 主循环与数据清洗系列总目录：PX4 v1.16 源码解读总目录
+
+]]></content>
+      <categories>
+        <category>技术</category>
+        <category>飞控PX4</category>
+        <category>位置控制</category>
+      </categories>
+      <tags>
+        <tag>技术博文</tag>
+        <tag>PX4</tag>
+        <tag>mc_pos_control</tag>
+        <tag>位置控制</tag>
+        <tag>串级PID</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>PX4 Navigator 主循环与模式调度</title>
+    <url>/2026/03/06/03-Navigator%E4%B8%BB%E5%BE%AA%E7%8E%AF%E4%B8%8E%E6%A8%A1%E5%BC%8F%E8%B0%83%E5%BA%A6/</url>
+    <content><![CDATA[一、Navigator::run() 主循环Navigator 运行在 WorkQueue 上，主循环执行顺序如下：
+flowchart TD    A[run 开始] --&gt; B[参数更新\nparams_update]    B --&gt; C[轮询核心 uORB topic\nvehicle_status / local_pos / global_pos\nhome_pos / mission / command / land_detected]    C --&gt; D[geofence_breach_check\n围栏安全检查 - 优先]    D --&gt; E[根据 nav_state\n选择当前模式对象]    E --&gt; F[NavigatorMode::run active\n驱动当前模式生命周期]    F --&gt; G&#123;triplet 有更新?&#125;    G --&gt;|是| H[发布 position_setpoint_triplet]    G --&gt;|否| I[不发布]    H --&gt; J[发布辅助 topic\nmission_result / navigator_status\ngeofence_result / navigator_status]    I --&gt; J    J --&gt; K[run 结束 等待下次回调]
+
+
+二、模式选择逻辑根据 vehicle_status.nav_state（由 Commander 设定，见飞行模式编码）选择对应的模式对象：
+// Navigator::run() 中的模式选择（简化）NavigatorMode *navigation_mode_new = nullptr;switch (_vehicle_status.nav_state) &#123;    case vehicle_status_s::NAVIGATION_STATE_AUTO_MISSION:        navigation_mode_new = &amp;_mission;        break;    case vehicle_status_s::NAVIGATION_STATE_AUTO_LOITER:        navigation_mode_new = &amp;_loiter;        break;    case vehicle_status_s::NAVIGATION_STATE_AUTO_RTL:        navigation_mode_new = &amp;_rtl;        break;    case vehicle_status_s::NAVIGATION_STATE_AUTO_TAKEOFF:        navigation_mode_new = &amp;_takeoff;        break;    case vehicle_status_s::NAVIGATION_STATE_AUTO_LAND:        navigation_mode_new = &amp;_land;        break;    case vehicle_status_s::NAVIGATION_STATE_AUTO_PRECLAND:        navigation_mode_new = &amp;_precland;        break;    // ...&#125;// 若模式发生切换，触发 on_inactivation() + on_activation()if (navigation_mode_new != _navigation_mode) &#123;    if (_navigation_mode) _navigation_mode-&gt;run(false);  // 触发 on_inactivation    _navigation_mode = navigation_mode_new;&#125;// 驱动当前模式if (_navigation_mode) _navigation_mode-&gt;run(true);  // 触发 on_active// 驱动所有非活跃模式（后台维护）for (auto *mode : _navigation_mode_array) &#123;    if (mode != _navigation_mode) mode-&gt;run(false);  // 触发 on_inactive&#125;
+
+
+三、NavigatorMode 生命周期机制NavigatorMode::run(bool active) 统一管理四种钩子：
+void NavigatorMode::run(bool active) &#123;    if (active) &#123;        if (!_active) &#123;            _active = true;            on_activation();  // 首次激活        &#125; else &#123;            on_active();      // 持续激活        &#125;    &#125; else &#123;        if (_active) &#123;            _active = false;            on_inactivation();  // 切出        &#125; else &#123;            on_inactive();      // 后台维护        &#125;    &#125;&#125;
+
+这一机制保证了：
+
+模式切入&#x2F;切出时一定执行一次初始化&#x2F;清理
+非活跃模式在后台持续维护状态（如 RTL 持续估计剩余时间）
+
+
+四、MissionBase — 任务执行框架Mission 系模式（Mission、RtlMissionFast 等）都使用 MissionBase 框架管理任务：
+flowchart TD    MB[MissionBase::on_active] --&gt; A[updateMavlinkMission\n从 mission topic 同步元信息]    A --&gt; B[updateDatamanCache\n从 dataman 读取任务项]    B --&gt; C[loadCurrentMissionItem\n加载当前 mission_item_s]    C --&gt; D[生成 current/next triplet\nsetActiveMissionItems]    D --&gt; E&#123;当前任务是否完成?&#125;    E --&gt;|否| F[维持当前 setpoint]    E --&gt;|是| G[advance_mission\n推进到下一任务项]    G --&gt; H&#123;autocontinue?&#125;    H --&gt;|是| D    H --&gt;|否| I[等待用户命令]
+
+任务数据读取链：
+uORB: mission_s（元信息：count, current_seq）    ↓ updateMavlinkMission()DatamanCache（异步预取）    ↓ updateDatamanCache()DatamanClient（按需读取）    ↓ loadCurrentMissionItem()当前 mission_item_s
+
+
+五、MissionBlock — 公共任务语义所有模式在生成任务时都通过 MissionBlock 进行：
+flowchart LR    Mode[&quot;具体模式\n(Mission/Loiter/RTL)&quot;] --&gt;|构造/修改| MS[&quot;mission_item_s&quot;]    MS --&gt; MB[&quot;MissionBlock\n公共语义解释器&quot;]    MB --&gt;|位置型任务| SP[&quot;position_setpoint_s&quot;]    MB --&gt;|动作型任务| CMD[&quot;vehicle_command&quot;]    SP --&gt; TRIP[&quot;position_setpoint_triplet.current&quot;]    TRIP --&gt; FMM[&quot;flight_mode_manager\nFlightTaskAuto&quot;]
+
+具体实现中，模式通过设置 _mission_item（MissionBlock 的成员）并调用 mission_item_to_position_setpoint() 来生成 triplet：
+// 以 Loiter 为例：void Loiter::set_loiter_position() &#123;    _mission_item.nav_cmd = NAV_CMD_LOITER_UNLIMITED;    _mission_item.lat     = _navigator-&gt;get_global_position()-&gt;lat;    _mission_item.lon     = _navigator-&gt;get_global_position()-&gt;lon;    _mission_item.altitude = _navigator-&gt;get_global_position()-&gt;alt + _navigator-&gt;get_loiter_min_alt();    _mission_item.acceptance_radius = _navigator-&gt;get_acceptance_radius();    // 通过 MissionBlock 翻译并写入 triplet    mission_item_to_position_setpoint(_mission_item, &amp;pos_sp_triplet-&gt;current);    _navigator-&gt;set_position_setpoint_triplet_updated();&#125;
+
+
+六、RTL 策略树RTL 不是单一状态机，而是顶层策略选择器：
+flowchart TD    RTL[&quot;RTL::on_activation&quot;] --&gt; Decide[&quot;setRtlTypeAndDestination\nfindRtlDestination&quot;]    Decide --&gt; Type&#123;RTL_TYPE 参数&#125;    Type --&gt;|0: 直接返航| Direct[&quot;RtlDirect\n直飞→盘旋→降落&quot;]    Type --&gt;|1: 直飞任务降落段| DML[&quot;RtlDirectMissionLand\n直飞到任务降落起点→沿任务落地&quot;]    Type --&gt;|2: 任务正向快速返回| MF[&quot;RtlMissionFast\n沿任务正向到降落段&quot;]    Type --&gt;|3: 任务反向回溯| MFR[&quot;RtlMissionFastReverse\n沿任务反向回溯→接入降落&quot;]    Direct --&gt; Exec[&quot;执行返航状态机\n更新 triplet&quot;]    DML --&gt; Exec    MF --&gt; Exec    MFR --&gt; Exec
+
+RtlDirect 的核心状态机（最常用）：
+
+
+
+状态
+动作
+
+
+
+CLIMBING
+爬升到返航高度（RTL_RETURN_ALT）
+
+
+MOVE_TO_LOITER
+直飞到 Home&#x2F;safe point 上方
+
+
+LOITER_DOWN
+盘旋下降到 RTL_DESCEND_ALT
+
+
+LOITER_HOLD
+等待 RTL_LAND_DELAY 秒
+
+
+MOVE_TO_LAND
+飞向精确降落点（若使能精降）
+
+
+LAND
+执行降落
+
+
+IDLE
+完成
+
+
+
+七、围栏安全链围栏检查优先于所有模式执行，在每次主循环中调用：
+flowchart TD    Check[&quot;geofence_breach_check&quot;] --&gt; Predict&#123;GF_PREDICT 开启?&#125;    Predict --&gt;|是| PredPos[&quot;GeofenceBreachAvoidance\n基于速度/加速度预测未来位置&quot;]    Predict --&gt;|否| CurPos[&quot;用当前位置检查&quot;]    PredPos --&gt; GF[&quot;Geofence\n检查是否越界\n(距离/高度/多边形/圆形)&quot;]    CurPos --&gt; GF    GF --&gt; Result&#123;是否越界?&#125;    Result --&gt;|否| NoAction[继续正常执行]    Result --&gt;|是| Action&#123;GF_ACTION 参数&#125;    Action --&gt;|1: Warning| Warn[&quot;发布警告\n继续执行&quot;]    Action --&gt;|2: Hold| Hold[&quot;注入 Loiter 到安全点&quot;]    Action --&gt;|3: RTL| RTLA[&quot;触发 RTL&quot;]    Action --&gt;|4: Land| Land[&quot;触发就地降落&quot;]
+
+
+八、小结Navigator 主循环的核心机制：
+
+以 nav_state 为中枢：Commander 通过 nav_state 驱动模式切换，Navigator 只执行选定的模式
+生命周期统一调度：NavigatorMode::run() 保证切入&#x2F;切出&#x2F;后台的干净执行
+MissionBlock 语义统一：所有模式产生的任务最终通过同一翻译层转化，保证一致性
+安全优先：围栏检查在模式执行之前，任何位置违规都会优先触发保护行为
+
+
+上一篇：navigation.h 与数据协议层下一篇：围栏与精降复杂状态机系列总目录：PX4 v1.16 源码解读总目录
+
+]]></content>
+      <categories>
+        <category>技术</category>
+        <category>飞控PX4</category>
+        <category>Navigator导航</category>
+      </categories>
+      <tags>
+        <tag>技术博文</tag>
+        <tag>PX4</tag>
+        <tag>状态机</tag>
+        <tag>Navigator</tag>
+        <tag>调度</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>PX4 PositionControl 串级控制算法详解</title>
+    <url>/2026/03/09/03-PositionControl%E4%B8%B2%E7%BA%A7%E6%8E%A7%E5%88%B6%E7%AE%97%E6%B3%95/</url>
+    <content><![CDATA[一、串级控制总览PositionControl.cpp 实现了一个纯算法层，不依赖任何 uORB 或 PX4 特定接口：
+pos_sp → [位置 P 环] → vel_sp_from_pos                     + vel_sp_feed_forward                           ↓                    vel_sp (限幅后)                     → [速度 PID 环] → acc_sp_from_vel                                      + acc_sp_feed_forward                                            ↓                                     acc_sp (合成后)                                      → [推力映射 + 姿态几何] → thr_sp + q_d                                                             ↓                                              [推力分配 + 抗饱和] → 最终输出
+
+
+二、位置环 _positionControl()位置环是纯 P 控制器，将位置误差转换为速度指令：
+void PositionControl::_positionControl() &#123;    // 水平位置 P 环    Vector2f vel_sp_position_xy = (_pos_sp.xy() - _pos.xy()) * _gain_pos_p.xy();    // 垂直位置 P 环（Z 轴向下为正，注意方向一致性）    float vel_sp_position_z = (_pos_sp(2) - _pos(2)) * _gain_pos_p(2);    // 合并为速度设定点    if (PX4_ISFINITE(_pos_sp(0))) _vel_sp(0) += vel_sp_position_xy(0);    if (PX4_ISFINITE(_pos_sp(1))) _vel_sp(1) += vel_sp_position_xy(1);    if (PX4_ISFINITE(_pos_sp(2))) _vel_sp(2) += vel_sp_position_z;&#125;
+
+参数：MPC_XY_P（水平位置增益）、MPC_Z_P（垂直位置增益）
+为何只用 P 不用 PID：
+
+位置误差的持续积累由内环速度的 I 项补偿（稳态位置误差最终反映为持续速度误差，由速度 I 消除）
+位置 D 项即速度反馈，已在内环中处理
+
+速度设定点合成后进行限幅：
+// 水平速度：优先级限幅（constrainXY）// 若合速度超限，等比缩小两轴，保持方向constrainXY(vel_sp_ff.xy(), vel_sp_from_pos.xy(), _lim_vel_horizontal, _vel_sp.xy());// 垂直速度：上下分别限幅_vel_sp(2) = math::constrain(_vel_sp(2), -_lim_vel_up, _lim_vel_down);
+
+
+三、速度环 _velocityControl()速度环是完整 PID 控制器：
+[\dot{e}v &#x3D; v{sp} - v][\mathbf{a}_{sp} &#x3D; K_P \cdot e_v + K_I \cdot \int e_v , dt - K_D \cdot \dot{v}]
+注意 D 项使用的是滤波后的加速度估计（set_vehicle_states 中计算的 states.acceleration），而非速度的数值微分，有效避免了数值微分引入的噪声放大。
+void PositionControl::_velocityControl(const float dt) &#123;    // 速度误差    const Vector3f vel_error = _vel_sp - _vel;    // PID 计算    Vector3f acc_sp_velocity =        vel_error.emult(_gain_vel_p) +   // P 项        _vel_int.emult(_gain_vel_i) -     // I 项（积分积累）        _vel_dot.emult(_gain_vel_d);      // D 项（用滤波加速度）    // 前馈加速度叠加    if (_acc_sp.isAllFinite()) &#123;        _acc_sp += acc_sp_velocity;    &#125; else &#123;        _acc_sp = acc_sp_velocity;    &#125;    // 积分更新（含抗饱和）    _vel_int += vel_error * _gain_vel_i * dt;    // ... 抗饱和见 §6&#125;
+
+参数：
+
+MPC_XY_VEL_P_ACC、MPC_XY_VEL_I_ACC、MPC_XY_VEL_D_ACC：水平速度 PID
+MPC_Z_VEL_P_ACC、MPC_Z_VEL_I_ACC、MPC_Z_VEL_D_ACC：垂直速度 PID
+
+注：参数名后缀 _ACC 表示单位是 m&#x2F;s²（加速度归一化），而非传统的无量纲增益。
+
+四、推力映射与姿态几何 _accelerationControl()这是整个控制器最关键的非线性环节：将期望加速度向量转换为物理可实现的推力和姿态。
+4.1 物理模型多旋翼只能沿机体 Z 轴（机体向上方向）施加推力：
+[\mathbf{T}{body} &#x3D; T{collective} \cdot \hat{\mathbf{z}}_{body}]
+在导航系（NED）中，重力方向为 ( \mathbf{g} &#x3D; [0, 0, g]^T )，期望加速度：
+[\mathbf{a}{sp} &#x3D; \frac{\mathbf{T}{body}}{m} - \mathbf{g}]
+4.2 body_z 计算（目标姿态方向）将期望加速度转换为机体 Z 轴方向（推力方向）：
+// 期望加速度 + 悬停补偿（Z 轴需要额外补偿重力）Vector3f body_z = -(_acc_sp + Vector3f(0.f, 0.f, CONSTANTS_ONE_G));// 归一化（只要方向，不要大小）body_z.normalize();
+
+注意：NED 坐标系中 Z 向下为正，重力加速度 (g) 在 Z+ 方向。推力方向是加速度需求加上重力补偿后的方向，取反（因为推力向上）。
+4.3 倾角限制 limitTilt()// 在 ControlMath.cpp 中// 将 body_z 限制在倾角 tilt_max 范围内// 超过时，在保持 yaw 方向不变的前提下，将 body_z 投影到最大倾角圆锥面上Vector3f limitTilt(Vector3f body_z, Vector3f world_z, float max_tilt_rad) &#123;    const float dot = math::constrain(body_z.dot(world_z), -1.f, 1.f);    if (acos(dot) &gt; max_tilt_rad) &#123;        // 将 body_z 旋转到最大倾角方向        const float b = cos(max_tilt_rad);        body_z = body_z + world_z * (b - dot);        body_z.normalize();    &#125;    return body_z;&#125;
+
+4.4 推力大小计算（collective_thrust）在确定推力方向后，计算需要多大的推力才能产生期望的加速度：
+// collective_thrust 是沿 body_z 方向的总推力（归一化，0=无推力，1=最大推力）// 从期望加速度在 body_z 方向的投影计算float collective_thrust = -(_acc_sp + Vector3f(0.f, 0.f, CONSTANTS_ONE_G)).dot(body_z);// 转为无量纲推力（考虑悬停推力和质量）collective_thrust = collective_thrust / _hover_thrust * 0.5f;  // 归一化collective_thrust = math::constrain(collective_thrust, _lim_thr_min, _lim_thr_max);
+
+4.5 推力向量合成// 机体推力向量 = 推力大小 × 推力方向_thr_sp = -body_z * collective_thrust;
+
+4.6 姿态四元数生成 thrustToAttitude()// ControlMath.cpp 中Quatf ControlMath::thrustToAttitude(const Vector3f &amp;thr_sp, const float yaw_sp) &#123;    // body_z = -thr_sp.normalized()（推力方向即机体 Z 轴方向）    // 给定 body_z 和目标 yaw，构造完整旋转矩阵    // body_x = 在 xy 平面的投影方向（由 yaw_sp 决定）    // body_y = body_z × body_x    const Vector3f body_z = -thr_sp.normalized();    const Vector3f body_x_proj = &#123;cosf(yaw_sp), sinf(yaw_sp), 0.f&#125;;    const Vector3f body_y = body_z % body_x_proj;  // 叉乘    const Vector3f body_x = body_y % body_z;    Dcmf R;    R.col(0) = body_x;    R.col(1) = body_y;    R.col(2) = body_z;    return Quatf(R);&#125;
+
+
+五、垂直优先推力分配多旋翼的总推力有上限 MPC_THR_MAX，当水平方向需要大倾角（大推力分量）时，不能无限增大总推力。PX4 采用垂直优先策略：
+
+先保证 Z 轴推力（高度控制优先）
+在剩余推力余量内，分配水平推力
+若水平推力不足，按等比缩小水平推力（不影响垂直分量）
+
+// 垂直推力必须保证const float thrust_z = -_thr_sp(2);  // NED Z 轴，向下为正，推力向上故取负// 水平推力裕量计算const float thrust_max_xy_sq = sq(_param_mpc_thr_max.get()) - sq(thrust_z);const float thrust_max_xy = math::max(0.f, sqrtf(thrust_max_xy_sq));// 保留至少 MPC_THR_XY_MARG 的水平推力余量const float thrust_xy_available = math::max(0.f, thrust_max_xy - _param_mpc_thr_xy_marg.get());// 若水平推力需求超过可用量，等比缩小if (_thr_sp.xy().norm() &gt; thrust_xy_available) &#123;    _thr_sp.xy() = _thr_sp.xy().normalized() * thrust_xy_available;&#125;
+
+
+六、抗积分饱和（Anti-Windup）6.1 Z 轴条件抗饱和// 只有在推力未饱和时才允许积分更新const bool saturated_up   = (_thr_sp(2) &lt; -_param_mpc_thr_max.get());const bool saturated_down = (_thr_sp(2) &gt;  -_param_mpc_thr_min.get());if (!saturated_up &amp;&amp; !saturated_down) &#123;    _vel_int(2) += vel_error(2) * _gain_vel_i(2) * dt;&#125;
+
+6.2 XY 轴 Tracking Anti-Windup// 用实际执行的加速度（经过限幅后）反算速度跟踪误差// 若水平推力被裁剪，反向修正积分，防止 windupconst Vector2f acc_executed = _thr_sp.xy() * (-1.f / _hover_thrust) * CONSTANTS_ONE_G;const Vector2f vel_int_contribution = (acc_sp_velocity.xy() - acc_executed) / _gain_vel_i.xy() * dt;_vel_int.xy() -= vel_int_contribution;
+
+这种 Tracking Anti-Windup 的原理：将实际输出与期望输出的差作为反馈，修正积分项，防止饱和时积分持续增大。
+
+七、控制完整数据流flowchart TD    POS_SP[&quot;位置设定 pos_sp&quot;] --&gt; POS_P[&quot;位置 P 环\nvel_sp_pos = (pos_sp - pos) * MPC_XY_P&quot;]    VEL_FF[&quot;速度前馈 vel_sp_ff&quot;] --&gt; VEL_SUM[&quot;速度合成\n+ 限幅（XY 优先级 / Z 上下限）&quot;]    POS_P --&gt; VEL_SUM    VEL_SP[&quot;速度设定 vel_sp&quot;] --&gt; VEL_SUM    VEL_SUM --&gt; VEL_ERR[&quot;速度误差 vel_error = vel_sp - vel&quot;]    VEL_ERR --&gt; VEL_PID[&quot;速度 PID\nP*e + I*∫e - D*vel_dot&quot;]    ACC_FF[&quot;加速度前馈 acc_sp_ff&quot;] --&gt; ACC_SUM[&quot;加速度合成&quot;]    VEL_PID --&gt; ACC_SUM    ACC_SUM --&gt; CTRL[&quot;_accelerationControl\nbody_z → limitTilt → collective_thrust&quot;]    CTRL --&gt; THRUST[&quot;thrustToAttitude\n推力向量 → 姿态四元数&quot;]    THRUST --&gt; PRIO[&quot;垂直优先分配\nZ 保证，XY 裕量内使用&quot;]    PRIO --&gt; ANTI[&quot;抗积分饱和\nZ 条件饱和 + XY Tracking&quot;]    ANTI --&gt; OUTPUT_ATT[&quot;vehicle_attitude_setpoint\nq_d + thrust_body&quot;]    ANTI --&gt; OUTPUT_LOC[&quot;vehicle_local_position_setpoint\npos/vel/acc/thrust sp&quot;]
+
+
+八、小结PositionControl.cpp 的关键设计：
+
+串级解耦：位置→速度→加速度三级串联，各级独立调参，调试清晰
+非线性几何映射：从加速度到推力方向（姿态）的转换考虑了重力补偿，数学上严格正确
+倾角约束：在位置控制层直接约束最大倾角，比在姿态层限制更早介入，更安全
+垂直优先：高度控制优先于水平控制，保证 Z 轴稳定性不被水平机动牺牲
+抗饱和：Z 方向条件抗饱和 + XY Tracking anti-windup，防止积分漂移
+
+这一控制算法是飞行稳定性的核心，其参数调优（特别是速度 PID 增益）对飞行品质影响最大。
+
+上一篇：MulticopterPositionControl 主循环详解系列总目录：PX4 v1.16 源码解读总目录
+
+]]></content>
+      <categories>
+        <category>技术</category>
+        <category>飞控PX4</category>
+        <category>位置控制</category>
+      </categories>
+      <tags>
+        <tag>技术博文</tag>
+        <tag>PX4</tag>
+        <tag>mc_pos_control</tag>
+        <tag>串级PID</tag>
+        <tag>推力映射</tag>
+        <tag>控制算法</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>PX4 EKF2 RingBuffer 环形缓冲区详解</title>
+    <url>/2026/02/06/03-RingBuffer%E7%8E%AF%E5%BD%A2%E7%BC%93%E5%86%B2%E5%8C%BA/</url>
+    <content><![CDATA[一、延迟融合的核心问题EKF2 的延迟时间融合架构要求：当 GPS 数据（延迟 ~110 ms）到达时，需要找到 110 ms 前对应时刻的 IMU 预测状态进行融合，而不是与当前时刻的 IMU 状态对齐。
+解决方案是 RingBuffer&lt;T&gt;——一个固定大小的环形缓冲区，持续保存一段历史时间窗口内的传感器数据。
+
+二、RingBuffer 结构template &lt;typename data_type&gt;class RingBuffer &#123;public:    // 初始化，分配 size 个槽位    bool allocate(int size);    void unallocate();    // 写入最新数据（覆盖最旧）    void push(const data_type &amp;sample);    // 读取最旧数据（不移除）    data_type &amp;get_oldest();    int get_oldest_index() const;    // 按时间戳查询：找到第一个时间戳 &lt;= time_us 的数据，移除并返回    bool pop_first_older_than(uint64_t time_us, data_type *sample);    // 状态    int get_length() const;    int get_total_size() const;    bool empty() const;private:    data_type *_buffer&#123;nullptr&#125;;  // 动态分配的环形数组    int _head&#123;0&#125;;   // 最新数据的索引    int _tail&#123;0&#125;;   // 最旧数据的索引    int _size&#123;0&#125;;   // 缓冲区槽位数    bool _first_write&#123;true&#125;;&#125;;
+
+
+三、关键操作详解3.1 push(sample) — 写入写入前: [oldest] → ... → [head]写入后: [oldest+1] → ... → [head] → [new sample]若满则覆盖最旧
+
+实现逻辑（伪代码）：
+_head = (_head + 1) % _size;if (_head == _tail) &#123;  // 满了，移动 tail    _tail = (_tail + 1) % _size;&#125;_buffer[_head] = sample;
+
+每次 IMU 降采样（~250 Hz）后的 imuSample 都会被 push 进 IMU RingBuffer，缓冲区深度通常为 maxDelay / dtImu，保证足够覆盖最大传感器延迟（通常设 0.5 s）。
+3.2 pop_first_older_than(time_us, sample) — 延迟对齐查询这是延迟补偿的核心操作：
+bool pop_first_older_than(uint64_t time_us, data_type *sample) &#123;    // 从 tail（最旧）往 head（最新）遍历    for (uint8_t i = 0; i &lt; _size; i++) &#123;        int index = (_tail + i) % _size;        if (_buffer[index].time_us &lt;= time_us) &#123;            // 找到第一个时间戳 &lt;= time_us 的条目            *sample = _buffer[index];            // 推进 tail（丢弃已使用的旧数据）            _tail = (index + 1) % _size;            return true;        &#125;    &#125;    return false;  // 缓冲区中没有足够旧的数据&#125;
+
+调用时机：control.cpp 中，当 GPS 数据到达时：
+gnssSample gps_sample;if (_gps_buffer.pop_first_older_than(        _time_delayed_us,   // 当前处理的延迟时刻        &amp;gps_sample)) &#123;    controlGpsFusion(gps_sample);  // 用延迟时刻的GPS数据融合&#125;
+
+3.3 get_oldest() — 获取历史最旧 IMUekf.cpp 主循环中：
+// 从 IMU RingBuffer 取出最旧（即最大延迟时刻）的 IMU 数据_imu_sample_delayed = _imu_buffer.get_oldest();// 更新内部时钟（延迟时刻推进一步）_time_delayed_us = _imu_sample_delayed.time_us;// 用该延迟 IMU 驱动一步预测predictState(_imu_sample_delayed);predictCovariance(_imu_sample_delayed);
+
+
+四、各传感器缓冲区配置
+
+
+缓冲区
+类型
+深度（典型）
+最大延迟
+
+
+
+IMU
+imuSample
+~20
+由最大传感器延迟决定
+
+
+GNSS
+gnssSample
+10
+EKF2_GPS_DELAY &#x3D; 110 ms
+
+
+磁力计
+magSample
+5
+EKF2_MAG_DELAY &#x3D; 0 ms
+
+
+气压计
+baroSample
+10
+EKF2_BARO_DELAY &#x3D; 0 ms
+
+
+光流
+flowSample
+15
+EKF2_OF_DELAY &#x3D; 5 ms
+
+
+测距仪
+rangeSample
+10
+EKF2_RNG_DELAY &#x3D; 5 ms
+
+
+外部视觉
+extVisionSample
+15
+EKF2_EV_DELAY &#x3D; 175 ms
+
+
+延迟参数通过 EKF2_*_DELAY PX4 参数设定，需与实际传感器延迟匹配，否则会造成状态跳变。
+
+五、与 IMU 降采样器的配合sequenceDiagram    participant IMU_Driver as IMU驱动 (1kHz)    participant Downsampler as ImuDownsampler (降采样)    participant IMU_Buffer as IMU RingBuffer    participant GPS_Buffer as GPS RingBuffer    participant EKF as ekf.cpp update()    IMU_Driver-&gt;&gt;Downsampler: 原始角速度+加速度 @ 1kHz    Downsampler-&gt;&gt;Downsampler: 累积增量 (4次 = 1步@250Hz)    Downsampler-&gt;&gt;IMU_Buffer: push(imuSample) @ ~250Hz    Note over EKF: 每次IMU_Buffer有新数据    EKF-&gt;&gt;IMU_Buffer: get_oldest() 取最大延迟时刻IMU    EKF-&gt;&gt;EKF: predictState() + predictCovariance()    GPS_Buffer-&gt;&gt;EKF: pop_first_older_than(time_delayed_us, &amp;gps)    EKF-&gt;&gt;EKF: controlGpsFusion(gps)    EKF-&gt;&gt;EKF: measurementUpdate() 卡尔曼更新状态+协方差
+
+
+六、关键约束与注意事项
+缓冲区大小必须足够覆盖最大传感器延迟：size &gt;= delay_ms / dt_imu_ms。estimator_interface.cpp 在初始化时根据参数动态计算并分配。
+RingBuffer 不是线程安全的。EKF2 整体运行在单个 WorkQueue 回调中，无并发问题。
+若 pop_first_older_than 返回 false（缓冲区中没有足够旧的数据），表示当前延迟时刻还没有对应传感器数据，本周期跳过该传感器融合。
+缓冲区满时 push 会自动覆盖最旧条目，因此实时性较差的传感器（EV 延迟 175 ms）需要更大的缓冲区。
+
+
+
+上一篇：common.h 数据结构下一篇：State.h 状态向量系列总目录：PX4 v1.16 源码解读总目录
+
+]]></content>
+      <categories>
+        <category>技术</category>
+        <category>飞控PX4</category>
+        <category>EKF2状态估计</category>
+      </categories>
+      <tags>
+        <tag>技术博文</tag>
+        <tag>PX4</tag>
+        <tag>EKF2</tag>
+        <tag>数据结构</tag>
+        <tag>延迟补偿</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>PX4 固件编译与烧写流程</title>
+    <url>/2026/01/16/03-%E5%9B%BA%E4%BB%B6%E7%BC%96%E8%AF%91%E4%B8%8E%E7%83%A7%E5%86%99%E6%B5%81%E7%A8%8B/</url>
+    <content><![CDATA[一、编译链总览make px4_fmu-v5_default 启动后经过七个阶段，最终将固件写入 MCU Flash：
+选择 default.px4board      |      vKconfig 依赖求解      |-- 输出 .config      `-- 生成 autoconf.h      |      vCMake 配置阶段      `-- 生成 build.ninja（或 Makefile）      |      vNinja 编译      |-- *.c/*.cpp -&gt; *.o      `-- *.o + *.a -&gt; firmware.elf（linker script 决定地址布局）      |      vobjcopy / 封装      |-- firmware.elf -&gt; firmware.bin / firmware.hex      `-- -&gt; firmware.px4（含元信息）      |      vBootloader 接收固件      |-- 擦除应用区 flash      |-- 写入固件      |-- 校验      `-- 重启跳转运行
+
+
+相关前置知识：SOC 与 BSP 层平台抽象
+
+
+二、各阶段详解2.1 目标解析顶层 Makefile 包装器解析 px4_fmu-v5_default，得到：
+
+board &#x3D; px4/fmu-v5
+label &#x3D; default
+generator &#x3D; Ninja（优先选择）
+
+随后管理 CMake 配置缓存，调用 CMake&#x2F;Ninja 执行真正的编译。
+2.2 Kconfig 阶段Kconfig 将 default.px4board 变成 .config 与 autoconf.h。
+Kconfig 两类输入：
+
+规则输入：大量 Kconfig 文件，定义可选项、依赖关系与默认值
+默认选择集：defconfig，给出初始配置快照
+
+核心计算规则：
+
+depends on：不满足则强制关闭
+select：联动打开依赖项
+choice：互斥选择，保留一个
+
+注意：PX4 的 Kconfig 与 NuttX 的 Kconfig 是两条独立链路，分别控制 PX4 模块与 NuttX 内核的编译选项。
+输出：
+
+.config：CONFIG_* 开关事实表
+autoconf.h：将事实表变成 C 宏 #define CONFIG_XXX 1
+
+CMake 根据 CONFIG_* 决定编译哪些目录，代码按 #ifdef CONFIG_* 裁剪。
+2.3 CMake 配置阶段输入：.config + 工具链 + 平台&#x2F;板目录
+输出：build.ninja + CMakeCache.txt
+2.4 编译阶段Ninja 调用 arm-none-eabi-gcc/g++ 将每个 .c/.cpp 编译为 .o，关键编译参数：
+-mcpu=cortex-m7 -mthumb -mfpu=fpv5-d16 -mfloat-abi=hard
+
+2.5 链接阶段arm-none-eabi-ld 使用链接脚本（来自 NuttX&#x2F;板级配置的 nuttx-config 与 Board ldscript）将所有 .o 与静态库 .a 组合成 px4_fmu-v5_default.elf（带符号与段信息）。
+2.6 镜像封装objcopy    firmware.elf -&gt; firmware.bin / firmware.hexPX4 封装工具 -&gt; firmware.px4（含版本、校验等元信息）
+
+2.7 Bootloader 烧写通过以下方式将镜像写入 MCU 内部 Flash 的固定地址区间：
+
+USB DFU
+MAVLink Bootloader（QGroundControl 固件更新）
+JLINK 调试器
+
+流程：擦除应用区 Flash → 写入固件 → CRC 校验 → 重启跳转执行。
+
+三、各阶段输入输出汇总
+
+
+阶段
+执行者
+输入
+输出
+被谁使用
+
+
+
+目标解析
+PX4 顶层 Makefile
+px4_fmu-v5_default
+board、label、generator
+后续 Kconfig&#x2F;CMake
+
+
+Kconfig 求解
+kconfig 工具
+Kconfig 规则 + default.px4board
+.config + autoconf.h
+CMake 与编译器
+
+
+CMake 配置
+cmake
+.config + toolchain + 平台&#x2F;板目录
+build.ninja + CMakeCache.txt
+Ninja
+
+
+编译&#x2F;归档
+ninja → arm-none-eabi-gcc&#x2F;g++
+源码 + 头文件 + autoconf.h
+.o、lib*.a
+链接器
+
+
+链接
+arm-none-eabi-ld
+.o/.a + 链接脚本
+firmware.elf
+objcopy&#x2F;封装&#x2F;调试
+
+
+提取&#x2F;封装
+objcopy + PX4 封装工具
+firmware.elf
+.bin/.hex/.px4
+bootloader&#x2F;QGC
+
+
+擦写&#x2F;启动
+bootloader + QGC
+.px4 或等价数据流
+Flash 应用区固件
+MCU 复位后执行
+
+
+
+四、上电执行路径固件写入 Flash 后，上电复位时 MCU 的执行路径：
+MCU 从 Flash 取向量表  -&gt; 取 Reset_Handler 地址  -&gt; 设置 MSP（主栈指针）  -&gt; 启动代码初始化 C 运行时：       .data 从 Flash 拷贝到 RAM       .bss 清零       调用 main()（或 NuttX 的入口）进入 NuttX 内核启动序列  -&gt; 调用 Board 的两个关键入口（init.c）：       stm32_boardinitialize()  // 最早的板级硬件初始化       board_app_initialize()   // 应用层初始化入口
+
+stm32_boardinitialize()将 Board 层的 GPIO 初始化清单写进寄存器：
+Board 层提供 PX4_GPIO_INIT_LIST（GPIO_xxx 宏/Pinset 位域）BSP 层 micro_hal.h: px4_arch_configgpio(pinset) -&gt; stm32_configgpio(pinset)NuttX STM32 arch 层寄存器写入：  -&gt; 开 GPIO 端口时钟（写 RCC）  -&gt; 写 GPIO-&gt;MODER/OTYPER/OSPEEDR/PUPDR/AFR  -&gt; 写 GPIO-&gt;BSRR 设置默认电平
+
+board_app_initialize()点亮 HRT&#x2F;ADC&#x2F;HW_INFO&#x2F;SPI&#x2F;IO_TIMER 功能，为 PX4 主系统启动做最后准备：
+-&gt; HRT 初始化（要求先跑起来，后续 ADC/SPI 初始化依赖时间戳）-&gt; ADC 初始化，读取硬件版本-&gt; SPI 初始化（依赖 HW 版本结果）-&gt; IO_TIMER 初始化-&gt; 进入 PX4 主系统（modules 逐一 start）
+
+
+
+上一篇：SOC 与 BSP 层平台抽象下一篇：交叉编译顺序详解
+
+]]></content>
+      <categories>
+        <category>技术</category>
+        <category>飞控PX4</category>
+        <category>PX4平台层</category>
+      </categories>
+      <tags>
+        <tag>技术博文</tag>
+        <tag>PX4</tag>
+        <tag>NuttX</tag>
+        <tag>Kconfig</tag>
+        <tag>编译</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>PX4 飞行模式编码与 MAVLink 映射</title>
+    <url>/2026/03/02/03-%E9%A3%9E%E8%A1%8C%E6%A8%A1%E5%BC%8F%E7%BC%96%E7%A0%81%E4%B8%8E%E6%98%A0%E5%B0%84/</url>
+    <content><![CDATA[一、文件定位px4_custom_mode.h 负责：
+
+定义 PX4 的 MAVLink custom_mode 编码格式（主模式 + 子模式枚举）
+提供 nav_state → custom_mode 的确定性映射函数 get_px4_custom_mode()
+供 MAVLink 下行心跳&#x2F;模式消息以及 Commander 内部日志&#x2F;事件复用
+
+本文件不负责决定飞行模式本身。飞行模式的实际状态由 vehicle_status.nav_state 表示，由 Commander 的模式管理与 failsafe 状态机产生。
+
+相关知识：Commander 模块框架
+
+
+二、主模式枚举enum PX4_CUSTOM_MAIN_MODE &#123;    PX4_CUSTOM_MAIN_MODE_MANUAL       = 1,  // 从 1 开始，0 表示 unknown    PX4_CUSTOM_MAIN_MODE_ALTCTL,    PX4_CUSTOM_MAIN_MODE_POSCTL,    PX4_CUSTOM_MAIN_MODE_AUTO,    PX4_CUSTOM_MAIN_MODE_ACRO,    PX4_CUSTOM_MAIN_MODE_OFFBOARD,    PX4_CUSTOM_MAIN_MODE_STABILIZED,    PX4_CUSTOM_MAIN_MODE_RATTITUDE_LEGACY,    PX4_CUSTOM_MAIN_MODE_SIMPLE,      // unused，保留备用    PX4_CUSTOM_MAIN_MODE_TERMINATION&#125;;
+
+从 1 开始的原因：0 被约定为 unknown，保持 MAVLink 生态的兼容性。
+
+三、Auto 子模式枚举enum PX4_CUSTOM_SUB_MODE_AUTO &#123;    PX4_CUSTOM_SUB_MODE_AUTO_READY       = 1,    PX4_CUSTOM_SUB_MODE_AUTO_TAKEOFF,    PX4_CUSTOM_SUB_MODE_AUTO_LOITER,    PX4_CUSTOM_SUB_MODE_AUTO_MISSION,    PX4_CUSTOM_SUB_MODE_AUTO_RTL,    PX4_CUSTOM_SUB_MODE_AUTO_LAND,    PX4_CUSTOM_SUB_MODE_AUTO_RESERVED_DO_NOT_USE,   // 已废弃（2020-03-05）    PX4_CUSTOM_SUB_MODE_AUTO_FOLLOW_TARGET,    PX4_CUSTOM_SUB_MODE_AUTO_PRECLAND,    PX4_CUSTOM_SUB_MODE_AUTO_VTOL_TAKEOFF,    PX4_CUSTOM_SUB_MODE_EXTERNAL1,    // ...    PX4_CUSTOM_SUB_MODE_EXTERNAL8,  // 外部拓展模式槽位&#125;;
+
+外部扩展模式 EXTERNAL1~8 为外部模式执行器&#x2F;自定义执行器预留槽位，保持 MAVLink 层的稳定编码形式。
+
+四、32 位 custom_mode 位布局graph LR    A[&quot;custom_mode (uint32_t)&quot;]    A --&gt; B[&quot;reserved (8 bits, [31:24])&quot;]    A --&gt; C[&quot;reserved (8 bits, [23:16])&quot;]    A --&gt; D[&quot;main_mode (8 bits, [15:8])&quot;]    A --&gt; E[&quot;sub_mode (8 bits, [7:0])&quot;]
+
+通过 union px4_custom_mode 同一段 32 位数据以多种视角解释：
+union px4_custom_mode &#123;    struct &#123;        uint16_t reserved;        uint8_t  main_mode;        uint8_t  sub_mode;    &#125;;    uint32_t data;    float    data_float;&#125;;
+
+内存编码示例（小端序）：
+写 main_mode = 4：内存为 00 00 04 00写 sub_mode  = 5：内存为 00 00 04 05读 data = 0x05040000
+
+按小端序规则：data = b0 + (b1&lt;&lt;8) + (b2&lt;&lt;16) + (b3&lt;&lt;24)，所以 data = 0x05040000。
+
+五、上行链路：nav_state → MAVLink custom_mode编码函数 get_px4_custom_mode(nav_state) 将 PX4 内部状态映射到 MAVLink 编码：
+nav_state（vehicle_status_s::NAVIGATION_STATE_*）    |    v get_px4_custom_mode()    |    vpx4_custom_mode（main_mode + sub_mode）    |    vHeartbeat.cpp 读取 data 写入 HEARTBEAT.custom_mode 字段下行
+
+映射形态分两类：
+
+
+
+类型
+示例
+
+
+
+一对一：单一 nav_state 对应单一 main_mode
+MANUAL&#x2F;ALTCTL&#x2F;ACRO&#x2F;OFFBOARD&#x2F;STABILIZED&#x2F;TERMINATION
+
+
+一对多：主模式固定 + 子模式分散
+AUTO_MISSION → AUTO + AUTO_MISSION；POSITION_SLOW → POSCTL + POSCTL_SLOW
+
+
+DEFINE_GET_PX4_CUSTOM_MODE 宏门控的目的：本文件既作类型&#x2F;枚举定义，又可选择性提供映射实现，避免所有 include 都引入 uORB 依赖与潜在编译耦合。
+
+六、下行链路：MAVLink custom_mode → PX4 nav_stateflowchart LR    GCS[&quot;地面站 SET_MODE 命令&quot;]    --&gt; MR[&quot;mavlink_receiver.cpp\nSET_MODE.custom_mode\n按 union 解析\n-&gt; vcmd.param2/param3&quot;]    --&gt; CMD[&quot;vehicle_command uORB&quot;]    --&gt; HC[&quot;Commander::handle_command()\n反解 param1/2/3 → 模式选择&quot;]    --&gt; UM[&quot;UserModeIntention::change()&quot;]    --&gt; NS[&quot;vehicle_status.nav_state&quot;]
+
+handle_command() 中的参数含义：
+
+
+
+参数
+含义
+
+
+
+param1
+base_mode：MAVLink SET_MODE.base_mode 对应 MAV_MODE_FLAG 位图
+
+
+param2
+PX4 custom_main_mode（px4_custom_mode.main_mode）
+
+
+param3
+PX4 custom_sub_mode（px4_custom_mode.sub_mode）
+
+
+Commander 侧直接将 float 强转回 uint8_t 提取 main_mode 和 sub_mode。
+
+七、uORB 消息结构体名生成规则PX4 的 uORB 消息生成器（Tools/msg/px_generate_uorb_topic_files.py）采用 PascalCase → snake_case 转换：
+# 核心算法：在不是开头且后面是大写字母处插入下划线re.sub(r&#x27;(?&lt;!^)(?=[A-Z])&#x27;, &#x27;_&#x27;, file_base_name).lower()# VehicleStatus.msg -&gt; vehicle_status
+
+生成内容：
+
+vehicle_status.h：结构体 vehicle_status_s
+ORB_DECLARE(vehicle_status) 与 ORB_DEFINE(vehicle_status, ...) 宏
+C++ 封装类 uORB::Publication&lt;vehicle_status_s&gt; &#x2F; uORB::Subscription vehicle_status_sub
+
+
+八、总结本文件的核心价值是编码层面的稳定性：nav_state → custom_mode.data 的映射是所有下行 MAVLink 消息对模式编码的唯一来源，保证地面站与飞控之间模式状态表达的一致性。
+
+
+上一篇：参数系统与 Kconfig下一篇：控制模式生成逻辑
+
+]]></content>
+      <categories>
+        <category>技术</category>
+        <category>飞控PX4</category>
+        <category>Commander决策层</category>
+      </categories>
+      <tags>
+        <tag>技术博文</tag>
+        <tag>PX4</tag>
+        <tag>Commander</tag>
+        <tag>MAVLink</tag>
+        <tag>飞行模式</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>PX4 交叉编译顺序详解</title>
+    <url>/2026/01/16/04-%E4%BA%A4%E5%8F%89%E7%BC%96%E8%AF%91%E9%A1%BA%E5%BA%8F%E8%AF%A6%E8%A7%A3/</url>
+    <content><![CDATA[一、完整编译链条default.px4board -&gt; Kconfig -&gt; CMake -&gt; Ninja -&gt; 链接 -&gt; 镜像封装 -&gt; Bootloader 写入 Flash
+
+本文是对 固件编译与烧写流程 的 Kconfig 阶段补充说明。
+
+
+二、Kconfig 阶段详解2.1 两类输入
+
+
+类型
+内容
+
+
+
+规则输入
+大量 Kconfig 文件，定义所有可选项、依赖关系与默认值
+
+
+默认选择集
+defconfig（即 .px4board），给出初始选择快照
+
+
+2.2 核心计算规则# 典型规则示例# 不满足则强制关闭depends on MODULES_SENSORS# 联动打开依赖项select LIBC_FLOATIO# 互斥选择，保留一个choice    prompt &quot;Scheduler&quot;    config SCHED_HPWORK        bool &quot;High priority work queue&quot;    config SCHED_LPWORK        bool &quot;Low priority work queue&quot;endchoice
+
+2.3 两条 Kconfig 链路PX4 的 Kconfig 与 NuttX 的 Kconfig 是相互独立的两条链路：
+
+
+
+链路
+控制范围
+
+
+
+PX4 Kconfig
+PX4 模块（CONFIG_MODULES_*）、驱动、功能特性
+
+
+NuttX Kconfig
+NuttX 内核裁剪、驱动框架、内存&#x2F;堆栈&#x2F;调试选项
+
+
+两者均通过 default.px4board 的配置快照完成依赖求解，分别输出各自的 .config 部分，合并后供 CMake 消费。
+
+三、编译阶段详解
+
+
+阶段
+执行者
+输入
+输出
+输出被谁用
+
+
+
+目标解析
+PX4 顶层 Makefile
+px4_fmu-v5_default
+board&#x3D;px4/fmu-v5，label&#x3D;default，generator&#x3D;Ninja
+后续 Kconfig&#x2F;CMake
+
+
+Kconfig 求解
+kconfig 工具
+Kconfig 规则 + default.px4board
+.config + autoconf.h
+CMake 与编译器
+
+
+CMake 配置
+cmake
+.config + toolchain + 平台&#x2F;板目录
+build.ninja + CMakeCache.txt
+Ninja
+
+
+编译&#x2F;归档
+ninja → arm-none-eabi-gcc&#x2F;g++
+源码 + 头文件 + autoconf.h
+.o、lib*.a
+链接器
+
+
+链接
+arm-none-eabi-ld
+.o/.a + 链接脚本
+firmware.elf
+objcopy&#x2F;封装&#x2F;调试
+
+
+提取&#x2F;封装
+objcopy + PX4 封装工具
+firmware.elf
+.bin/.hex/.px4
+bootloader&#x2F;QGC
+
+
+擦写&#x2F;启动
+bootloader + QGC
+.px4 或等价数据流
+Flash 应用区固件
+MCU 复位后执行
+
+
+
+四、autoconf.h 的作用autoconf.h 将 .config 事实表转换为 C 预处理宏：
+// .config 内容CONFIG_MODULES_COMMANDER=yCONFIG_MODULES_EKF2=y// autoconf.h 生成#define CONFIG_MODULES_COMMANDER 1#define CONFIG_MODULES_EKF2 1
+
+代码层面通过条件编译实现功能裁剪：
+#ifdef CONFIG_MODULES_COMMANDER// Commander 相关代码#endif
+
+CMake 也直接读取 CONFIG_* 开关，决定是否将某个目录&#x2F;目标加入构建图谱，做到”不需要的代码连目录都不进入编译系统”。
+
+五、链接脚本的来源链接脚本决定各代码段（.text、.data、.bss）在 Flash&#x2F;RAM 中的地址布局：
+
+NuttX 提供基础链接脚本框架
+Board 层的 nuttx-config 根据芯片 Flash&#x2F;RAM 大小进行裁剪
+最终脚本控制 Bootloader 应用区的起始地址与大小，使固件能够被 PX4-Bootloader 正确识别与跳转
+
+
+
+上一篇：固件编译与烧写流程下一篇：模块入口与运行模式
+
+]]></content>
+      <categories>
+        <category>技术</category>
+        <category>飞控PX4</category>
+        <category>PX4平台层</category>
+      </categories>
+      <tags>
+        <tag>技术博文</tag>
+        <tag>PX4</tag>
+        <tag>Kconfig</tag>
+        <tag>CMake</tag>
+        <tag>交叉编译</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>PX4 EKF2 State.h 状态向量详解</title>
+    <url>/2026/02/24/04-State-h%E7%8A%B6%E6%80%81%E5%90%91%E9%87%8F/</url>
+    <content><![CDATA[一、状态向量概述EKF 的状态向量 ( \mathbf{x} ) 是估计器运行的核心，对应着 EKF 在某一时刻对飞机真实状态的最优估计。EKF2 中状态向量的维数为 24（若含地形估计则为 25）：
+
+
+
+分量组
+符号
+维数
+物理意义
+
+
+
+姿态旋转向量误差
+(\delta\theta)
+3
+当前姿态与参考四元数之间的小角误差（rad）
+
+
+NED 速度
+(\mathbf{v})
+3
+北东地坐标系速度（m&#x2F;s）
+
+
+NED 位置
+(\mathbf{p})
+3
+北东地坐标系位置（m）
+
+
+陀螺仪零偏
+(\mathbf{b}_g)
+3
+角速度偏差估计（rad&#x2F;s）
+
+
+加速度计零偏
+(\mathbf{b}_a)
+3
+加速度偏差估计（m&#x2F;s²）
+
+
+地球磁场（NED）
+(\mathbf{m}_g)
+3
+导航坐标系地球磁场分量（Gauss）
+
+
+机体磁偏差
+(\mathbf{m}_b)
+3
+机体固连磁场偏差（Gauss）
+
+
+风速（NE）
+(\mathbf{w})
+2
+北向&#x2F;东向风速（m&#x2F;s）
+
+
+合计
+—
+24
+—
+
+
+
+二、StateSample 结构体（state.h）PX4 EKF2 通过 Symforce 自动生成状态结构体，物理布局为：
+struct StateSample &#123;    // [0:2]   姿态旋转向量误差（δθ）    Vector3f    quat_nominal&#123;&#125;;  // 实际类型：Quatf，但索引操作用 rotation_vector    // 注意：内部运算使用四元数 _state.quat_nominal（Quatf）    // 协方差矩阵 P 对应的误差状态是旋转向量 δθ（3维），而非四元数（4维）    // [3:5]   NED速度（m/s）    Vector3f    vel&#123;&#125;;    // [6:8]   NED位置（m）    Vector3f    pos&#123;&#125;;    // [9:11]  陀螺仪零偏（rad/s）    Vector3f    gyro_bias&#123;&#125;;    // [12:14] 加速度计零偏（m/s²）    Vector3f    accel_bias&#123;&#125;;    // [15:17] 地球磁场NED分量（Gauss）    Vector3f    mag_I&#123;&#125;;    // [18:20] 机体磁偏差（Gauss）    Vector3f    mag_B&#123;&#125;;    // [21:22] 风速 North/East（m/s）    Vector2f    wind_vel&#123;&#125;;    // [23]    地形高度（m，若启用 HAGL 估计）    // float   terrain&#123;&#125;;  // 在扩展状态中&#125;;
+
+
+三、为何用旋转向量误差而非四元数问题：四元数是 4 维，但只有 3 个自由度（受 (|\mathbf{q}|&#x3D;1) 约束），直接用于 EKF 协方差矩阵会造成奇异。
+解决方案：EKF2 采用误差状态卡尔曼滤波（ESKF）：
+
+名义状态（nominal state）：_state.quat_nominal — 存储完整四元数，用于预测
+误差状态（error state）：旋转向量 (\delta\theta \in \mathbb{R}^3) — 用于卡尔曼更新（协方差矩阵 P 是 24×24）
+
+融合时，卡尔曼增益计算出误差修正量 (\delta\theta)，再通过：
+[\mathbf{q}{nominal}^{+} &#x3D; \mathbf{q}{nominal} \otimes \begin{bmatrix} 1 \ \delta\theta&#x2F;2 \end{bmatrix}]
+将误差注入名义四元数，最后对四元数归一化。
+
+四、协方差矩阵 P 的维数与索引协方差矩阵 P 是 24×24（或 25×25）浮点数矩阵，其索引与状态分量的对应：
+// 状态索引枚举（P矩阵行/列索引）enum StateIndex &#123;    // 旋转向量误差    quat_error_0 = 0,    quat_error_1 = 1,    quat_error_2 = 2,    vel_N = 3, vel_E = 4, vel_D = 5,    pos_N = 6, pos_E = 7, pos_D = 8,    gyro_bias_0 = 9,  gyro_bias_1 = 10, gyro_bias_2 = 11,    accel_bias_0 = 12, accel_bias_1 = 13, accel_bias_2 = 14,    mag_I_0 = 15, mag_I_1 = 16, mag_I_2 = 17,    mag_B_0 = 18, mag_B_1 = 19, mag_B_2 = 20,    wind_N = 21, wind_E = 22,    // 地形（扩展状态）    terrain = 23,&#125;;
+
+
+五、OutputPredictor 的输出状态OutputPredictor 维护独立的实时积分状态（无延迟），供飞控直接使用：
+struct outputSample &#123;    uint64_t    time_us&#123;&#125;;    Quatf       quat_nominal&#123;&#125;;   // 实时姿态四元数    Vector3f    vel&#123;&#125;;            // NED速度    Vector3f    pos&#123;&#125;;            // NED位置&#125;;struct outputVert &#123;    float   vert_vel&#123;&#125;;           // 垂直速度（D方向）    float   vert_vel_integ&#123;&#125;;     // 垂直速度积分（用于高度修正）    float   dt&#123;&#125;;    uint64_t time_us&#123;&#125;;&#125;;
+
+OutputPredictor 以 IMU 原始频率（1 kHz）运行，每收到延迟 EKF 的修正量后，通过互补滤波对实时积分状态进行校正，保证输出的低延迟与无漂移。
+
+六、状态初始化void Ekf::initialiseFilter() &#123;    // 姿态：由加速度计计算初始 roll/pitch，yaw=0 或磁力计/GPS航向    _state.quat_nominal = Quaternion::from_euler(...);    // 速度：全部归零    _state.vel.setZero();    // 位置：归零（本地原点 = 起飞点）    _state.pos.setZero();    // 零偏：归零（通过融合逐步估计）    _state.gyro_bias.setZero();    _state.accel_bias.setZero();    // 磁场：由磁力计测量设定初始值    _state.mag_I = _mag_sample_delayed.mag; // 近似值，后续精化    // 协方差 P：初始化为对角矩阵，各项为初始不确定度的平方    initialiseCovariance();&#125;
+
+
+七、小结
+EKF2 使用 24 维（含地形 25 维）误差状态向量，协方差矩阵 P 也是对应维数。
+姿态用旋转向量误差 + 名义四元数的 ESKF 形式，避免约束奇异性。
+状态索引与 P 矩阵的行&#x2F;列一一对应，是阅读协方差预测（covariance.cpp）和融合代码（measurementUpdate()）的关键。
+
+
+上一篇：RingBuffer 环形缓冲区下一篇：EKF2 应用管理结构 EKF2.cpp系列总目录：PX4 v1.16 源码解读总目录
+
+]]></content>
+      <categories>
+        <category>技术</category>
+        <category>飞控PX4</category>
+        <category>EKF2状态估计</category>
+      </categories>
+      <tags>
+        <tag>技术博文</tag>
+        <tag>PX4</tag>
+        <tag>EKF2</tag>
+        <tag>C++</tag>
+        <tag>状态向量</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>PX4 Navigator 围栏安全与精确降落</title>
+    <url>/2026/03/14/04-%E5%9B%B4%E6%A0%8F%E5%AE%89%E5%85%A8%E4%B8%8E%E7%B2%BE%E7%A1%AE%E9%99%8D%E8%90%BD/</url>
+    <content><![CDATA[一、安全与验证层的职责分工安全层由四个组件构成，各司其职：
+
+
+
+组件
+职责
+
+
+
+Geofence
+加载围栏数据，判断某点是否越界（当下）
+
+
+GeofenceBreachAvoidance
+基于运动学预测未来位置，提前规避
+
+
+MissionFeasibilityChecker
+执行前验证任务合法性（不在飞行过程中）
+
+
+FeasibilityChecker
+纯规则检查：命令合法、机型支持、距离合理
+
+
+
+二、Geofence — 围栏检测2.1 围栏类型围栏数据存储在 dataman 中，支持以下类型：
+
+
+
+类型
+描述
+
+
+
+包含多边形（Inclusion Polygon）
+飞行必须在此多边形内
+
+
+排除多边形（Exclusion Polygon）
+飞行必须在此多边形外
+
+
+包含圆形（Inclusion Circle）
+飞行必须在圆形区域内
+
+
+排除圆形（Exclusion Circle）
+飞行必须在圆形区域外
+
+
+最大水平距离
+不超过 Home 点的水平距离（GF_MAX_HOR_DIST）
+
+
+最大高度
+不超过设定海拔（GF_MAX_VER_DIST）
+
+
+2.2 检测函数bool Geofence::checkPointAgainstAllGeofences(double lat, double lon, float alt) &#123;    // 1. 检查是否超过最大 Home 距离    if (isCloserThanMaxDistToHome(lat, lon, alt) == false) return false;    // 2. 检查是否超过最大高度    if (isBelowMaxAltitude(alt) == false) return false;    // 3. 遍历所有 dataman 围栏项，检查多边形/圆形    for (int i = 0; i &lt; num_fence_points; i++) &#123;        // 射线法判断是否在多边形内/外        // 圆形则用 Haversine 距离公式    &#125;    return true;&#125;
+
+2.3 围栏源选择（GF_SOURCE 参数）
+
+
+值
+说明
+
+
+
+0
+优先使用 GPS（vehicle_gps_position），更新频率高
+
+
+1
+使用 EKF2 全局位置（vehicle_global_position），与控制器一致
+
+
+
+三、GeofenceBreachAvoidance — 预测规避3.1 预测逻辑GF_PREDICT 参数开启后，不仅检测当前位置是否越界，还要预测未来位置：
+预测测试点 = 当前位置 + 刹车距离刹车距离 = v² / (2 * a_max)  （运动学公式）
+
+对于多旋翼：
+float braking_distance_xy = sq(vel_xy) / (2.f * _param_mpc_acc_hor.get());float braking_distance_z  = sq(vel_z)  / (2.f * _param_mpc_acc_down_max.get());
+
+对于固定翼：
+
+使用盘旋半径估算预警距离
+考虑当前航向角，计算切线方向的越界风险
+
+3.2 规避点计算当预测点越界时，计算安全 loiter 点：
+struct position_setpoint_s GeofenceBreachAvoidance::getFenceAvoidanceLoiterPoint() &#123;    // 在围栏边界内侧一定距离处设置 loiter 点    // 方向：从当前位置到越界点的射线，在边界前 1 m 设安全点    position_setpoint_s sp;    sp.type = position_setpoint_s::SETPOINT_TYPE_LOITER;    sp.lat  = safe_lat;    sp.lon  = safe_lon;    sp.alt  = safe_alt;  // 若超高，强制降至 GF_MAX_VER_DIST    sp.loiter_radius = _param_nav_loiter_rad.get();    return sp;&#125;
+
+3.3 触发动作（GF_ACTION 参数）
+
+
+值
+动作
+
+
+
+0
+无（仅记录日志）
+
+
+1
+发出警告
+
+
+2
+Loiter（悬停在安全点）
+
+
+3
+返航（RTL）
+
+
+4
+就地降落
+
+
+5
+Loiter 并持续等待
+
+
+
+四、任务合法性检查MissionFeasibilityChecker::checkMissionFeasible() 在任务上传后或模式切换前调用，逐项扫描任务：
+flowchart TD    A[checkMissionFeasible] --&gt; B[遍历所有 mission_item_s]    B --&gt; C[FeasibilityChecker::processNextItem]    C --&gt; D&#123;命令是否合法?&#125;    D --&gt;|否| FAIL[&quot;返回 false\nGCS 提示错误&quot;]    D --&gt;|是| E&#123;机型是否支持?&#125;    E --&gt;|否| FAIL    E --&gt;|是| F&#123;起降要求是否满足?&#125;    F --&gt;|否| FAIL    F --&gt;|是| G[继续下一项]    G --&gt; B    B --&gt; H[checkMissionAgainstGeofence\n检查所有航点是否在围栏内]    H --&gt; I&#123;全部合法?&#125;    I --&gt;|是| OK[&quot;返回 true\n任务可以执行&quot;]    I --&gt;|否| FAIL
+
+关键检查项：
+
+首个有效航点距 Home 是否过远（MIS_DIST_1WP）
+固定翼降落进近角度是否合理
+VTOL 相关命令是否在 VTOL 机型上使用
+所有带位置的航点是否在当前围栏内
+
+
+五、精确降落 PrecLand精确降落是一个独立的复杂状态机，不是普通 Land 的扩展，需要 landing_target_pose 话题提供目标位置（来自视觉&#x2F;红外标记系统）：
+5.1 状态机stateDiagram-v2    [*] --&gt; Start    Start --&gt; HorizontalApproach : 初始化投影    HorizontalApproach --&gt; DescendAboveTarget : 到达目标上方    HorizontalApproach --&gt; Search : 目标丢失 &gt; PLD_BTOUT    DescendAboveTarget --&gt; FinalApproach : 高度 &lt;= PLD_FAPPR_ALT    FinalApproach --&gt; Done : 落地检测    Search --&gt; HorizontalApproach : 目标重新发现    Search --&gt; Fallback : 搜索超时 &gt; PLD_SRCH_TOUT    Fallback --&gt; Done : 执行普通降落
+
+5.2 各状态说明
+
+
+状态
+动作
+完成条件
+
+
+
+Start
+初始化地图投影，建立参考坐标系
+立即进入 HorizontalApproach
+
+
+HorizontalApproach
+水平移动使无人机对准目标上方
+XY 误差 &lt; PLD_HACC_RAD
+
+
+DescendAboveTarget
+保持 XY 对准的同时缓慢下降
+高度 &lt;&#x3D; PLD_FAPPR_ALT
+
+
+FinalApproach
+最终精确降落
+落地检测（vehicle_land_detected.landed）
+
+
+Search
+目标不可见时，在 PLD_SRCH_ALT 高度盘旋搜索
+目标重新出现
+
+
+Fallback
+搜索超时，执行普通降落
+落地
+
+
+5.3 目标可见性处理void PrecLand::on_active() &#123;    // 检测 landing_target_pose 是否更新    if (_landing_target_pose_sub.updated()) &#123;        _landing_target_pose_sub.copy(&amp;_landing_target_pose);        const bool target_visible = _landing_target_pose.is_static ||                                    (hrt_elapsed_time(&amp;_landing_target_pose.timestamp) &lt; 2_s);        if (!target_visible) &#123;            // 目标丢失超过 PLD_BTOUT 阈值            if (hrt_elapsed_time(&amp;_last_target_visible) &gt; _param_pld_btout.get()) &#123;                // 切换到 Search 状态                _state = PrecLandState::Search;            &#125;        &#125;    &#125;&#125;
+
+5.4 关键参数
+
+
+参数
+默认值
+说明
+
+
+
+PLD_BTOUT
+5 s
+目标丢失多久后进入搜索
+
+
+PLD_HACC_RAD
+0.2 m
+水平接近阶段的对准精度
+
+
+PLD_FAPPR_ALT
+0.1 m
+最终进近阶段开始的高度
+
+
+PLD_SRCH_ALT
+10 m
+搜索阶段的盘旋高度
+
+
+PLD_SRCH_TOUT
+10 s
+搜索超时阈值
+
+
+PLD_MAX_SRCH
+3 次
+最大搜索次数
+
+
+
+六、小结Navigator 安全层的设计原则：
+
+分离判定与执行：Geofence 只判定是否越界，GeofenceBreachAvoidance 才计算规避方案
+预测优先于响应：GF_PREDICT 让围栏检查从被动响应变为主动预判
+执行前与运行时双重验证：FeasibilityChecker 在任务上传时检查，geofence_breach_check() 在飞行中持续监控
+PrecLand 独立自治：精确降落状态机完全独立，不依赖 Mission 框架，可以单独激活
+
+
+上一篇：Navigator 主循环与模式调度系列总目录：PX4 v1.16 源码解读总目录下一章：mc_pos_control 位置控制总览
+
+]]></content>
+      <categories>
+        <category>技术</category>
+        <category>飞控PX4</category>
+        <category>Navigator导航</category>
+      </categories>
+      <tags>
+        <tag>技术博文</tag>
+        <tag>PX4</tag>
+        <tag>Navigator</tag>
+        <tag>Geofence</tag>
+        <tag>PrecLand</tag>
+        <tag>安全</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>PX4 控制模式生成逻辑</title>
+    <url>/2026/03/05/04-%E6%8E%A7%E5%88%B6%E6%A8%A1%E5%BC%8F%E7%94%9F%E6%88%90%E9%80%BB%E8%BE%91/</url>
+    <content><![CDATA[一、功能定位ModeUtil/control_mode.cpp 的职责：根据当前飞行模式（nav_state）、机型（vehicle_type）与 Offboard 输入类型（offboard_control_mode），生成一份 vehicle_control_mode_s 控制器使能位图，决定哪些控制环&#x2F;任务应当运行。
+这份使能位图是 Commander 输出给全系统的控制权配置，由 Commander::updateControlMode() 计算后发布。
+
+相关前置：飞行模式编码与映射
+
+
+二、输入与输出输入
+
+
+字段
+类型
+含义
+
+
+
+nav_state
+vehicle_status_s::NAVIGATION_STATE_*
+当前生效的飞行模式
+
+
+vehicle_type
+vehicle_status_s::VEHICLE_TYPE_*
+旋翼&#x2F;固定翼&#x2F;车辆
+
+
+offboard_control_mode
+offboard 期望控制的 setpoint 类型
+position&#x2F;velocity&#x2F;acceleration&#x2F;attitude&#x2F;body_rate&#x2F;thrust_and_torque
+
+
+输出vehicle_control_mode_s 引用写入，包含若干 flag_control_*_enabled 布尔位：
+struct vehicle_control_mode_s &#123;    bool flag_control_manual_enabled;     // 手动控制模式    bool flag_control_auto_enabled;       // 自动控制模式    bool flag_control_position_enabled;   // 位置控制环使能    bool flag_control_velocity_enabled;   // 速度控制环使能    bool flag_control_altitude_enabled;   // 高度控制环使能    bool flag_control_attitude_enabled;   // 姿态控制环使能    bool flag_control_rates_enabled;      // 角速率控制环使能    bool flag_control_allocation_enabled; // 控制分配使能    // ...&#125;;
+
+
+三、控制模式与控制环的对应关系flowchart LR    subgraph 控制环层级        POS[&quot;位置控制\nmc_pos_control&quot;]        VEL[&quot;速度控制&quot;]        ATT[&quot;姿态控制\nmc_att_control&quot;]        RATE[&quot;角速率控制\nmc_rate_control&quot;]        ALLOC[&quot;控制分配\ncontrol_allocator&quot;]    end    subgraph 飞行模式        POSCTL[&quot;POSCTL/AUTO_*&quot;]        ALTCTL[&quot;ALTCTL&quot;]        STAB[&quot;STABILIZED&quot;]        ACRO[&quot;ACRO&quot;]        OFFBOARD[&quot;OFFBOARD&quot;]    end    POSCTL --&gt;|&quot;pos+vel+att+rate&quot;| POS    POSCTL --&gt; VEL    POSCTL --&gt; ATT    POSCTL --&gt; RATE    ALTCTL --&gt;|&quot;vel+att+rate&quot;| VEL    ALTCTL --&gt; ATT    ALTCTL --&gt; RATE    STAB --&gt;|&quot;att+rate&quot;| ATT    STAB --&gt; RATE    ACRO --&gt;|&quot;rate only&quot;| RATE    OFFBOARD --&gt;|&quot;根据 offboard_control_mode 动态选择&quot;| POS        RATE --&gt; ALLOC
+
+各模式激活的控制环（多旋翼为例）：
+
+
+
+飞行模式
+position
+velocity
+altitude
+attitude
+rates
+allocation
+
+
+
+MANUAL
+✗
+✗
+✗
+✗
+✗
+✓
+
+
+ACRO
+✗
+✗
+✗
+✗
+✓
+✓
+
+
+STABILIZED
+✗
+✗
+✗
+✓
+✓
+✓
+
+
+ALTCTL
+✗
+✗
+✓
+✓
+✓
+✓
+
+
+POSCTL
+✓
+✓
+✓
+✓
+✓
+✓
+
+
+AUTO_MISSION
+✓
+✓
+✓
+✓
+✓
+✓
+
+
+
+四、Offboard 模式的特殊处理Offboard 模式下，控制环使能取决于 offboard_control_mode 中声明的 setpoint 类型：
+
+
+
+offboard_control_mode
+激活的控制环
+
+
+
+position=true
+位置+速度+姿态+角速率
+
+
+velocity=true
+速度+姿态+角速率
+
+
+acceleration=true
+姿态+角速率
+
+
+attitude=true
+姿态+角速率
+
+
+body_rate=true
+角速率
+
+
+thrust_and_torque=true
+仅控制分配
+
+
+这使得 Offboard 模式下上位机可以精确控制”接管到哪一层控制环”，灵活适配不同的外部控制策略。
+
+五、conversions.hppconversions.hpp 提供 nav_state 到 events 体系的 navigation_mode_t 的转换：
+
+输入：nav_state
+输出：events 体系的 navigation_mode_t，用于事件&#x2F;日志参数的稳定表达
+
+与 control_mode.cpp 的区别：control_mode 用于控制运行时控制环开关；conversions 用于日志&#x2F;事件的模式描述，两者均由 Commander 内部调用但服务于不同目的。
+
+六、vehicle_control_mode 的消费者vehicle_control_mode_s 发布后，被多个下游模块订阅：
+
+
+
+模块
+用途
+
+
+
+mc_pos_control
+判断是否执行位置&#x2F;速度控制
+
+
+mc_att_control
+判断是否执行姿态控制，还是直接透传 rates
+
+
+mc_rate_control
+判断是否执行角速率控制
+
+
+control_allocator
+判断是否进行控制分配
+
+
+每个模块在 Run() 开始时订阅 vehicle_control_mode，根据对应的 flag_control_*_enabled 决定本次执行的控制路径。
+
+
+上一篇：飞行模式编码与映射下一篇：模式需求位图
+
+]]></content>
+      <categories>
+        <category>技术</category>
+        <category>飞控PX4</category>
+        <category>Commander决策层</category>
+      </categories>
+      <tags>
+        <tag>技术博文</tag>
+        <tag>PX4</tag>
+        <tag>Commander</tag>
+        <tag>vehicle_control_mode</tag>
+        <tag>控制环</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>PX4 模块入口与运行模式</title>
+    <url>/2026/01/16/05-%E6%A8%A1%E5%9D%97%E5%85%A5%E5%8F%A3%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%A8%A1%E5%BC%8F/</url>
+    <content><![CDATA[一、统一 CLI 入口PX4 中所有 drivers 与 modules（算法与中间件）都可通过 NSH Shell 或启动脚本 rcS 以命令行方式启动、停止与查询状态。每个模块的可执行入口本质是一个函数：
+&lt;module&gt;_main(int argc, char *argv[])
+
+继承 ModuleBase&lt;T&gt; 的模块通过 T::main(argc, argv) 获得统一的 start/stop/status/help 分发能力，与模块是 drivers 还是算法模块无关。
+
+相关知识：uORB 通信机制（上） 理解模块间数据流的基础
+
+
+二、ModuleBase::main() 的分发逻辑flowchart TD    A[&quot;&lt;module&gt;_main(argc, argv)&quot;] --&gt; B[&quot;ModuleBase&lt;T&gt;::main(argc, argv)&quot;]    B --&gt; C&#123;argv[1] 是什么?&#125;    C --&gt;|&quot;-h/help/usage&quot;| D[&quot;T::print_usage()&quot;]    C --&gt;|&quot;start&quot;| E[&quot;start_command_base(argc-1, argv+1)&quot;]    C --&gt;|&quot;status&quot;| F[&quot;status_command()\n-&gt; print_status()&quot;]    C --&gt;|&quot;stop&quot;| G[&quot;stop_command()\n-&gt; request_stop() + 等待退出&quot;]    C --&gt;|&quot;其他&quot;| H[&quot;T::custom_command(argc-1, argv+1)&quot;]    E --&gt; I[&quot;T::task_spawn(argc, argv)&quot;]
+
+start 分支将 start 字符串保留作为 argv[0] 占位，因为后续 px4_getopt() 从 index=1 开始解析，argv[0] 被当作命令名&#x2F;占位，不参与选项解析。
+全局互斥锁ModuleBase 启动&#x2F;停止&#x2F;查询依赖两个全局静态成员：
+static px4::atomic&lt;T *&gt; _object;static int _task_id;
+
+start/stop/status 这些命令可能并行执行，全局互斥锁 px4_modules_mutex 保证对 _object/_task_id 的复合读写是原子的，避免并发踩踏。
+
+三、独立线程模式run_trampoline → instantiate() → run() → exit_and_cleanup()
+run_trampoline 的定位新线程的入口函数，生命周期分三段：
+instantiate(argc, argv)  // 在新线程里创建对象object-&gt;run()            // 进入模块主循环exit_and_cleanup()       // delete 对象，清 task_id，通知 stop 等待者
+
+为什么 run_trampoline 先丢弃 argv[0]px4_task_spawn_cmd() 会把 task 名称塞到 argv[0]（POSIX 明确行为），而 instantiate() 期望看到的 argv[0] 是 &quot;start&quot;（作为 px4_getopt 的占位）。因此 run_trampoline 必须先执行：
+argc -= 1;argv += 1;
+
+各函数职责
+
+
+函数
+职责
+
+
+
+instantiate()
+解析 CLI 参数 + 构造对象，失败返回 nullptr
+
+
+run()
+主循环，should_exit() 为真时尽快退出
+
+
+exit_and_cleanup()
+回收对象 + 置 task_id=-1，stop_command() 等待此标志判断任务结束
+
+
+独立线程模式的典型 run() 结构：
+void MyModule::run() &#123;    uORB::Subscription _topic_sub&#123;ORB_ID(some_topic)&#125;;    while (!should_exit()) &#123;        px4_poll(...);   // 阻塞等待数据        some_topic_s msg&#123;&#125;;        if (_topic_sub.update(&amp;msg)) &#123;            // 处理数据        &#125;    &#125;&#125;
+
+
+四、WorkQueue 模式以 mc_att_control 为例。
+task_spawn() 不创建独立线程，而是设置 _task_id = task_id_is_work_queue，声明跑在 WorkQueue 里：
+static int task_spawn(int argc, char *argv[]) &#123;    MulticopterAttitudeControl *inst = new MulticopterAttitudeControl(vtol);    _object.store(inst);    _task_id = task_id_is_work_queue;  // 不创建独立线程    inst-&gt;init();   // 注册 uORB 回调    return 0;&#125;
+
+init() 中通过 vehicle_attitude_sub.registerCallback() 注册 uORB 回调，失败则启动失败：
+bool init() &#123;    if (!_att_sub.registerCallback()) &#123;        return false;    &#125;    ScheduleDelayed(10_ms);  // 定时兜底    return true;&#125;
+
+启动成功后，模块不进入 while(1) 循环，而是等 uORB 触发回调，由 WorkQueue 线程调用 Run()。
+工作流对比
+
+
+特性
+独立线程模式
+WorkQueue 模式
+
+
+
+线程创建
+独立线程，px4_task_spawn_cmd()
+复用 WorkQueue 线程，无新线程
+
+
+执行触发
+主循环 + px4_poll() 阻塞等待
+uORB 回调 + ScheduleNow()
+
+
+CPU 占用
+阻塞时挂起，不占 CPU
+事件驱动，更高效
+
+
+适用场景
+简单驱动、低频任务
+高频控制算法（姿态、位置、速率环）
+
+
+
+五、完整参数链路以 module start -f -p 42 为例追踪参数流转：
+module start -f -p 42  -&gt; &lt;module&gt;_main(argc=5, argv=[&quot;module&quot;,&quot;start&quot;,&quot;-f&quot;,&quot;-p&quot;,&quot;42&quot;])  -&gt; ModuleBase&lt;T&gt;::main()  命中 start 分支  -&gt; start_command_base(argc-1=4, argv+1=[&quot;start&quot;,&quot;-f&quot;,&quot;-p&quot;,&quot;42&quot;])  -&gt; T::task_spawn(argc=4, argv=[&quot;start&quot;,&quot;-f&quot;,&quot;-p&quot;,&quot;42&quot;])  -&gt; px4_task_spawn_cmd(&quot;module&quot;, ..., run_trampoline, argv)POSIX 在新线程入口构造 argv:  argv=[&quot;module&quot;,&quot;start&quot;,&quot;-f&quot;,&quot;-p&quot;,&quot;42&quot;]  argc=5run_trampoline() 丢弃 argv[0]:  argc=4, argv=[&quot;start&quot;,&quot;-f&quot;,&quot;-p&quot;,&quot;42&quot;]T::instantiate(argc=4, argv=[&quot;start&quot;,&quot;-f&quot;,&quot;-p&quot;,&quot;42&quot;])  px4_getopt 从 index=1 开始解析 &quot;-f -p 42&quot;
+
+
+六、uORB 回调驱动执行流程独立线程模式// run() 内部while (!should_exit()) &#123;    px4_pollfd_struct_t fds[1];    fds[0].fd = topic_sub.getHandle();    fds[0].events = POLLIN;    px4_poll(fds, 1, 100);   // 阻塞，最多等 100ms    if (fds[0].revents &amp; POLLIN) &#123;        topic_sub.copy(&amp;data);        // 处理    &#125;&#125;
+
+WorkQueue 模式// task_spawn 时不创建独立线程// init() 注册回调_att_sub.registerCallback();// uORB 发布新数据 -&gt; DeviceNode 触发回调 -&gt; ScheduleNow()// WorkQueue 线程调用 Run()void Run() override &#123;    if (should_exit()) &#123;        _att_sub.unregisterCallback();        exit_and_cleanup();        return;    &#125;    // 处理数据    vehicle_attitude_s att&#123;&#125;;    if (_att_sub.update(&amp;att)) &#123;        // 控制算法    &#125;    ScheduleDelayed(10_ms);  // 定时兜底&#125;
+
+WorkQueue 模式的关键约束：
+
+Run() 里不允许 px4_poll，不允许阻塞 I&#x2F;O
+不要打印高频日志（WorkQueue 线程被卡住会影响整个队列）
+回调触发 + ScheduleDelayed() 同时存在时，频率由兜底周期决定
+
+
+
+上一篇：交叉编译顺序详解下一篇：uORB 通信机制（上）
+
+]]></content>
+      <categories>
+        <category>技术</category>
+        <category>飞控PX4</category>
+        <category>PX4平台层</category>
+      </categories>
+      <tags>
+        <tag>技术博文</tag>
+        <tag>PX4</tag>
+        <tag>NuttX</tag>
+        <tag>ModuleBase</tag>
+        <tag>WorkQueue</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>PX4 EKF2 应用管理层 EKF2.cpp 详解</title>
+    <url>/2026/02/24/05-EKF2%E5%BA%94%E7%94%A8%E7%AE%A1%E7%90%86%E5%B1%82/</url>
+    <content><![CDATA[一、EKF2.cpp 的职责定位EKF2.cpp 是 EKF 算法库与 PX4 飞控系统之间的粘合层（Glue Layer）。它不实现任何 EKF 数学算法，其职责是：
+
+通过 uORB 订阅传感器原始数据
+将 uORB 数据格式转换为 EKF 库接受的内部格式（imuSample, gnssSample 等）
+调用 EKF 算法库执行估计
+将 EKF 输出发布为 uORB 话题供飞控其他模块使用
+
+EKF2 运行在 WorkQueue（wq:ekf2）上，由 sensor_combined 或 vehicle_imu 话题到达时触发 Run()。
+
+相关基础：uORB 通信机制（上），uORB 通信机制（下）
+
+
+二、Run() 主循环void EKF2::Run() &#123;    // 1. 接收 IMU 数据（vehicle_imu 或 sensor_combined）    if (_vehicle_imu_sub.update(&amp;_vehicle_imu)) &#123;        imuSample imu_sample;        // 转换 delta_velocity → imuSample.delta_vel        // 转换 delta_angle  → imuSample.delta_ang        _ekf.setImuData(imu_sample);  // 推入 IMU RingBuffer    &#125;    // 2. 接收其他传感器（非每次 IMU 到达都有）    if (_vehicle_gps_position_sub.updated()) &#123;        vehicle_gps_position_s gps;        _vehicle_gps_position_sub.copy(&amp;gps);        gnssSample gnss;        // 格式转换：经纬度、速度、精度...        _ekf.setGpsData(gnss);    &#125;    // 类似处理: setBaroData(), setMagData(), setRangeData() ...    // 3. 调用 EKF 主循环（每次 IMU 到达时执行）    bool updated = _ekf.update();    if (updated) &#123;        // 4. 发布估计结果        PublishAttitude();       // vehicle_attitude        PublishLocalPosition();  // vehicle_local_position        PublishGlobalPosition(); // vehicle_global_position        PublishOdometry();       // vehicle_odometry        PublishStatus();         // estimator_status        PublishInnovations();    // estimator_innovations    &#125;&#125;
+
+
+三、数据订阅与发布3.1 订阅的 uORB 话题
+
+
+话题
+类型
+说明
+
+
+
+vehicle_imu
+按实例订阅
+每个 IMU 芯片对应一个实例（EKF2 有多实例）
+
+
+vehicle_gps_position
+可选
+GNSS 位置&#x2F;速度
+
+
+vehicle_magnetometer
+可选
+磁力计数据
+
+
+vehicle_air_data
+可选
+气压计气压和高度
+
+
+distance_sensor
+可选
+测距仪
+
+
+vehicle_optical_flow
+可选
+光流
+
+
+vehicle_visual_odometry
+可选
+外部视觉&#x2F;VIO&#x2F;MoCap
+
+
+landing_target_pose
+可选
+精确降落目标
+
+
+airspeed_validated
+可选
+空速
+
+
+3.2 发布的 uORB 话题
+
+
+话题
+下游使用者
+关键字段
+
+
+
+vehicle_attitude
+mc_pos_control, Commander
+姿态四元数 q
+
+
+vehicle_local_position
+mc_pos_control, Navigator
+NED 位置&#x2F;速度&#x2F;加速度
+
+
+vehicle_global_position
+Navigator, GCS
+经纬度、海拔
+
+
+vehicle_odometry
+外部系统
+完整位姿
+
+
+estimator_status
+QGC 健康监控
+新息、方差、错误标志
+
+
+estimator_innovations
+调试
+各传感器新息和方差
+
+
+wind
+固定翼空速控制
+风速估计
+
+
+ekf_gps_drift
+健康监控
+GPS 漂移
+
+
+
+四、多实例架构与 EKF2Selector4.1 多实例设计PX4 飞控板可能搭载多个 IMU（如 Pixhawk 6C 有 3 个 IMU）。EKF2 对每个 IMU 单独运行一个 EKF 实例，相互独立。每个实例都发布完整的估计结果，只是实例编号不同（vehicle_attitude:0、vehicle_attitude:1 等）。
+4.2 EKF2Selector 选择策略EKF2Selector 负责从多个 EKF 实例中选择一个最优输出，供控制器使用：
+flowchart TD    EKF0[&quot;EKF 实例 0\n(IMU 0)&quot;] --&gt; Selector    EKF1[&quot;EKF 实例 1\n(IMU 1)&quot;] --&gt; Selector    EKF2[&quot;EKF 实例 2\n(IMU 2)&quot;] --&gt; Selector    Selector[&quot;EKF2Selector\n综合评分&quot;] --&gt; Primary[&quot;Primary 输出\nvehicle_attitude等&quot;]    Selector --&gt; Fallback[&quot;Fallback 切换\n(主实例失效时)&quot;]
+
+评分准则（综合多个因素）：
+
+姿态估计健康（没有大的姿态翻转）
+IMU 振动水平（滤除振动严重的 IMU）
+新息检验通过率（GPS&#x2F;Baro&#x2F;Mag 新息是否合理）
+传感器错误标志（卡尔曼滤波器未发散）
+
+切换策略：Primary 实例评分显著降低时，无缝切换至 Fallback 实例。切换时对位置状态进行对齐，避免跳变。
+
+五、参数更新机制EKF2 通过 updateParams() 将 PX4 参数系统的值同步到 EKF 库内部的 parameters 结构：
+void EKF2::updateParams() &#123;    ModuleParams::updateParams();  // 更新 @Parameter 声明的成员变量    // 手动同步部分参数到 EKF 内部结构    _ekf.get_mag_decl_deg()  = _param_ekf2_mag_decl.get();    _ekf.get_gps_delay_ms()  = _param_ekf2_gps_delay.get();    // ...&#125;
+
+参数变更（通过 QGC 或 MAVLink 命令修改 EKF2_* 参数）触发 parameter_update 话题，EKF2 订阅后在下次 Run() 调用 updateParams()。
+
+六、健康状态发布estimator_status 是 EKF 健康状态的核心话题，关键字段：
+struct estimator_status_s &#123;    float   vibe[3];              // 振动水平估计    float   output_tracking_error[3]; // OutputPredictor 跟踪误差    uint64_t time_slip;           // 积分时间滑移（实时性指标）    bool    gps_check_fail_flags; // GPS 预检失败标志位    uint16_t filter_fault_flags;  // 滤波器内部错误（bit flags）    uint16_t innovation_check_flags; // 各传感器新息检验结果    float   pos_horiz_accuracy;   // 水平位置精度（m, 95%）    float   pos_vert_accuracy;    // 垂直位置精度（m, 95%）    // ...&#125;;
+
+filter_fault_flags 的任意位置 1 都表示 EKF 状态异常（如协方差发散、四元数非法等），Commander 会据此触发估计器失效保护。
+
+七、小结EKF2.cpp 的核心价值在于：将 EKF 纯算法库与 PX4 模块化架构解耦。算法库（/EKF/）不依赖任何 PX4 特定的 uORB、参数系统，可以独立编译和单元测试；而 EKF2.cpp 负责所有 PX4 特定的 I&#x2F;O 适配。
+多实例 + Selector 的架构是 PX4 冗余估计的实现基础，在飞行安全上有实质意义。
+
+上一篇：State.h 状态向量下一篇：ekf.cpp 核心主循环系列总目录：PX4 v1.16 源码解读总目录
+
+]]></content>
+      <categories>
+        <category>技术</category>
+        <category>飞控PX4</category>
+        <category>EKF2状态估计</category>
+      </categories>
+      <tags>
+        <tag>技术博文</tag>
+        <tag>PX4</tag>
+        <tag>架构</tag>
+        <tag>EKF2</tag>
+        <tag>uORB</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>PX4 EKF2 ekf.cpp 核心主循环详解</title>
+    <url>/2026/02/26/06-ekf-cpp%E6%A0%B8%E5%BF%83%E4%B8%BB%E5%BE%AA%E7%8E%AF/</url>
+    <content><![CDATA[一、update() 主循环结构ekf.cpp 的 update() 函数是 EKF 算法的最高级入口，每次 IMU 降采样完成后由 EKF2.cpp 调用一次（约 250 Hz）：
+bool Ekf::update() &#123;    // 1. 尝试从 IMU RingBuffer 取最旧数据    if (!_imu_buffer.pop_first_older_than(_time_delayed_us,                                           &amp;_imu_sample_delayed)) &#123;        return false;  // 暂无延迟时刻的 IMU 数据，跳过    &#125;    // 2. 首次运行时初始化滤波器    if (!_filter_initialised) &#123;        _filter_initialised = initialiseFilter();        if (!_filter_initialised) return false;    &#125;    // 3. 计算本步 dt（使用 IMU 样本内置时间）    _dt_ekf_avg = 0.998f * _dt_ekf_avg + 0.002f * _imu_sample_delayed.delta_ang_dt;    // 4. 状态预测（积分 IMU 增量到状态向量）    predictState(_imu_sample_delayed);    // 5. 协方差预测（P = F*P*F&#x27; + Q）    predictCovariance(_imu_sample_delayed);    // 6. 融合调度（调用各传感器融合函数）    controlFusionModes(_imu_sample_delayed);    // 7. 更新 OutputPredictor（延迟修正传播到实时状态）    _output_predictor.correctOutputStates(_imu_sample_delayed.time_us,                                           getQuaternion(), getVelocity(),                                           getPosition(), getGyroBias());    return true;&#125;
+
+
+二、初始化条件 initialiseFilter()EKF 初始化是一个积累静止数据的过程，需满足多个条件：
+flowchart TD    Start([首次调用]) --&gt; CheckIMU&#123;IMU 数据\n是否充足?&#125;    CheckIMU --&gt;|否| WaitIMU[等待积累足够 IMU 样本]    CheckIMU --&gt;|是| CalcTilt[用加速度计计算 roll / pitch]    CalcTilt --&gt; CheckYaw&#123;有可靠航向源?&#125;    CheckYaw --&gt;|磁力计有效| MagYaw[用磁力计初始化 yaw]    CheckYaw --&gt;|GPS 双天线| GpsYaw[用 GPS 航向初始化 yaw]    CheckYaw --&gt;|无磁无GPS| ZeroYaw[yaw = 0, 等待校正]    MagYaw --&gt; InitCov[初始化协方差 P]    GpsYaw --&gt; InitCov    ZeroYaw --&gt; InitCov    InitCov --&gt; CheckGPS&#123;GPS 可用且\n预检通过?&#125;    CheckGPS --&gt;|是| SetOrigin[设置本地坐标原点]    CheckGPS --&gt;|否| BaroOrigin[用气压计高度设定 Z 轴原点]    SetOrigin --&gt; Done([初始化完成])    BaroOrigin --&gt; Done
+
+初始化失败的主要原因：
+
+IMU 在运动（加速度计不稳定，无法估计重力方向）
+磁力计数据异常（软铁干扰大）
+GPS 预检失败（精度差、卫星数不足）
+
+
+三、predictState() 状态预测数学状态预测基于 IMU 的角增量 (\delta\theta) 和速度增量 (\delta v)（加速度计积分 - 已去除估计重力）：
+3.1 姿态预测姿态用四元数表示，角增量转换为旋转四元数后与名义四元数相乘：
+[\mathbf{q}^+ &#x3D; \mathbf{q} \otimes \begin{bmatrix} \cos\frac{|\delta\theta|}{2} \ \sin\frac{|\delta\theta|}{2} \cdot \frac{\delta\theta}{|\delta\theta|} \end{bmatrix}]
+代码实现：
+const Quatf dq(AxisAnglef&#123;imu.delta_ang - _state.gyro_bias * imu.delta_ang_dt&#125;);_state.quat_nominal = (_state.quat_nominal * dq).normalized();
+
+注意：角增量在应用前减去了陀螺仪零偏估计 _state.gyro_bias * dt，这是 EKF 实时补偿传感器偏差的体现。
+3.2 速度预测速度在导航（NED）坐标系下积分，加速度增量需从机体系转到导航系：
+[\mathbf{v}^+ &#x3D; \mathbf{v} + \left( \mathbf{R}_{nb} \cdot (\delta v - \mathbf{b}_a \cdot dt) \right) + \mathbf{g} \cdot dt]
+其中 (\mathbf{R}_{nb}) 是机体到导航系的旋转矩阵（由 _state.quat_nominal 提取），(\mathbf{g} &#x3D; [0, 0, +9.81]^T)（NED 坐标系重力朝 D 轴正方向）。
+const Vector3f delta_vel_nav =    _R_to_earth * (imu.delta_vel - _state.accel_bias * imu.delta_vel_dt)    + _earth_rate_NED % imu.delta_vel * imu.delta_vel_dt;  // Coriolis 修正_state.vel += delta_vel_nav;_state.vel(2) += CONSTANTS_ONE_G * imu.delta_vel_dt;  // 重力
+
+3.3 位置预测位置用梯形积分（避免纯后向欧拉的滞后）：
+_state.pos += (_state.vel + 0.5f * delta_vel_nav) * imu.delta_vel_dt;
+
+3.4 零偏&#x2F;磁场&#x2F;风速预测这些缓慢变化的量使用随机游走模型（不预测，保持不变，仅在协方差矩阵中增加过程噪声）：
+// gyro_bias, accel_bias, mag_I, mag_B, wind_vel 不改变名义值// 过程噪声在 predictCovariance() 中添加到对应对角元
+
+
+四、水平加速度健康监测预测中会实时检测加速度计异常：
+// 检查削波const bool delta_vel_clipped =    imu.delta_vel_clipping[0] || imu.delta_vel_clipping[1] || imu.delta_vel_clipping[2];if (delta_vel_clipped) &#123;    // 抑制被削波轴的卡尔曼增益，避免错误修正    clearInhibitedStateKalmanGains();&#125;
+
+
+五、controlFusionModes() 调用时机在每步 IMU 预测后，controlFusionModes() 检查各传感器 RingBuffer 是否有延迟时刻的新数据：
+flowchart LR    predict[predictState +\npredictCovariance] --&gt; ctrl[controlFusionModes]    ctrl --&gt; gps[controlGpsFusion\n位置/速度]    ctrl --&gt; mag[controlMagFusion\n航向/磁场]    ctrl --&gt; baro[controlBaroFusion\n高度]    ctrl --&gt; rng[controlRangeFinderFusion\n高度]    ctrl --&gt; flow[controlOpticalFlowFusion\n光流速度]    ctrl --&gt; ev[controlEvFusion\n外部视觉]    ctrl --&gt; height[controlHeightFusion\n多源高度仲裁]    ctrl --&gt; yaw[controlGpsYawFusion\nGPS航向]
+
+每个 control*Fusion() 函数决定：
+
+是否有新数据需要融合
+是否通过新息检验（未通过则拒绝）
+是否调用 measurementUpdate() 执行卡尔曼更新
+
+
+六、小结ekf.cpp 的 update() 实现了预测 → 融合的标准 EKF 节拍：
+
+预测阶段：IMU 积分驱动，每步固定执行，高频（250 Hz）
+更新阶段：由传感器数据到达时机决定，各传感器独立异步触发
+零偏估计：通过协方差传播和卡尔曼更新逐步收敛，不在预测阶段显式积分
+
+理解 update() 的执行流程是读懂后续 covariance.cpp 和 control.cpp 的前提。
+
+上一篇：EKF2 应用管理层下一篇：协方差矩阵预测 covariance.cpp系列总目录：PX4 v1.16 源码解读总目录
+
+]]></content>
+      <categories>
+        <category>技术</category>
+        <category>飞控PX4</category>
+        <category>EKF2状态估计</category>
+      </categories>
+      <tags>
+        <tag>技术博文</tag>
+        <tag>PX4</tag>
+        <tag>EKF2</tag>
+        <tag>核心算法</tag>
+        <tag>状态预测</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>PX4 Commander 核心调度</title>
+    <url>/2026/03/06/06-Commander%E6%A0%B8%E5%BF%83%E8%B0%83%E5%BA%A6/</url>
+    <content><![CDATA[一、Commander 主类结构Commander 继承 ModuleBase&lt;Commander&gt; 与 ModuleParams，以单进程内控制平面的形式持有所有子系统成员：
+class Commander : public ModuleBase&lt;Commander&gt;, public ModuleParams &#123;    // 子系统成员（均以值/引用持有）    Failsafe              _failsafe;    FailureDetector       _failure_detector;    HealthAndArmingChecks _health_and_arming_checks;    HomePosition          _home_position;    ModeManagement        _mode_management;    UserModeIntention     _user_mode_intention;    Safety                _safety;    WorkerThread          _worker_thread;    MulticopterThrowLaunch _throw_launch;    // ...&#125;;
+
+主循环 100 Hz，状态发布 2 Hz 或状态变化时立即发布。
+
+前置知识：模式需求位图，Commander 模块框架
+
+
+二、run() 中央调度顺序每次循环：  1. 更新系统状态与输入源     （电源/landed/安全按钮/VTOL/HOME/LINK/RC/Offboard……）  2. 更新失败检测、模式管理  3. ★ failsafe/模式意图合成（handleModeIntentionAndFailsafe）  4. 跑健康检查（10 Hz）  5. 处理命令/动作请求  6. 把三大状态按 2 Hz 或状态变化立即发布     actuator_armed → vehicle_control_mode → vehicle_status
+
+
+三、arm() 完整流程触发来源：
+
+action_request：RC 手势&#x2F;开关&#x2F;按钮生成的动作请求指令
+vehicle_command：MAVLink COMPONENT_ARM_DISARM 等命令
+其他内部路径：任务启动等
+
+flowchart TD    A[&quot;arm() 入口&quot;] --&gt; B[&quot;检查 arming_state 不是 ARMED&quot;]    B --&gt; C[&quot;HealthAndArmingChecks::canArm() 强制跑一次&quot;]    C --&gt; D&#123;&quot;通过检查?&quot;&#125;    D --&gt;|&quot;No&quot;| E[&quot;返回 TRANSITION_DENIED\n记录拒绝原因&quot;]    D --&gt;|&quot;Yes&quot;| F[&quot;验证油门位置\n（RC 模式需要油门最低）&quot;]    F --&gt; G[&quot;_vehicle_status.arming_state = ARMED&quot;]    G --&gt; H[&quot;发布 actuator_armed.armed=true&quot;]    H --&gt; I[&quot;返回 TRANSITION_CHANGED&quot;]
+
+
+四、disarm() 完整流程空中门禁加强制路径：
+flowchart TD    A[&quot;disarm() 入口&quot;] --&gt; B&#123;&quot;forced = true?&quot;&#125;    B --&gt;|&quot;Yes（kill/lockdown/failsafe）&quot;| C[&quot;跳过空中门禁检查&quot;]    B --&gt;|&quot;No（正常 disarm）&quot;| D&#123;&quot;is_landed?&quot;&#125;    D --&gt;|&quot;No（空中）&quot;| E[&quot;返回 TRANSITION_DENIED\n不允许空中手动锁定&quot;]    D --&gt;|&quot;Yes（地面）&quot;| F[&quot;执行锁定&quot;]    C --&gt; F    F --&gt; G[&quot;_vehicle_status.arming_state = STANDBY&quot;]    G --&gt; H[&quot;发布 actuator_armed.armed=false&quot;]
+
+触发 disarm 的来源：
+
+kill switch&#x2F;lockdown 自动上锁：disarm(..., true)（forced&#x3D;true）
+failsafe action disarm：handleModeIntentionAndFailsafe() 中调用
+
+
+五、handleAutoDisarm()着陆后自动上锁与地面预解锁超时自动上锁：
+graph TD    A[&quot;handleAutoDisarm()&quot;] --&gt; B&#123;&quot;landed_amid_mission?&quot;&#125;    B --&gt;|&quot;Yes（任务中短暂landed）&quot;| C[&quot;豁免 COM_DISARM_LAND\n避免任务中误判&quot;]    B --&gt;|&quot;No&quot;| D&#123;&quot;landed 超过 COM_DISARM_LAND 秒?&quot;&#125;    D --&gt;|&quot;Yes&quot;| E[&quot;自动上锁（非强制）&quot;]        A --&gt; F&#123;&quot;kill/lockdown 持续超过阈值?&quot;&#125;    F --&gt;|&quot;Yes&quot;| G[&quot;强制上锁（forced=true）\n绕过空中门禁&quot;]
+
+迟滞参数来源：_auto_disarm_killed 事件由 updateParameters() 根据 COM_KILL_DISARM 参数初始化。
+
+六、handleModeIntentionAndFailsafe()这是整个 Commander 最核心的函数，将用户意图模式、模式替代、failsafe 状态机选出的 action 合成最终的 vehicle_status.nav_state：
+flowchart TD    UI[&quot;UserModeIntention\n用户想要的 nav_state&quot;] --&gt; Merge    FS[&quot;Failsafe 状态机\n选出最严重 Action&quot;] --&gt; Merge    MM[&quot;ModeManagement\ngetNavStateReplacementIfValid()&quot;] --&gt; Merge        Merge[&quot;合成逻辑&quot;] --&gt; OUT1[&quot;nav_state_user_intention\n（user 想要的，下行心跳用）&quot;]    Merge --&gt; OUT2[&quot;nav_state\n（实际生效的）&quot;]        Merge --&gt;|&quot;Action=Disarm&quot;| DIS[&quot;直接执行 disarm()&quot;]    Merge --&gt;|&quot;Action=Terminate&quot;| TERM[&quot;强制 nav_state=TERMINATION&quot;]
+
+两个输出的用途：
+
+nav_state_user_intention：下行 MAVLink CURRENT_MODE 时同时发送 intended_custom_mode
+nav_state：真正驱动所有模块行为的当前模式
+
+ModeManagement 的 replacement 是强制插入层——无论用户意图还是 failsafe action 映射出来的模式，都需要通过 getNavStateReplacementIfValid() 处理，允许外部模式执行器替代&#x2F;模式不可用替代等机制生效。
+Disarm 与 Terminate 属于超越模式的系统动作，直接驱动上锁或将 nav_state 强制为 TERMINATION。
+
+七、handle_command()handle_command() 是 Commander 对 vehicle_command 的命令分发入口，参数来自 MAVLinkReceiver 转发，也可能来自其他模块内部发布：
+vehicle_command 话题  -&gt; handle_command() 目标过滤（system/component）  -&gt; 按 cmd.command 分支执行：     - DO_SET_MODE：切换飞行模式     - COMPONENT_ARM_DISARM：arm/disarm     - 校准命令：卸载到 WorkerThread     - 重启命令     - failsafe 相关动作  -&gt; vehicle_command_ack 回复 ACK
+
+
+八、完整数据流汇总graph LR    subgraph 输入        RC[&quot;RC/action_request&quot;]        MAVLINK[&quot;vehicle_command\nMAVLink&quot;]        SENSORS[&quot;传感器/估计器话题&quot;]    end    subgraph Commander 内部        HAC[&quot;HealthAndArmingChecks\n-&gt; failsafe_flags&quot;]        CM[&quot;control_mode\n-&gt; vehicle_control_mode&quot;]        UMI[&quot;UserModeIntention\n-&gt; user nav_state&quot;]        FSM[&quot;Failsafe\n-&gt; selected action&quot;]        MGT[&quot;ModeManagement\n-&gt; replacement nav_state&quot;]        HP[&quot;HomePosition\n-&gt; home_position&quot;]    end    subgraph 输出        AA[&quot;actuator_armed&quot;]        VCM[&quot;vehicle_control_mode&quot;]        VS[&quot;vehicle_status&quot;]        FDS[&quot;failure_detector_status&quot;]    end    RC --&gt; UMI    MAVLINK --&gt; HAC    MAVLINK --&gt; UMI    SENSORS --&gt; HAC    HAC --&gt; FSM    UMI --&gt; FSM    FSM --&gt; MGT    MGT --&gt; VS    CM --&gt; VCM    VS --&gt; AA    VS --&gt; FDS
+
+
+
+上一篇：模式需求位图下一篇：HomePosition 管理
+
+]]></content>
+      <categories>
+        <category>技术</category>
+        <category>飞控PX4</category>
+        <category>Commander决策层</category>
+      </categories>
+      <tags>
+        <tag>技术博文</tag>
+        <tag>PX4</tag>
+        <tag>Commander</tag>
+        <tag>arm</tag>
+        <tag>disarm</tag>
+        <tag>failsafe</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>PX4 模式需求位图（mode_requirements）</title>
+    <url>/2026/03/05/05-%E6%A8%A1%E5%BC%8F%E9%9C%80%E6%B1%82%E4%BD%8D%E5%9B%BE/</url>
+    <content><![CDATA[一、功能定位ModeUtil/mode_requirements.hpp/cpp 负责生成每个 nav_state 对应的模式需求位图，写入 failsafe_flags_s 的 mode_req_* 字段。
+核心接口：
+void getModeRequirements(uint8_t vehicle_type, failsafe_flags_s &amp;flags);
+
+
+输出：flags.mode_req_angular_velocity、flags.mode_req_attitude、flags.mode_req_local_position 等一组 uint32_t 位图
+位图的位索引与 vehicle_status_s::NAVIGATION_STATE_* 数值一致（0~30）
+vehicle_type 参数预留接口，当前实现中未使用，保留以支持未来机型差异化
+
+
+相关知识：控制模式生成逻辑、Commander 模块框架
+
+
+二、核心抽象：位图 + 有效性标志graph LR    A[&quot;getModeRequirements()&quot;] --&gt;|&quot;计算&quot;| B[&quot;mode_req_X\n（uint32_t 位图）\n第 n 位=1 表示 NAVIGATION_STATE==n 需要X&quot;]    C[&quot;HealthAndArmingChecks&quot;] --&gt;|&quot;检查传感器状态&quot;| D[&quot;X_invalid\n（布尔）\n当前系统对X的判定&quot;]        B --&gt; E&#123;&quot;组合逻辑&quot;&#125;    D --&gt; E    E --&gt;|&quot;X_invalid=true 且 当前nav_state 在 mode_req_X 中被置位&quot;| F[&quot;该模式不可运行\n或触发 failsafe&quot;]
+
+两个字段配合使用：
+
+mode_req_X：一个集合，表示哪些 nav_state 需要能力 X
+X_invalid：当前系统对能力 X 的健康判定
+
+
+三、setRequirement() 最小实现// 将某个 nav_state 对某类需求的依赖写入对应的位图// 位图: 第 n 位为 1 表示 NAVIGATION_STATE==n 属于该需求集合void setRequirement(uint8_t nav_state, uint32_t &amp;requirement_bitmask) &#123;    requirement_bitmask |= (1u &lt;&lt; nav_state);&#125;
+
+
+四、各模式的需求配置graph TD    subgraph 模式需求层级        MANUAL[&quot;MANUAL\n仅需: manual_control&quot;]        ALTCTL[&quot;ALTCTL\n需要: angular_velocity + attitude + local_alt + manual_control&quot;]        POSCTL[&quot;POSCTL\n需要: ALTCTL的全部 + local_position_relaxed&quot;]        AUTO[&quot;AUTO_MISSION\n需要: local_pos + global_pos + home_position + mission + angular_velocity + attitude&quot;]        RTL[&quot;AUTO_RTL\n需要: global_pos + home_position + angular_velocity + attitude&quot;]    end
+
+主要模式的需求汇总（以多旋翼为例）：
+
+
+
+模式
+需要的能力集合
+
+
+
+MANUAL
+manual_control
+
+
+ALTCTL
+angular_velocity、attitude、local_alt、manual_control
+
+
+POSCTL
+ALTCTL + local_position_relaxed
+
+
+AUTO_LOITER
+local_position、attitude、angular_velocity
+
+
+AUTO_MISSION
+local_position、global_position、home_position（可选）、mission、attitude、angular_velocity
+
+
+AUTO_RTL
+global_position、home_position、attitude、angular_velocity
+
+
+关键点：每次调用 getModeRequirements() 都会生成一整套 mode_req_* 位图字段。每个模式只在它依赖的那几类位图里被置位，其余位图中该模式对应位为 0。
+
+五、需求类别与传感器数据源的绑定*_invalid 标志并非抽象概念，而是由 HealthAndArmingChecks 的具体检查项绑定到对应的 uORB 话题。
+angular_velocity_invalid由 vehicle_angular_velocity 话题驱动，时间戳超时或数值非有限即 invalid。
+attitude_invalid由 vehicle_attitude 话题驱动，超时或四元数归一化&#x2F;数值检查失败即 invalid。
+local_position_invalid &#x2F; local_position_invalid_relaxedlocal_position_invalid：严格检查，要求 EKF 位置估计高质量且置信度高。
+local_position_invalid_relaxed：宽松检查，允许估计精度稍低，POSCTL 模式使用此项（POSCTL 加入 local_position_relaxed 而非 local_position）。
+global_position_invalid要求 vehicle_global_position 话题有效且 EKF GPS 融合处于健康状态。
+home_position_invalid要求 home_position.valid 为真，且 Home 点的精度满足 RTL 所需的精度门限。
+其他标志
+
+
+标志
+说明
+
+
+
+local_altitude_invalid
+本地高度无效（无气压计且无其他高度源）
+
+
+offboard_control_signal_lost
+Offboard 模式下控制信号超时
+
+
+auto_mission_missing
+任务模式下没有任务可执行
+
+
+manual_control_signal_lost
+RC&#x2F;摇杆信号丢失
+
+
+
+六、位图的消费路径mode_req_* 位图与 *_invalid 标志共同存储在 failsafe_flags_s 话题中，被下游两个系统消费：
+graph LR    FLAGS[&quot;failsafe_flags_s\nmode_req_* 位图\n*_invalid 标志&quot;]        FLAGS --&gt; MCHECK[&quot;ModeCheck\n判断某 nav_state 是否可运行/可切换&quot;]    FLAGS --&gt; FSAFE[&quot;Failsafe 状态机\n判断是否触发 failsafe 动作&quot;]        MCHECK --&gt; ARM[&quot;影响解锁条件\ncanArm()&quot;]    MCHECK --&gt; RUN[&quot;影响模式可运行性\ncanRun()&quot;]    FSAFE --&gt; NAVSTATE[&quot;影响最终 nav_state 选择&quot;]
+
+
+
+上一篇：控制模式生成逻辑下一篇：Commander 核心调度
+
+]]></content>
+      <categories>
+        <category>技术</category>
+        <category>飞控PX4</category>
+        <category>Commander决策层</category>
+      </categories>
+      <tags>
+        <tag>技术博文</tag>
+        <tag>PX4</tag>
+        <tag>Commander</tag>
+        <tag>failsafe_flags</tag>
+        <tag>模式需求</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>PX4 uORB 通信机制（下）：WorkQueue 实例模板</title>
+    <url>/2026/01/23/07-uORB%E9%80%9A%E4%BF%A1%E6%9C%BA%E5%88%B6-%E4%B8%8B/</url>
+    <content><![CDATA[一、dt 的意义与限幅1.1 为什么飞控算法强依赖 dt飞控算法是连续时间模型的离散实现，几乎所有关键计算都依赖两次执行之间的时间间隔 dt（单位秒）：
+
+
+
+算法环节
+dt 的作用
+
+
+
+积分（I 项）
+integral += error * dt，dt 大则积分快
+
+
+微分（D 项）
+derivative = (error - last_error) / dt，dt 小则放大噪声
+
+
+低通滤波器
+滤波器系数 α 由 dt 与截止频率共同决定
+
+
+状态传播
+v += a * dt，x += v * dt，dt 错则状态估计发散
+
+
+计算方式：
+const uint64_t now_us = hrt_absolute_time();float dt = (now_us - _last_run_us) * 1e-6f;_last_run_us = now_us;
+
+1.2 为什么必须对 dt 限幅实际中 dt 会因 CPU 忙、队列阻塞、线程调度抖动、任务被长时间抢占而波动，出现 0.001 s、0.004 s、0.020 s 的跳变。不限幅时：
+
+积分项被偶发大 dt 破坏，产生积分爆炸
+滤波器有效带宽被改变，响应不一致
+状态预测产生误差积累
+
+标准做法：
+if (dt &lt; 0.0005f) &#123; dt = 0.0005f; &#125;  // 最小 0.5ms，防止噪声放大if (dt &gt; 0.02f)   &#123; dt = 0.02f;   &#125;  // 最大 20ms，防止积分爆炸
+
+
+二、HRT 的作用HRT（High Resolution Timer）是 PX4 自建的统一微秒时基系统，提供三个接口：
+hrt_absolute_time()     // 返回系统从启动以来的微秒计时（单调递增）hrt_call_every(...)     // 注册周期回调（用于周期性任务/轮询）hrt_call_after(...)     // 延时一次性回调
+
+所有传感器时间戳、EKF 时间对齐、控制 dt 都基于同一个单调微秒时钟，保证系统内时间域一致。1 kHz 级别任务可靠，抖动远低于 OS 调度时钟。
+
+相关知识：uORB 通信机制（上）
+
+
+三、WorkQueue 实例模板以下是 WorkQueue 模式的完整代码模板，集成了 WorkQueue + uORB 回调 + HRT dt + 参数订阅的标准范式：
+#include &lt;px4_platform_common/module.h&gt;#include &lt;px4_platform_common/module_params.h&gt;#include &lt;px4_platform_common/log.h&gt;#include &lt;uORB/SubscriptionCallbackWorkItem.hpp&gt;#include &lt;uORB/Publication.hpp&gt;#include &lt;uORB/topics/vehicle_attitude.h&gt;#include &lt;uORB/topics/vehicle_rates_setpoint.h&gt;#include &lt;uORB/topics/parameter_update.h&gt;#include &lt;drivers/drv_hrt.h&gt;using namespace time_literals;class UorbWqExample final    : public ModuleBase&lt;UorbWqExample&gt;    , public ModuleParams    , public px4::WorkItem&#123;public:    UorbWqExample() :        ModuleParams(nullptr),        WorkItem(MODULE_NAME, px4::wq_configurations::hp_default)    &#123;&#125;    ~UorbWqExample() override &#123;        _att_sub.unregisterCallback();    &#125;    // ModuleBase 统一 CLI：start/stop/status/help    static int task_spawn(int argc, char *argv[]) &#123;        UorbWqExample *inst = new UorbWqExample();        if (!inst) &#123; return -1; &#125;        _object.store(inst);        _task_id = task_id_is_work_queue;        if (inst-&gt;init()) &#123; return 0; &#125;        delete inst;        _object.store(nullptr);        _task_id = -1;        return -1;    &#125;    static UorbWqExample *instantiate(int argc, char *argv[]) &#123;        // WorkQueue 模式不走 instantiate/run_trampoline        return nullptr;    &#125;    bool init() &#123;        // 1) 注册 attitude 更新回调：有新数据就 ScheduleNow() -&gt; Run()        if (!_att_sub.registerCallback()) &#123;            PX4_ERR(&quot;attitude callback registration failed&quot;);            return false;        &#125;        // 2) 定时兜底：避免完全依赖回调（可选）        ScheduleDelayed(10_ms);        _last_run_us = hrt_absolute_time();        return true;    &#125;    void Run() override &#123;        // 退出路径：WorkQueue 模式必须在 Run 内自收尾        if (should_exit()) &#123;            _att_sub.unregisterCallback();            exit_and_cleanup();            return;        &#125;        // 0) 参数刷新：parameter_update 是标准做法        if (_param_update_sub.updated()) &#123;            parameter_update_s p&#123;&#125;;            _param_update_sub.copy(&amp;p);            updateParams();  // ModuleParams: 把 PARAM_* 同步到本地变量        &#125;        // 1) HRT dt 计算（必须限幅）        const uint64_t now_us = hrt_absolute_time();        float dt = (now_us - _last_run_us) * 1e-6f;        _last_run_us = now_us;        if (dt &lt; 0.0005f) &#123; dt = 0.0005f; &#125;        if (dt &gt; 0.02f)   &#123; dt = 0.02f; &#125;        // 2) uORB 输入：通常有更新，但仍要用 update() 保证        vehicle_attitude_s att&#123;&#125;;        if (_att_sub.update(&amp;att)) &#123;            // 3) 参数控制逻辑            if (_param_enable.get() == 0) &#123; return; &#125;            // 4) 算法：此处为示意，实际需要四元数误差/角速度闭环等            vehicle_rates_setpoint_s rates_sp&#123;&#125;;            rates_sp.timestamp = now_us;            rates_sp.roll  = _param_p.get() * 0.0f;            rates_sp.pitch = _param_p.get() * 0.0f;            rates_sp.yaw   = _param_p.get() * 0.0f;            // 5) uORB 输出            _rates_sp_pub.publish(rates_sp);        &#125;        // 6) 定时兜底：每 10ms 至少跑一次        ScheduleDelayed(10_ms);    &#125;    int print_status() override &#123;        PX4_INFO(&quot;running&quot;);        PX4_INFO(&quot;enable=%d p=%.3f&quot;, _param_enable.get(), (double)_param_p.get());        return 0;    &#125;private:    // 回调驱动订阅（WorkQueue 事件触发）    uORB::SubscriptionCallbackWorkItem _att_sub&#123;this, ORB_ID(vehicle_attitude)&#125;;    // 参数更新订阅    uORB::Subscription _param_update_sub&#123;ORB_ID(parameter_update)&#125;;    // 发布    uORB::Publication&lt;vehicle_rates_setpoint_s&gt; _rates_sp_pub&#123;ORB_ID(vehicle_rates_setpoint)&#125;;    // HRT 时间戳    uint64_t _last_run_us&#123;0&#125;;    DEFINE_PARAMETERS(        (ParamInt&lt;px4::params::SYS_AUTOSTART&gt;) _param_enable,        (ParamFloat&lt;px4::params::MPC_XY_P&gt;)    _param_p    )&#125;;extern &quot;C&quot; __EXPORT int uorb_wq_example_main(int argc, char *argv[]) &#123;    return UorbWqExample::main(argc, argv);&#125;
+
+
+四、WorkQueue 模式关键约束
+
+
+约束
+原因
+
+
+
+Run() 内禁止 px4_poll
+WorkQueue 线程是共享线程，阻塞会卡住整个队列
+
+
+Run() 内禁止阻塞 I&#x2F;O
+同上
+
+
+不要打印高频日志
+串口&#x2F;文件 I&#x2F;O 有延迟，高频调用会导致 WorkQueue 积压
+
+
+回调 + ScheduleDelayed 同时存在时
+频率由兜底周期决定，两者会叠加触发
+
+
+
+五、三种订阅方式的选型建议
+
+
+方式
+类型
+适用场景
+
+
+
+uORB::Subscription::update()
+轮询式
+简单低频模块，独立线程循环
+
+
+px4_poll() + orb_copy()
+阻塞式
+独立线程，等待多个 topic 中任意一个更新
+
+
+SubscriptionCallbackWorkItem
+回调式
+WorkQueue 模式，高频控制算法（姿态、位置环）
+
+
+
+
+上一篇：uORB 通信机制（上）下一篇：DShot 电机转向修改
+
+]]></content>
+      <categories>
+        <category>技术</category>
+        <category>飞控PX4</category>
+        <category>PX4平台层</category>
+      </categories>
+      <tags>
+        <tag>技术博文</tag>
+        <tag>PX4</tag>
+        <tag>WorkQueue</tag>
+        <tag>uORB</tag>
+        <tag>HRT</tag>
+        <tag>dt</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>PX4 uORB 通信机制（上）：概念与用法</title>
+    <url>/2026/01/22/06-uORB%E9%80%9A%E4%BF%A1%E6%9C%BA%E5%88%B6-%E4%B8%8A/</url>
+    <content><![CDATA[一、uORB 的定位uORB（Micro Object Request Broker）是 PX4 的进程内&#x2F;系统内 IPC 机制：将 drivers、估计器、导航、控制等模块解耦为统一的发布&#x2F;订阅模型。
+数据流路径：传感器驱动采样 → 解析 → 发布 uORB → 上层模块订阅使用。
+
+相关知识：模块入口与运行模式
+
+
+二、三个核心对象与两个数字2.1 Topic（主题）Topic 是”一类消息的定义”：
+
+消息结构体（由 msg/*.msg 自动生成）：如 vehicle_attitude_s、sensor_accel_s
+元数据：topic 名称、结构体大小、队列长度、唯一 ID
+Publisher：将最新数据写入 Topic
+Subscriber：读取 Topic 最新数据，并感知是否有更新
+
+2.2 DeviceNode（节点）某个 Topic 的实例化数据容器：
+
+一个 topic 可以有多个实例（multi-instance），对应多 IMU、多气压计等
+每个实例对应一个 DeviceNode，内部保存最新数据（或环形队列）+ 订阅者状态 + 唤醒机制
+
+2.3 Manager（管理器）Topic → DeviceNode 的总表，负责：
+
+查找&#x2F;创建 DeviceNode（advertise&#x2F;subscribe 时）
+发布时把数据写入正确的 DeviceNode
+订阅时把订阅者挂到正确的 DeviceNode
+
+2.4 两个关键数字
+
+
+字段
+含义
+
+
+
+generation
+DeviceNode 内部计数器，每发布一次自增
+
+
+last_generation
+订阅者上次读到的 generation
+
+
+判定有更新
+node.generation != subscriber.last_generation
+
+
+
+三、发布链路// 最小发布者示例#include &lt;uORB/Publication.hpp&gt;#include &lt;uORB/topics/vehicle_attitude.h&gt;uORB::Publication&lt;vehicle_attitude_s&gt; _att_pub&#123;ORB_ID(vehicle_attitude)&#125;;void publish_attitude() &#123;    vehicle_attitude_s msg&#123;&#125;;    msg.timestamp = hrt_absolute_time();  // 必须填写 timestamp    // 填写其他字段    _att_pub.publish(msg);  // 若未 advertise，内部自动 advertise&#125;
+
+发布不是将指针传给订阅者，而是把数据拷贝到 broker（DeviceNode）的存储里，再由 broker 负责通知订阅者。
+
+四、订阅链路PX4 支持三种订阅方式：
+4.1 轮询式（非阻塞）适合低频任务、简单模块、线程循环：
+#include &lt;uORB/SubscriptionInterval.hpp&gt;#include &lt;uORB/topics/sensor_accel.h&gt;// 5ms 最小间隔uORB::SubscriptionInterval _accel_sub&#123;ORB_ID(sensor_accel), 5000&#125;;void handle_accel() &#123;    sensor_accel_s a&#123;&#125;;    if (_accel_sub.update(&amp;a)) &#123;        // 至少间隔 5ms 才会 copy 一次        // 保证：hrt_elapsed_time &gt;= interval 才检查 updated() 并 copy    &#125;&#125;
+
+底层语义：orb_check 比较 generation 与 last_generation；orb_copy 把 DeviceNode 最新数据拷贝到栈变量，并更新 last_generation。
+4.2 阻塞式通过 px4_poll() 等待数据，适合独立线程模式：
+uORB::Subscription _sub&#123;ORB_ID(vehicle_attitude)&#125;;px4_pollfd_struct_t fds[1];fds[0].fd = _sub.getHandle();fds[0].events = POLLIN;px4_poll(fds, 1, 100);  // 阻塞最多 100msif (fds[0].revents &amp; POLLIN) &#123;    vehicle_attitude_s att&#123;&#125;;    _sub.copy(&amp;att);&#125;
+
+DeviceNode 内部通过 poll_notify(POLLIN) 通知订阅者。
+4.3 回调式（WorkQueue 事件驱动）适合高频控制算法（见 uORB 通信机制（下））：
+// init() 中注册回调_att_sub.registerCallback();// uORB 发布时 -&gt; DeviceNode 遍历 _callbacks 调用 call()// -&gt; 触发 ScheduleNow() -&gt; WorkQueue 调用 Run()
+
+
+五、新增一条消息的完整步骤Step 1：创建 .msg 文件在 msg/ 目录下新建 MyTopic.msg，必须包含 timestamp：
+uint64 timestamp      # 必须有，PX4 生态依赖此字段做日志同步float32 valueint32 id
+
+Step 2：加入构建系统编辑 msg/CMakeLists.txt，将 MyTopic.msg 加入列表，重新编译后自动生成：
+
+uORB/topics/my_topic.h（结构体 my_topic_s）
+topic 元数据注册（ORB_ID(my_topic) 可用）
+
+Step 3：发布与订阅// 发布#include &lt;uORB/Publication.hpp&gt;#include &lt;uORB/topics/my_topic.h&gt;uORB::Publication&lt;my_topic_s&gt; _pub&#123;ORB_ID(my_topic)&#125;;void send() &#123;    my_topic_s m&#123;&#125;;    m.timestamp = hrt_absolute_time();    m.value = 1.0f;    m.id = 42;    _pub.publish(m);&#125;
+
+// 订阅#include &lt;uORB/Subscription.hpp&gt;#include &lt;uORB/topics/my_topic.h&gt;uORB::Subscription _sub&#123;ORB_ID(my_topic)&#125;;void recv() &#123;    my_topic_s m&#123;&#125;;    if (_sub.updated()) &#123;        _sub.copy(&amp;m);    &#125;&#125;
+
+
+六、消息文件名到结构体名的转换PX4 的 uORB 消息生成器（Tools/msg/px_generate_uorb_topic_files.py）将 PascalCase 文件名转为 snake_case 结构体名：
+# 核心正则re.sub(r&#x27;(?&lt;!^)(?=[A-Z])&#x27;, &#x27;_&#x27;, file_base_name).lower()# 在不是开头的位置且后面是大写字母处插入下划线# VehicleStatus.msg -&gt; vehicle_status# vehicle_status_s（结构体名加 _s 后缀）
+
+生成内容：
+
+vehicle_status.h：结构体定义
+vehicle_status.cpp：uORB topic 元数据
+ORB_DECLARE(vehicle_status) 与 ORB_DEFINE(vehicle_status, ...) 宏
+
+
+七、多实例与队列深度多实例同一种 topic 可能有多路来源（多 IMU、多 GPS），uORB 允许同一 topic 有多个 instance：
+// 发布多实例（advertise_multi）// 订阅多实例（subscribe_multi，需要指定 instance 编号）
+
+注意：
+
+不要混用 orb_advertise_multi 与 orb_advertise
+遇到多实例时，发布端只发布 instance 0 但订阅端订阅了 instance 1，会导致永远收不到数据
+
+队列深度
+大多数 topic 只要最新值，queue=1 足够
+少数 topic 需要保留短历史，如 vehicle_command，队列 &gt; 1
+
+
+
+上一篇：模块入口与运行模式下一篇：uORB 通信机制（下）：WorkQueue 实例模板
+
+]]></content>
+      <categories>
+        <category>技术</category>
+        <category>飞控PX4</category>
+        <category>PX4平台层</category>
+      </categories>
+      <tags>
+        <tag>技术博文</tag>
+        <tag>PX4</tag>
+        <tag>uORB</tag>
+        <tag>发布订阅</tag>
+        <tag>IPC</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>PX4 HomePosition 管理</title>
+    <url>/2026/03/06/07-HomePosition%E7%AE%A1%E7%90%86/</url>
+    <content><![CDATA[一、功能定位HomePosition 是 Commander 内部的一个状态组件，负责生成并维护 Home 点，通过 uORB 发布 home_position 话题。
+Home 点在两套坐标系下均有表达：
+
+本地坐标系（NED）：用于本地导航计算
+全局坐标系（WGS84 经纬度）：用于 GPS 导航与 RTL 方向计算
+
+home_position 话题被以下系统消费：
+
+RTL 逻辑：确定返航目标点
+任务导航：相对 Home 点的高度&#x2F;距离计算
+Failsafe：home_position_invalid 标志决定 RTL 是否可用
+
+
+相关知识：Commander 核心调度
+
+
+二、输入&#x2F;输出接口输入// uORB 订阅ORB_ID(vehicle_gps_position)     -&gt; sensor_gps_s       // raw GNSSORB_ID(vehicle_global_position)  -&gt; vehicle_global_position_s  // 融合 globalORB_ID(vehicle_local_position)   -&gt; vehicle_local_position_s   // 融合 local + ref 经纬度// 依赖的状态引用const failsafe_flags_s &amp;_failsafe_flags  // 由 HealthAndArmingChecks 维护
+
+外部调用参数：
+
+setHomePosition(force)：强制设置 Home 点
+setManually(lat, lon, alt, yaw)：手动设置 Home 点（优先级高于自动设置）
+update(set_automatically, check_if_changed)：周期更新检查
+
+输出// uORB 发布ORB_ID(home_position) -&gt; home_position_s// 包含字段：//   local NED 坐标（x, y, z）//   全局坐标（lat, lon, alt）//   航向 yaw//   valid 标志// 内部状态_valid                      // 是否已设置过全局 HOME_gps_position_for_home_valid // GNSS 缓存（global fused 无效时的 fallback）_heading_reset_counter      // 跟踪 EKF heading reset 并修正 home yaw
+
+
+三、Home 点设置时机flowchart TD    A[&quot;解锁（arm()）&quot;] --&gt;|&quot;自动设置&quot;| HP[&quot;HomePosition&quot;]    B[&quot;起飞后（in-air）&quot;] --&gt;|&quot;若 COM_HOME_IN_AIR=1&quot;| HP    C[&quot;DO_SET_HOME MAVLink 命令&quot;] --&gt;|&quot;手动覆盖&quot;| HP    D[&quot;run() 周期更新&quot;] --&gt;|&quot;条件满足时自动更新&quot;| HP        HP --&gt; PUB[&quot;发布 home_position 话题&quot;]
+
+手动设置（setManually）优先级高于自动设置，一旦手动设置后，自动设置不会再覆盖，除非调用 setHomePosition(force=true)。
+GPS 质量门限自动设置 Home 点时，需要满足以下 GNSS 精度要求：
+
+EPH（水平位置误差）&lt; 5 m
+EPV（垂直位置误差）&lt; 10 m
+
+低于此精度的 GNSS 数据不用于 Home 点更新，防止 RTL 时使用不精确的返航点。
+
+四、Home 有效性反馈链路flowchart LR    HP[&quot;home_position 话题\nhome_position.valid&quot;] --&gt; HC[&quot;HomePositionCheck\nHealthAndArmingChecks 子系统&quot;]    HC --&gt; FF[&quot;failsafe_flags.home_position_invalid&quot;]    FF --&gt; MR[&quot;mode_req_home_position 位图\n（AUTO_RTL 等模式需要此项）&quot;]    MR --&gt; FS[&quot;Failsafe 状态机\n决定 RTL 是否可用&quot;]    FS --&gt;|&quot;home_position_invalid=true 且需要 RTL&quot;| FB[&quot;RTL 降级为 Land 或 Descend&quot;]
+
+这条链路保证了：当 GPS 精度不足导致 Home 点未设置或无效时，RTL 模式不会被错误地执行。Failsafe 状态机在尝试执行 RTL 时会检查 Home 是否有效，不可用时按 Failsafe 框架的级联回退机制降级。
+
+五、heading_reset_counter 的作用EKF 在某些情况下会触发 heading reset（例如 GPS 重新获取锁定后修正航向估计）。此时 Home 点的航向（yaw）记录也需要同步更新，否则 RTL 计算的返回方向会出现偏差。
+_heading_reset_counter 跟踪 EKF 的 heading reset 事件，检测到 reset 后用最新的 heading 重新更新 Home 点的 yaw 分量。
+
+
+上一篇：Commander 核心调度返回总目录：PX4 v1.16 源码解读总目录
+
+]]></content>
+      <categories>
+        <category>技术</category>
+        <category>飞控PX4</category>
+        <category>Commander决策层</category>
+      </categories>
+      <tags>
+        <tag>技术博文</tag>
+        <tag>PX4</tag>
+        <tag>Commander</tag>
+        <tag>HomePosition</tag>
+        <tag>RTL</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>PX4 DShot 电机转向修改</title>
+    <url>/2026/01/12/08-DShot%E7%94%B5%E6%9C%BA%E8%BD%AC%E5%90%91%E4%BF%AE%E6%94%B9/</url>
+    <content><![CDATA[一、前提条件DShot 电机转向修改仅支持 DShot 协议。操作通过 MAVLink Shell 或 NuttX NSH 终端执行。
+
+二、操作步骤以修改 1 号电机为例：
+# 反转 1 号电机转向dshot reverse -m 1# 将反转设置保存到 ESC 内部存储dshot save -m 1
+
+两条命令必须按顺序执行，reverse 仅在运行时生效，save 将设置持久化到 ESC 内部。
+
+三、机制说明反转信息存储在 ESC 电调的内部非易失性存储中，而非飞控参数系统。因此：
+
+切换到不同固件（APM&#x2F;PX4）后仍然生效
+飞控重刷固件不影响 ESC 内保存的转向设置
+若需要恢复原始转向，重新执行 dshot reverse 再 dshot save
+
+
+四、多电机操作若需要修改多个电机转向，分别对每个电机编号执行以上两条命令：
+dshot reverse -m 1dshot save -m 1dshot reverse -m 3dshot save -m 3
+
+电机编号从 1 开始，对应 actuator 分配中的电机顺序。
+
+
+上一篇：uORB 通信机制（下）返回总目录：PX4 v1.16 源码解读总目录
+
+]]></content>
+      <categories>
+        <category>技术</category>
+        <category>飞控PX4</category>
+        <category>PX4平台层</category>
+      </categories>
+      <tags>
+        <tag>技术博文</tag>
+        <tag>PX4</tag>
+        <tag>DShot</tag>
+        <tag>ESC</tag>
+        <tag>电调</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>PX4 EKF2 融合调度 control.cpp 详解</title>
+    <url>/2026/02/26/08-%E8%9E%8D%E5%90%88%E8%B0%83%E5%BA%A6control-cpp/</url>
+    <content><![CDATA[一、controlFusionModes() 职责controlFusionModes() 是 EKF 中所有传感器融合的调度中心，在每步 IMU 预测后调用，负责：
+
+检查各传感器 RingBuffer 是否有延迟时刻的新数据
+判断是否满足融合前提条件（传感器健康、EKF 初始化完成等）
+执行新息检验，决定接受或拒绝测量
+调用具体融合函数（aid_sources/*）执行卡尔曼更新
+
+void Ekf::controlFusionModes(const imuSample &amp;imu_sample) &#123;    controlGpsFusion(imu_sample);    controlGpsYawFusion(imu_sample);    controlMagFusion();    controlHeightFusion(imu_sample);    controlBaroFusion();    controlRangeFinderFusion();    controlEvFusion();    controlOpticalFlowFusion(imu_sample);    controlAuxVelFusion();    controlAirspeedFusion();    controlDragFusion();&#125;
+
+
+二、GPS 融合详解 controlGpsFusion()以 GPS 为例，说明融合流程：
+2.1 GPS 使能条件bool EKF::controlGpsFusion() &#123;    // 1. 参数使能检查    if (!_params.gnss_vel_use &amp;&amp; !_params.gnss_pos_use) return;    // 2. 数据有效性（RingBuffer 查询）    gnssSample gps_sample;    if (!_gps_buffer.pop_first_older_than(_time_delayed_us, &amp;gps_sample)) return;    // 3. GPS 预检（位置精度、卫星数、速度精度等）    if (!gpsIsHealthy(gps_sample)) &#123;        // 降级：停止 GPS 融合，依赖气压计+陀螺积分        stopGpsFusion();        return;    &#125;    // 4. 执行位置融合    if (_params.gnss_pos_use) &#123;        fuseGnssPos(gps_sample, _aid_src_gnss_pos);    &#125;    // 5. 执行速度融合    if (_params.gnss_vel_use) &#123;        fuseGnssVel(gps_sample, _aid_src_gnss_vel);    &#125;&#125;
+
+2.2 新息检验（Innovation Gate）在 fuseGnssPos() 内部执行新息一致性检验：
+// 计算新息Vector2f innov = gps_pos_local - _state.pos.xy();  // 预测位置 vs GPS 位置// 计算新息方差 S = H*P*H&#x27; + R// 对角位置状态的 H 矩阵是单位矩阵，所以 S = P_pos + R_gpsVector2f innov_var = &#123;    P(6,6) + sq(gps_sample.hacc),  // 北向    P(7,7) + sq(gps_sample.hacc),  // 东向&#125;;// 归一化新息平方（NIS）检验float test_ratio = (innov(0)*innov(0)/innov_var(0) + innov(1)*innov(1)/innov_var(1)) / 2.0f;if (test_ratio &gt; sq(_params.gps_pos_innov_gate)) &#123;    // 拒绝：新息太大，说明 GPS 数据与 EKF 预测差距超过 gate 倍标准差    _aid_src_gnss_pos.innovation_rejected = true;    // 连续拒绝超过阈值 → 触发 GPS 重置（直接跳变状态到 GPS 位置）    if (consecutive_rejections &gt; GPS_RESET_THRESHOLD) &#123;        resetPositionToGnss();  // 状态重置    &#125;    return;&#125;// 接受：调用卡尔曼更新measurementUpdate(_aid_src_gnss_pos, H_pos, innov, innov_var);
+
+Gate 参数意义：EKF2_GPS_P_GATE = 5.0（默认）表示：若 GPS 新息超过 5σ，则拒绝该测量。调大可接受更差的 GPS，调小则对 GPS 质量要求更严。
+
+三、高度融合仲裁 controlHeightFusion()高度是最复杂的融合场景，需要在多个高度源之间进行仲裁和降级切换：
+flowchart TD    Start[controlHeightFusion] --&gt; CheckAcc[checkVerticalAccelHealth\n检查垂直加速度健康]    CheckAcc --&gt; GndEff[controlGroundEffect\n地面效应补偿]    GndEff --&gt; BaroCtrl[controlBaroHeightFusion\n气压计高度]    BaroCtrl --&gt; GnssCtrl[controlGnssHeightFusion\nGPS高度]    GnssCtrl --&gt; RngCtrl[controlRangeHeightFusion\n测距仪高度]    RngCtrl --&gt; EvCtrl[controlEvHeightFusion\n外部视觉高度]    EvCtrl --&gt; Fallback[checkHeightSensorRefFallback\n高度参考自动切换]    Fallback --&gt; CheckRef&#123;主参考源\n是否有效?&#125;    CheckRef --&gt;|有效| Done([继续使用主参考])    CheckRef --&gt;|失效| Switch[按优先级切换:\n1.EV → 2.测距仪 → 3.GPS → 4.气压计]    Switch --&gt; Done
+
+3.1 高度参考优先级默认优先级（EKF2_HGT_REF 参数控制）：
+
+
+
+优先级
+传感器
+典型场景
+
+
+
+1
+外部视觉（EV）
+室内精确定位
+
+
+2
+测距仪
+低空悬停&#x2F;降落（&lt;10 m）
+
+
+3
+GPS 高度
+室外绝对高度
+
+
+4（默认）
+气压计
+通用场景回退
+
+
+3.2 地面效应补偿近地面时旋翼下洗流导致气压计读数偏低（压力增大 → 高度显示偏低）：
+void Ekf::controlGroundEffect() &#123;    // 测距仪读数 &lt; 1 m 时认为在地面效应区域    if (_rng_sample.rng &lt; 1.0f &amp;&amp; _in_air) &#123;        // 增加气压计观测噪声方差（降低气压计置信度）        _baro_noise_var_compensated = sq(_params.baro_noise * _params.gnd_effect_baro_scaler);    &#125;&#125;
+
+
+四、磁力计融合 controlMagFusion()磁力计融合的工作模式由 EKF2_MAG_TYPE 参数控制：
+
+
+
+模式
+值
+说明
+
+
+
+自动
+0
+室外用 3D 磁场融合，室内&#x2F;干扰大时切换为仅航向
+
+
+仅航向
+1
+仅约束 yaw，不估计地球磁场矢量
+
+
+3D 磁场
+2
+完整估计地球磁场（NED）+ 机体磁偏差
+
+
+无磁力计
+5
+依赖双天线 GPS 或外部视觉提供航向
+
+
+室外飞行时，3D 磁场融合同时约束：
+
+航向 yaw（主要贡献）
+地球磁场方向估计（提高后续磁力计一致性）
+机体磁偏差（校准磁铁干扰）
+
+
+五、外部视觉（EV）融合controlEvFusion() 支持 4 种信息的独立融合：
+
+
+
+子函数
+话题字段
+融合内容
+
+
+
+controlEvPosFusion()
+pos
+本地 NED 位置（MoCap&#x2F;VIO）
+
+
+controlEvVelFusion()
+vel
+机体或 NED 速度
+
+
+controlEvHeightFusion()
+pos.z
+高度
+
+
+controlEvYawFusion()
+yaw（从 q 提取）
+航向角
+
+
+EV 数据（vehicle_visual_odometry）延迟通常较大（EKF2_EV_DELAY 默认 175 ms），因此 RingBuffer 需要设置较大深度。
+
+六、小结control.cpp 是 EKF 的决策层，其核心逻辑：
+
+多传感器异步调度：各传感器按各自频率独立触发，互不阻塞
+新息门检验：统一的 NIS 检验机制，异常测量自动拒绝
+状态重置：连续拒绝超过阈值时执行状态跳变，防止长期漂移
+高度源仲裁：优先级驱动的自动降级，保证高度估计在任意传感器失效时的鲁棒性
+
+这一层的参数调优（各 *_GATE 参数、EKF2_HGT_REF、EKF2_MAG_TYPE）直接影响飞行稳定性和故障恢复能力。
+
+上一篇：协方差矩阵预测下一篇：高度融合与多源仲裁系列总目录：PX4 v1.16 源码解读总目录
+
+]]></content>
+      <categories>
+        <category>技术</category>
+        <category>飞控PX4</category>
+        <category>EKF2状态估计</category>
+      </categories>
+      <tags>
+        <tag>技术博文</tag>
+        <tag>PX4</tag>
+        <tag>EKF2</tag>
+        <tag>调度</tag>
+        <tag>传感器融合</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>PX4 EKF2 协方差矩阵预测 covariance.cpp</title>
+    <url>/2026/02/27/07-%E5%8D%8F%E6%96%B9%E5%B7%AE%E7%9F%A9%E9%98%B5%E9%A2%84%E6%B5%8B/</url>
+    <content><![CDATA[一、协方差矩阵的作用协方差矩阵 P 是 EKF 的核心数据结构之一，其物理意义是状态估计误差的统计描述：
+
+P 的对角元 P[i][i] &#x3D; 状态分量 i 的方差，即估计误差的平方期望
+P 的非对角元 P[i][j] &#x3D; 状态 i 与 j 的协方差，描述误差的相关性
+
+P 越大，表示 EKF 对该状态量的估计越不确信；卡尔曼增益 K 正比于 P，P 大时 EKF 更信任传感器测量，给予更大的修正力度。
+EKF2 的 P 矩阵是 24×24（含地形则 25×25），covariance.cpp 负责其全生命周期管理。
+
+二、协方差初始化 initialiseCovariance()初始化在 initialiseFilter() 中调用，将 P 设为对角矩阵，各对角元反映对初始状态的先验不确定度：
+void Ekf::initialiseCovariance() &#123;    P.setZero();    // 姿态不确定度（rad²）    // roll/pitch 由加速度计估计，精度约 0.1 rad    // yaw 由磁力计/GPS估计，精度约 0.3 rad；无磁力计时设大一些    P(0,0) = P(1,1) = sq(0.1f);    P(2,2) = sq((_params.mag_fusion_type == MagFuseType::NONE) ? 1.0f : 0.3f);    // 速度不确定度（m/s）²：初始静止约 0.1 m/s    P(3,3) = P(4,4) = P(5,5) = sq(0.1f);    // 位置不确定度（m）²：初始 GPS 精度约 5 m    P(6,6) = P(7,7) = sq(5.0f);    P(8,8) = sq(1.0f);  // 高度精度较好    // 陀螺仪零偏（rad/s）²    P(9,9) = P(10,10) = P(11,11) = sq(rad_per_sec_to_dpss(_params.switch_on_gyro_bias));    // 加速度计零偏（m/s²）²    P(12,12) = P(13,13) = P(14,14) = sq(_params.switch_on_accel_bias);    // 地球磁场（Gauss）²：由磁力计精度决定    P(15,15) = P(16,16) = P(17,17) = sq(_params.mag_noise);    // 机体磁偏差（Gauss）²    P(18,18) = P(19,19) = P(20,20) = sq(_params.mag_bias_faded);    // 风速（m/s）²：初始风速未知，设较大值    P(21,21) = P(22,22) = sq(_params.initial_wind_uncertainty);&#125;
+
+
+三、协方差预测 predictCovariance()predictCovariance() 实现了离散时间 EKF 的协方差传播：
+[P^- &#x3D; F \cdot P \cdot F^T + Q]
+其中：
+
+(F) 是状态转移矩阵（系统雅可比），由 IMU 数据计算
+(Q) 是过程噪声协方差矩阵
+
+3.1 F 矩阵的稀疏性利用完整的 F 矩阵是 24×24，但大部分元素为零（稀疏矩阵）。EKF2 使用 Symforce 自动生成的符号化展开代码，只计算非零元素，避免全矩阵乘法（24³ &#x3D; 13824 次浮点运算 → 优化后仅需数百次）。
+关键的 F 矩阵耦合项（非零非对角块）：
+
+
+
+行（状态）
+列（状态）
+物理含义
+
+
+
+速度
+姿态误差
+速度预测依赖机体→导航系旋转，姿态误差影响速度预测误差
+
+
+速度
+加速度计零偏
+加速度计零偏直接影响速度积分
+
+
+位置
+速度
+位置是速度的积分
+
+
+姿态
+陀螺仪零偏
+陀螺仪零偏直接影响姿态积分
+
+
+3.2 过程噪声 QQ 矩阵描述系统动力学模型的不确定性（随机游走噪声）。EKF2 的 Q 是对角矩阵：
+// 陀螺仪过程噪声（持续随机游走）const float gyro_noise_sq = sq(_params.gyro_noise) * dt;// 加速度计过程噪声const float accel_noise_sq = sq(_params.accel_noise) * dt;// Q 贡献到协方差预测（简化表达）：// 姿态方向：受陀螺仪噪声驱动// 速度方向：受加速度计噪声驱动// 零偏：受零偏随机游走噪声驱动（通常很小，确保零偏估计缓慢漂移）
+
+
+四、数值稳定性约束 constrainCovariance()实际代码中协方差矩阵会因数值误差导致对称性破坏或对角元变负，需要定期约束：
+void Ekf::constrainCovariance() &#123;    // 1. 强制对称：P = (P + P&#x27;) / 2    for (int i = 0; i &lt; _k_num_states; i++) &#123;        for (int j = i+1; j &lt; _k_num_states; j++) &#123;            P(i,j) = P(j,i) = 0.5f * (P(i,j) + P(j,i));        &#125;    &#125;    // 2. 对角元下限（防止除零）    for (int i = 0; i &lt; _k_num_states; i++) &#123;        P(i,i) = math::max(P(i,i), _min_cov_diag[i]);    &#125;    // 3. 对角元上限（防止发散）    // 姿态方差上限 (1 rad)²    P(0,0) = math::min(P(0,0), 1.0f);    // 速度方差上限 (1e6 m/s)²    P(3,3) = math::min(P(3,3), 1e6f);    // ...&#125;
+
+
+五、协方差重置场景以下情况会触发局部或全局协方差重置：
+
+
+
+场景
+动作
+
+
+
+initialiseFilter() 调用
+全局重置为初始对角矩阵
+
+
+磁力计融合崩溃（fuseYaw 病态）
+调用 initialiseCovariance()（全局重置）
+
+
+速度&#x2F;位置状态重置
+对应分块清零（消除与其他状态的相关性）
+
+
+传感器切换（如 GPS→EV）
+对对应状态协方差膨胀（增大不确定度）
+
+
+长时间 GPS 丢失
+位置方差随时间增大（过程噪声累积）
+
+
+局部重置示例（GPS 速度重置时）：
+// 速度重置时，清除速度与其他状态的协方差（相关性不再有效）for (int i = 0; i &lt; _k_num_states; i++) &#123;    P(3,i) = P(i,3) = 0.0f;    P(4,i) = P(i,4) = 0.0f;    P(5,i) = P(i,5) = 0.0f;&#125;// 重置速度方差为 GPS 速度精度的平方P(3,3) = P(4,4) = sq(gps_sample.sacc);P(5,5) = sq(gps_sample.vacc);
+
+
+六、小结covariance.cpp 实现了 EKF 的不确定度管理：
+
+初始化——设定合理先验，反映各传感器精度
+预测传播——Symforce 自动代码高效计算 F·P·F’+Q
+数值稳定——对称强制 + 上下限约束，防止计算病态
+局部重置——传感器切换时精确清理相关性，避免错误传播
+
+P 矩阵的健康状态直接决定卡尔曼增益的合理性，是整个 EKF 系统可靠工作的基础。
+
+上一篇：ekf.cpp 核心主循环下一篇：融合调度 control.cpp系列总目录：PX4 v1.16 源码解读总目录
+
+]]></content>
+      <categories>
+        <category>技术</category>
+        <category>飞控PX4</category>
+        <category>EKF2状态估计</category>
+      </categories>
+      <tags>
+        <tag>技术博文</tag>
+        <tag>PX4</tag>
+        <tag>EKF2</tag>
+        <tag>协方差</tag>
+        <tag>卡尔曼滤波</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>PX4 EKF2 高度融合与多源仲裁</title>
+    <url>/2026/02/27/09-%E9%AB%98%E5%BA%A6%E8%9E%8D%E5%90%88%E4%B8%8E%E5%A4%9A%E6%BA%90%E4%BB%B2%E8%A3%81/</url>
+    <content><![CDATA[一、高度融合的核心挑战高度估计需要解决以下问题：
+
+多源矛盾：气压计（长期稳定但受环境影响）、GPS 高度（绝对但精度低）、测距仪（高精度但距离有限）、外部视觉（精确但依赖基础设施）同时工作时，如何仲裁
+坐标系差异：PX4 内部高度（NED 坐标 D 轴，向下为正），外部 API 高度（altitude，向上为正），需要符号统一
+地面效应：近地面时气压计受旋翼下洗流影响，导致高度读数偏低
+参考切换：主高度源失效时，无缝切换至备用源，避免高度跳变
+
+
+二、高度传感器选择参数EKF2_HGT_REF 参数控制首选高度源：
+
+
+
+参数值
+传感器
+适用场景
+
+
+
+0
+气压计（默认）
+通用室外场景
+
+
+1
+GPS 高度
+需要绝对高度参考
+
+
+2
+测距仪
+低空精确悬停
+
+
+3
+外部视觉
+室内精确定位
+
+
+实际工作中，多个高度源可以同时工作，只是只有一个是”参考”（reference），其他作为辅助约束。
+
+三、controlHeightFusion() 实现flowchart TD    A[controlHeightFusion] --&gt; B[checkVerticalAccelerationHealth]    B --&gt; C&#123;垂直加速度\n是否异常?&#125;    C --是--&gt; D[设置 bad_vert_accel 标志\n抑制垂直状态更新]    C --否--&gt; E[controlGroundEffect\n地面效应补偿]    E --&gt; F[controlBaroHeightFusion\n气压计高度]    F --&gt; G[controlGnssHeightFusion\nGNSS高度]    G --&gt; H[controlRangeHeightFusion\n测距仪高度]    H --&gt; I[controlEvHeightFusion\n外部视觉高度]    I --&gt; J[checkHeightSensorRefFallback\n主参考健康检查]    J --&gt; K&#123;主参考是否持续输出?&#125;    K --是--&gt; L([继续当前参考])    K --否超时--&gt; M[按优先级选择下一个可用源]    M --&gt; N[resetHeightToBaro/GPS/Range/EV\n执行高度重置对齐]    N --&gt; L
+
+3.1 垂直加速度健康检查void Ekf::checkVerticalAccelerationHealth(const imuSample &amp;imu_sample) &#123;    // 检测加速度计纵轴削波（delta_vel_clipping[2]）    if (imu_sample.delta_vel_clipping[2]) &#123;        _clip_counter++;        if (_clip_counter &gt; CLIP_COUNT_THRESHOLD) &#123;            _fault_status.flags.bad_acc_vertical = true;        &#125;    &#125; else &#123;        _clip_counter = math::max(0, _clip_counter - 1);    &#125;    // 恢复条件：连续若干步无削波&#125;
+
+当 bad_acc_vertical 置位时，EKF 停止使用加速度计进行垂直状态预测（防止削波导致高度突变）。
+3.2 气压计高度融合气压计高度单位转换：气压计提供的是气压高度（相对起飞点 MSL 高度差）：
+// 新息计算（NED 坐标，D 轴向下为正）// EKF 内部高度 = -_state.pos(2)（向上为正）// 气压计高度 = baro_sample.hgt（向上为正，相对参考）float innov = -_state.pos(2) - (_baro_hgt_offset + baro_sample.hgt);
+
+_baro_hgt_offset 是气压计高度与 EKF 原点的偏差，在初始化或高度重置时更新。
+3.3 GNSS 高度融合GPS 高度使用 WGS84 椭球高，与气压计 MSL 高度存在大地水准面起伏差（geoid undulation），需要通过 _gpos.altitude() 接口统一处理。
+// GNSS 高度新息float innov = _gpos.altitude() - gnss_sample.alt;// 注意符号：altitude() 返回向上的高度，gnss_sample.alt 也是向上// EKF 内部通过坐标变换对齐
+
+3.4 测距仪高度融合测距仪测量地面以上高度（HAGL），而非 NED 原点高度：
+// 测距仪高度新息（HAGL）// _terrain_vpos 是估计的地面高度（NED D轴值）float innov = -(gpos_height - _terrain_vpos) - rng_sample.rng;// 等价于：EKF估计的HAGL - 测距仪读数
+
+
+四、高度参考自动切换checkHeightSensorRefFallback() 检测主高度参考是否超时无数据：
+void Ekf::checkHeightSensorRefFallback() &#123;    // 超时阈值：2 * 最大传感器延迟    const uint64_t timeout_us = 2 * _params.hgt_timeout_us;    if (_time_last_hgt_fuse + timeout_us &lt; _time_delayed_us) &#123;        // 主高度源超时，触发切换        switch (_params.hgt_sensor_ref) &#123;        case HeightSensor::EV:            if (isBaroHealthy()) resetHeightToBaro();            else if (isGnssHgtHealthy()) resetHeightToGnss();            break;        case HeightSensor::GNSS:            if (isBaroHealthy()) resetHeightToBaro();            break;        // ...        &#125;    &#125;&#125;
+
+切换时会执行 resetHeight*()，将 EKF 高度状态直接跳变到新传感器的读数，同时：
+
+更新高度参考偏置（_*_hgt_offset）
+清除高度状态的协方差相关性
+重置 OutputPredictor 中的高度积分
+
+
+五、速度融合通用模式速度融合（velocity_fusion.cpp）统一处理各传感器速度：
+void Ekf::fuseVelocity(AidSourceStatus&lt;3&gt;&amp; status) &#123;    // 3D 速度融合，每轴独立执行    for (int i = 0; i &lt; 3; i++) &#123;        // 新息        status.innovation[i] = _state.vel[i] - status.observation[i];        // 新息方差        status.innovation_variance[i] = P(3+i, 3+i) + status.observation_variance[i];        // 新息检验        const float test_ratio = sq(status.innovation[i]) / status.innovation_variance[i];        if (test_ratio &gt; sq(_params.vel_innov_gate)) &#123;            status.innovation_rejected = true;            continue;        &#125;        // 卡尔曼更新（单维测量）        VectorState K = P.col(3+i) / status.innovation_variance[i];        applyKalmanGainToState(K, status.innovation[i]);        applyKalmanGainToCovariance(K, 3+i);    &#125;&#125;
+
+
+六、航向融合 fuseYaw()航向角 ψ 无法由重力观测，必须依赖磁力计或 GPS 双天线或外部视觉：
+void Ekf::fuseYaw(AidSourceStatus&lt;1&gt;&amp; status) &#123;    // 观测矩阵 H 由 Symforce 自动生成（非线性，ψ 是四元数 q 的函数）    sym::ComputeYawInnovVarAndH(q, R_yaw, &amp;status.innovation_variance[0], &amp;H);    // 病态检查：新息方差必须大于观测噪声    if (status.innovation_variance[0] &lt; status.observation_variance[0]) &#123;        // P 矩阵崩溃（非正定），触发全局协方差重置        initialiseCovariance();        return;    &#125;    // 卡尔曼更新    measurementUpdate(status, H, status.innovation, status.innovation_variance);&#125;
+
+航向重置 resetQuatStateYaw()：当航向误差过大时，直接重置四元数而非卡尔曼更新：
+void Ekf::resetQuatStateYaw(float yaw, float yaw_var) &#123;    // 构建仅包含 yaw 变化的旋转四元数    const Dcmf R_body_to_earth&#123;_state.quat_nominal&#125;;    // 提取当前 roll/pitch，替换 yaw    const Eulerf euler_angles(R_body_to_earth);    _state.quat_nominal = Quatf(Eulerf(euler_angles.phi(), euler_angles.theta(), yaw));    // 通知 OutputPredictor 同步更新（外环控制器感知坐标系旋转）    _output_predictor.resetQuatState(_state.quat_nominal);    // 更新协方差（清零 yaw 相关项，设置新的 yaw 方差）    P(2,2) = yaw_var;    // 清除 yaw 与其他状态的相关性    for (int i = 0; i &lt; _k_num_states; i++) &#123;        if (i != 2) &#123;            P(2,i) = P(i,2) = 0.0f;        &#125;    &#125;&#125;
+
+
+七、小结EKF2 高度融合的关键设计：
+
+多源并行：气压计、GPS、测距仪、EV 可同时工作，各自提供独立约束
+参考仲裁：单一主参考 + 自动降级，失效时平滑切换
+坐标统一：所有高度源通过偏置对齐到 EKF 内部 NED 坐标原点
+故障隔离：垂直加速度健康检查 + 地面效应补偿，防止特殊场景下的错误融合
+
+航向融合的病态检查体现了 EKF2 在数值稳定性方面的防御性编程思路。
+
+上一篇：融合调度 control.cpp下一篇：辅助函数与卡尔曼更新 ekf_helper.cpp系列总目录：PX4 v1.16 源码解读总目录
+
+]]></content>
+      <categories>
+        <category>技术</category>
+        <category>飞控PX4</category>
+        <category>EKF2状态估计</category>
+      </categories>
+      <tags>
+        <tag>技术博文</tag>
+        <tag>PX4</tag>
+        <tag>EKF2</tag>
+        <tag>传感器融合</tag>
+        <tag>高度融合</tag>
       </tags>
   </entry>
   <entry>
@@ -77,6 +4622,108 @@
         <tag>PX4</tag>
         <tag>Apriltag</tag>
         <tag>视觉识别</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>PX4 EKF2 辅助函数与卡尔曼更新 ekf_helper.cpp</title>
+    <url>/2026/02/27/10-%E8%BE%85%E5%8A%A9%E5%87%BD%E6%95%B0%E4%B8%8E%E5%8D%A1%E5%B0%94%E6%9B%BC%E6%9B%B4%E6%96%B0/</url>
+    <content><![CDATA[一、measurementUpdate() — 卡尔曼更新核心measurementUpdate() 是所有传感器融合的最终执行函数，实现标准 EKF 的测量更新步骤：
+标准卡尔曼更新公式给定观测矩阵 H（1×24）、新息 y（标量）、新息方差 S &#x3D; HPH’ + R：
+[K &#x3D; P H^T S^{-1}][x^+ &#x3D; x + K \cdot y][P^+ &#x3D; (I - K H) P (I - K H)^T + K R K^T \quad \text{(Joseph form)}]
+EKF2 使用 Joseph 稳定形式（而非简化的 P &#x3D; (I-KH)P），保证数值正定性。
+代码实现（简化）void Ekf::measurementUpdate(    VectorState &amp;H,          // 观测矩阵行向量 H (1×24)    const float innovation,  // 新息 y = z - Hx    const float innov_var)   // 新息方差 S&#123;    // 1. 计算卡尔曼增益 K = P*H&#x27; / S    VectorState K;    for (int i = 0; i &lt; _k_num_states; i++) &#123;        K(i) = 0.0f;        for (int j = 0; j &lt; _k_num_states; j++) &#123;            K(i) += P(i,j) * H(j);        &#125;        K(i) /= innov_var;    &#125;    // 2. 更新状态向量 x = x + K * y    // 注意：姿态更新通过旋转向量误差注入，不是直接修改    fuse(K, innovation);    // 3. 更新协方差 P（Joseph 形式）    // P = (I - K*H) * P * (I - K*H)&#x27; + K * R * K&#x27;    SquareMatrix24f KH;  // K*H 矩阵    for (int i = 0; i &lt; _k_num_states; i++) &#123;        for (int j = 0; j &lt; _k_num_states; j++) &#123;            KH(i,j) = K(i) * H(j);        &#125;    &#125;    SquareMatrix24f ImKH = SquareMatrix24f::identity() - KH;    P = ImKH * P * ImKH.T() + K.outerProduct(K) * (innov_var - P_contribution);&#125;
+
+fuse() 函数 — 状态修正void Ekf::fuse(const VectorState &amp;K, const float innovation) &#123;    // 各状态分量直接加法更新    _state.vel += K.slice&lt;3,1&gt;(3,0) * innovation;    _state.pos += K.slice&lt;3,1&gt;(6,0) * innovation;    _state.gyro_bias  += K.slice&lt;3,1&gt;(9,0)  * innovation;    _state.accel_bias += K.slice&lt;3,1&gt;(12,0) * innovation;    _state.mag_I      += K.slice&lt;3,1&gt;(15,0) * innovation;    _state.mag_B      += K.slice&lt;3,1&gt;(18,0) * innovation;    _state.wind_vel   += K.slice&lt;2,1&gt;(21,0) * innovation;    // 姿态：旋转向量误差注入四元数    const Vector3f dq = K.slice&lt;3,1&gt;(0,0) * innovation;    _state.quat_nominal = Quatf(_state.quat_nominal * AxisAnglef(dq)).normalized();    // 零偏限幅（防止估计值超出物理合理范围）    _state.gyro_bias  = matrix::constrain(_state.gyro_bias,  -_params.gyro_bias_lim, _params.gyro_bias_lim);    _state.accel_bias = matrix::constrain(_state.accel_bias, -_params.accel_bias_lim, _params.accel_bias_lim);&#125;
+
+
+二、fuseDirectStateMeasurement() — 直接状态测量对于直接测量某个状态量的传感器（如直接测量速度的 GPS），提供简化接口：
+// 单维状态直接测量（避免构造完整 H 矩阵）void Ekf::fuseDirectStateMeasurement(    const float innov,    const float innov_var,    const int state_index)  // 状态分量索引（如速度 = 3,4,5）&#123;    // H 矩阵是单位向量（仅 state_index 处为 1，其余为 0）    VectorState H&#123;&#125;;    H(state_index) = 1.0f;    measurementUpdate(H, innov, innov_var);&#125;
+
+
+三、精度报告函数3.1 位置精度 get_ekf_lpos_accuracy()void Ekf::get_ekf_lpos_accuracy(float *ekf_eph, float *ekf_epv) const &#123;    // 水平位置精度（1σ，m）    // = sqrt(P_NN + P_EE)，即位置协方差的水平分量    *ekf_eph = sqrtf(P(6,6) + P(7,7));    // 垂直位置精度    *ekf_epv = sqrtf(P(8,8));&#125;
+
+这些值通过 estimator_status 话题发布，供 vehicle_local_position.eph/epv 使用，Navigator 和安全模块据此判断定位是否可信。
+3.2 新息测试比率float Ekf::getHeadingInnovationTestRatio() const &#123;    // 返回最近一次航向新息的 NIS 比率    // &gt; 1.0 表示新息超过 1σ，&gt; 门限² 表示被拒绝    return _aid_src_yaw.test_ratio;&#125;float Ekf::getHorizontalVelocityInnovationTestRatio() const &#123;    return math::max(_aid_src_gnss_vel.test_ratio[0],                     _aid_src_gnss_vel.test_ratio[1]);&#125;
+
+这些比率通过 estimator_innovations 话题发布，是调试传感器融合质量的关键指标。
+
+四、零偏管理4.1 resetGyroBias() &#x2F; resetAccelBias()void Ekf::resetGyroBias() &#123;    _state.gyro_bias.setZero();  // 清零零偏估计（保守重置，重新收敛）    // 重置零偏协方差到初始值（增大不确定度，加快重新估计）    for (int i = 9; i &lt; 12; i++) &#123;        P(i,i) = sq(_params.switch_on_gyro_bias);        // 清除与其他状态的相关性        for (int j = 0; j &lt; _k_num_states; j++) &#123;            if (j != i) P(i,j) = P(j,i) = 0.0f;        &#125;    &#125;&#125;
+
+4.2 updateIMUBiasInhibit() — 零偏估计抑制当飞机处于某些特殊状态时，应停止更新零偏估计（避免动态机动被错误解释为零偏）：
+void Ekf::updateIMUBiasInhibit() &#123;    // 条件：飞机正在高动态机动 OR 在地面静止（此时零偏可能被重力成分影响）    const bool inhibit = _control_status.flags.vehicle_at_rest                      || _fault_status.flags.bad_acc_vertical;    if (inhibit) &#123;        // 清零陀螺/加速度计的卡尔曼增益（P 矩阵对应列不参与更新）        // 通过 clearInhibitedStateKalmanGains() 实现    &#125;&#125;
+
+
+五、航迹推算（Dead Reckoning）状态当所有外部定位传感器（GPS&#x2F;EV&#x2F;光流）失效后，EKF 进入航迹推算模式，仅靠 IMU 积分维持位置估计：
+void Ekf::updateDeadReckoningStatus() &#123;    // 判断水平定位辅助源是否活跃    const bool pos_aiding = _control_status.flags.gps                         || _control_status.flags.ev_pos                         || _control_status.flags.opt_flow;    const bool vel_aiding = _control_status.flags.gps                         || _control_status.flags.ev_vel;    if (!pos_aiding &amp;&amp; !vel_aiding) &#123;        // 进入纯航迹推算        _time_last_hor_pos_aiding = 0;        // 计算水平位置漂移（仅靠 IMU 积分，位置方差随时间增长）        // P(6,6) 和 P(7,7) 受过程噪声驱动持续增大        _control_status.flags.dead_reckoning = true;    &#125;&#125;
+
+航迹推算期间，vehicle_local_position.dead_reckoning = true，高层模块（如 mc_pos_control）应降低对位置精度的要求，可能触发悬停或降落。
+
+六、辅助源状态管理 updateAidSourceStatus()template&lt;int N&gt;void Ekf::updateAidSourceStatus(    AidSourceStatus&lt;N&gt;&amp; status,    const matrix::Vector&lt;float, N&gt;&amp; observation,    const matrix::Vector&lt;float, N&gt;&amp; observation_variance,    const matrix::Vector&lt;float, N&gt;&amp; innovation,    const matrix::Vector&lt;float, N&gt;&amp; innovation_variance,    const float gate_size)&#123;    status.observation           = observation;    status.observation_variance  = observation_variance;    status.innovation            = innovation;    status.innovation_variance   = innovation_variance;    // 计算归一化新息平方    float test_ratio_sum = 0.0f;    for (int i = 0; i &lt; N; i++) &#123;        test_ratio_sum += sq(innovation[i]) / innovation_variance[i];    &#125;    status.test_ratio = test_ratio_sum / N;    status.innovation_rejected = (status.test_ratio &gt; sq(gate_size));&#125;
+
+这一函数统一了所有传感器在融合前的状态更新，是连接 control.cpp 调度逻辑和具体融合实现的桥梁。
+
+七、小结ekf_helper.cpp 提供了 EKF2 的底层通用操作：
+
+measurementUpdate() 是卡尔曼更新的唯一实现点，所有融合最终汇聚于此
+fuse() 负责将数学修正量正确注入各类状态（特别是姿态的四元数旋转处理）
+精度报告函数将协方差矩阵转换为可供高层模块使用的置信度指标
+零偏管理和航迹推算状态更新保证了 EKF 在复杂飞行场景中的鲁棒性
+
+
+上一篇：高度融合与多源仲裁系列总目录：PX4 v1.16 源码解读总目录下一章：Navigator 导航模块
+
+]]></content>
+      <categories>
+        <category>技术</category>
+        <category>飞控PX4</category>
+        <category>EKF2状态估计</category>
+      </categories>
+      <tags>
+        <tag>技术博文</tag>
+        <tag>PX4</tag>
+        <tag>EKF2</tag>
+        <tag>卡尔曼滤波</tag>
+        <tag>辅助函数</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>电磁干扰下飞控SO3+LADRC抗干扰设计</title>
+    <url>/2025/11/30/2025-11-30%20%E7%94%B5%E7%A3%81%E5%B9%B2%E6%89%B0/</url>
+    <content><![CDATA[一、前言
+本文要解决的问题：
+适用读者：
+使用环境 &#x2F; 依赖（系统、硬件、软件版本等）：
+
+二、问题背景 &#x2F; 理论准备
+场景介绍：
+相关概念：
+已有方案对比（如有）：
+
+三、实现步骤 &#x2F; 配置过程1. 环境搭建2. 核心配置 &#x2F; 核心代码示例命令&#x2F;&#x2F; 示例代码### 3. 验证与测试
+
+测试用例：
+期望结果：
+实际结果截图 &#x2F; 日志片段：
+
+四、常见坑与解决方案
+坑 1：问题现象、原因、解决办法
+坑 2：……
+
+五、经验总结与建议
+总结 3～5 条自己觉得最关键的经验点；
+可列出 “下一步可以怎么优化 &#x2F; 深挖”。
+
+]]></content>
+      <categories>
+        <category>技术</category>
+        <category>飞控PX4</category>
+      </categories>
+      <tags>
+        <tag>技术博文</tag>
+        <tag>PX4</tag>
+        <tag>抗干扰</tag>
+        <tag>SO3</tag>
+        <tag>LADRC</tag>
       </tags>
   </entry>
 </search>
