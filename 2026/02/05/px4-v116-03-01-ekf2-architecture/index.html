@@ -28,7 +28,7 @@
 <meta property="og:description" content="全面梳理 PX4 EKF2 模块从输入层到输出层的完整目录结构，说明延迟时间融合架构的核心设计思想，并列出各层级文件的功能定位。">
 <meta property="og:locale" content="zh_CN">
 <meta property="article:published_time" content="2026-02-05T04:00:00.000Z">
-<meta property="article:modified_time" content="2026-03-14T13:21:42.000Z">
+<meta property="article:modified_time" content="2026-03-14T13:45:12.000Z">
 <meta property="article:author" content="QingShan Li">
 <meta property="article:tag" content="EKF2">
 <meta property="article:tag" content="PX4">
@@ -415,7 +415,7 @@ mjx-container[display="true"] + br {
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">更新于</span>
-      <time title="修改时间：2026-03-14 21:21:42" itemprop="dateModified" datetime="2026-03-14T21:21:42+08:00">2026-03-14</time>
+      <time title="修改时间：2026-03-14 21:45:12" itemprop="dateModified" datetime="2026-03-14T21:45:12+08:00">2026-03-14</time>
     </span>
     <span class="post-meta-item">
       <span class="post-meta-item-icon">
@@ -479,7 +479,7 @@ mjx-container[display="true"] + br {
 <p>相关基础：<a href="/2026/01/22/px4-v116-01-06-uorb-part1/">uORB 通信机制（上）</a>，<a href="/2026/01/16/px4-v116-01-05-module-entry/">模块入口与运行模式</a></p>
 </blockquote>
 <hr>
-<h2 id="二、整体架构流程"><a href="#二、整体架构流程" class="headerlink" title="二、整体架构流程"></a>二、整体架构流程</h2><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br></pre></td><td class="code"><pre><span class="line">flowchart TB</span><br><span class="line">    subgraph input [输入层 - uORB订阅]</span><br><span class="line">        IMU["sensor_combined / vehicle_imu\nIMU加速度计+陀螺仪"]</span><br><span class="line">        GPS["vehicle_gps_position\nGNSS位置/速度"]</span><br><span class="line">        MAG["vehicle_magnetometer\n磁力计"]</span><br><span class="line">        BARO["vehicle_air_data\n气压计"]</span><br><span class="line">        FLOW["vehicle_optical_flow\n光流"]</span><br><span class="line">        RNG["distance_sensor\n测距仪"]</span><br><span class="line">        EV["vehicle_visual_odometry\n外部视觉VIO/MoCap"]</span><br><span class="line">    end</span><br><span class="line"></span><br><span class="line">    subgraph wrapper [EKF2 PX4包装层]</span><br><span class="line">        EKF2CPP["EKF2.cpp\nRun()主循环\n传感器数据采集+格式转换+结果发布"]</span><br><span class="line">        SELECTOR["EKF2Selector.cpp\n多实例选择器\n选择最优EKF输出"]</span><br><span class="line">    end</span><br><span class="line"></span><br><span class="line">    subgraph interface [数据接口层]</span><br><span class="line">        ESTI["estimator_interface.cpp\nsetIMUData / setGpsData等\nRingBuffer延迟缓冲"]</span><br><span class="line">        DOWNSAMP["imu_down_sampler.cpp\nIMU降采样 1kHz→250Hz"]</span><br><span class="line">    end</span><br><span class="line"></span><br><span class="line">    subgraph core [EKF核心算法层]</span><br><span class="line">        EKF_UPDATE["ekf.cpp\nupdate()主循环\ninitialiseFilter()初始化\npredictState()状态预测"]</span><br><span class="line">        COV["covariance.cpp\npredictCovariance()\nP=F*P*F'+Q"]</span><br><span class="line">        CONTROL["control.cpp\ncontrolFusionModes()\n传感器融合调度中心"]</span><br><span class="line">        HELPER["ekf_helper.cpp\nmeasurementUpdate()\n卡尔曼增益计算"]</span><br><span class="line">    end</span><br><span class="line"></span><br><span class="line">    subgraph publish [输出层 - uORB发布]</span><br><span class="line">        ATT["vehicle_attitude\n姿态四元数"]</span><br><span class="line">        LPOS["vehicle_local_position\n本地NED位置/速度"]</span><br><span class="line">        GPOS["vehicle_global_position\n全局经纬度/海拔"]</span><br><span class="line">        STATUS["estimator_status等\n估计器健康状态"]</span><br><span class="line">    end</span><br><span class="line"></span><br><span class="line">    IMU --&gt; EKF2CPP</span><br><span class="line">    GPS --&gt; EKF2CPP</span><br><span class="line">    MAG --&gt; EKF2CPP</span><br><span class="line">    BARO --&gt; EKF2CPP</span><br><span class="line">    EKF2CPP --&gt; ESTI</span><br><span class="line">    ESTI --&gt; DOWNSAMP</span><br><span class="line">    DOWNSAMP --&gt; EKF_UPDATE</span><br><span class="line">    EKF_UPDATE --&gt; COV</span><br><span class="line">    EKF_UPDATE --&gt; CONTROL</span><br><span class="line">    CONTROL --&gt; HELPER</span><br><span class="line">    EKF_UPDATE --&gt; wrapper</span><br><span class="line">    wrapper --&gt; SELECTOR</span><br><span class="line">    SELECTOR --&gt; ATT</span><br><span class="line">    SELECTOR --&gt; LPOS</span><br><span class="line">    SELECTOR --&gt; GPOS</span><br><span class="line">    EKF2CPP --&gt; STATUS</span><br></pre></td></tr></table></figure>
+<h2 id="二、整体架构流程"><a href="#二、整体架构流程" class="headerlink" title="二、整体架构流程"></a>二、整体架构流程</h2><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br></pre></td><td class="code"><pre><span class="line">flowchart TB</span><br><span class="line">    subgraph input["输入层 - uORB订阅"]</span><br><span class="line">        IMU["sensor_combined / vehicle_imu&lt;br/&gt;IMU加速度计+陀螺仪"]</span><br><span class="line">        GPS["vehicle_gps_position&lt;br/&gt;GNSS位置/速度"]</span><br><span class="line">        MAG["vehicle_magnetometer&lt;br/&gt;磁力计"]</span><br><span class="line">        BARO["vehicle_air_data&lt;br/&gt;气压计"]</span><br><span class="line">        FLOW["vehicle_optical_flow&lt;br/&gt;光流"]</span><br><span class="line">        RNG["distance_sensor&lt;br/&gt;测距仪"]</span><br><span class="line">        EV["vehicle_visual_odometry&lt;br/&gt;外部视觉VIO/MoCap"]</span><br><span class="line">    end</span><br><span class="line"></span><br><span class="line">    subgraph wrapper["EKF2 PX4包装层"]</span><br><span class="line">        EKF2CPP["EKF2.cpp&lt;br/&gt;Run()主循环&lt;br/&gt;传感器数据采集+格式转换+结果发布"]</span><br><span class="line">        SELECTOR["EKF2Selector.cpp&lt;br/&gt;多实例选择器&lt;br/&gt;选择最优EKF输出"]</span><br><span class="line">    end</span><br><span class="line"></span><br><span class="line">    subgraph interface["数据接口层"]</span><br><span class="line">        ESTI["estimator_interface.cpp&lt;br/&gt;setIMUData / setGpsData等&lt;br/&gt;RingBuffer延迟缓冲"]</span><br><span class="line">        DOWNSAMP["imu_down_sampler.cpp&lt;br/&gt;IMU降采样 1kHz→250Hz"]</span><br><span class="line">    end</span><br><span class="line"></span><br><span class="line">    subgraph core["EKF核心算法层"]</span><br><span class="line">        EKF_UPDATE["ekf.cpp&lt;br/&gt;update()主循环&lt;br/&gt;initialiseFilter()初始化&lt;br/&gt;predictState()状态预测"]</span><br><span class="line">        COV["covariance.cpp&lt;br/&gt;predictCovariance()&lt;br/&gt;P=F*P*F'+Q"]</span><br><span class="line">        CONTROL["control.cpp&lt;br/&gt;controlFusionModes()&lt;br/&gt;传感器融合调度中心"]</span><br><span class="line">        HELPER["ekf_helper.cpp&lt;br/&gt;measurementUpdate()&lt;br/&gt;卡尔曼增益计算"]</span><br><span class="line">    end</span><br><span class="line"></span><br><span class="line">    subgraph publish["输出层 - uORB发布"]</span><br><span class="line">        ATT["vehicle_attitude&lt;br/&gt;姿态四元数"]</span><br><span class="line">        LPOS["vehicle_local_position&lt;br/&gt;本地NED位置/速度"]</span><br><span class="line">        GPOS["vehicle_global_position&lt;br/&gt;全局经纬度/海拔"]</span><br><span class="line">        STATUS["estimator_status等&lt;br/&gt;估计器健康状态"]</span><br><span class="line">    end</span><br><span class="line"></span><br><span class="line">    IMU --&gt; EKF2CPP</span><br><span class="line">    GPS --&gt; EKF2CPP</span><br><span class="line">    MAG --&gt; EKF2CPP</span><br><span class="line">    BARO --&gt; EKF2CPP</span><br><span class="line">    EKF2CPP --&gt; ESTI</span><br><span class="line">    ESTI --&gt; DOWNSAMP</span><br><span class="line">    DOWNSAMP --&gt; EKF_UPDATE</span><br><span class="line">    EKF_UPDATE --&gt; COV</span><br><span class="line">    EKF_UPDATE --&gt; CONTROL</span><br><span class="line">    CONTROL --&gt; HELPER</span><br><span class="line">    EKF_UPDATE --&gt; wrapper</span><br><span class="line">    wrapper --&gt; SELECTOR</span><br><span class="line">    SELECTOR --&gt; ATT</span><br><span class="line">    SELECTOR --&gt; LPOS</span><br><span class="line">    SELECTOR --&gt; GPOS</span><br><span class="line">    EKF2CPP --&gt; STATUS</span><br></pre></td></tr></table></figure>
 
 <hr>
 <h2 id="三、目录结构与功能"><a href="#三、目录结构与功能" class="headerlink" title="三、目录结构与功能"></a>三、目录结构与功能</h2><h3 id="3-1-顶层目录-src-modules-ekf2"><a href="#3-1-顶层目录-src-modules-ekf2" class="headerlink" title="3.1 顶层目录 /src/modules/ekf2/"></a>3.1 顶层目录 <code>/src/modules/ekf2/</code></h3><table>
@@ -703,7 +703,7 @@ mjx-container[display="true"] + br {
 </tr>
 </tbody></table>
 <hr>
-<h2 id="四、核心处理时序"><a href="#四、核心处理时序" class="headerlink" title="四、核心处理时序"></a>四、核心处理时序</h2><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line">sequenceDiagram</span><br><span class="line">    participant Sensor as 传感器驱动</span><br><span class="line">    participant EKF2 as EKF2.cpp</span><br><span class="line">    participant Buffer as RingBuffer</span><br><span class="line">    participant Core as ekf.cpp</span><br><span class="line">    participant Control as control.cpp</span><br><span class="line">    participant AidSrc as aid_sources/*</span><br><span class="line">    participant Output as output_predictor</span><br><span class="line"></span><br><span class="line">    Sensor-&gt;&gt;EKF2: uORB回调(IMU数据到达)</span><br><span class="line">    EKF2-&gt;&gt;EKF2: Run()主循环</span><br><span class="line">    EKF2-&gt;&gt;Buffer: push(imu_downsampled)</span><br><span class="line">    EKF2-&gt;&gt;Buffer: push(sensor_sample, GPS/Mag等)</span><br><span class="line">    Output-&gt;&gt;Output: calculateOutputStates() 实时积分（无延迟）</span><br><span class="line">    EKF2-&gt;&gt;Core: update()</span><br><span class="line">    Core-&gt;&gt;Buffer: get_oldest() 获取延迟时刻IMU</span><br><span class="line">    Core-&gt;&gt;Core: predictState() 状态预测</span><br><span class="line">    Core-&gt;&gt;Core: predictCovariance() P=FPF'+Q</span><br><span class="line">    Core-&gt;&gt;Control: controlFusionModes()</span><br><span class="line">    Control-&gt;&gt;AidSrc: controlGpsFusion()等</span><br><span class="line">    AidSrc-&gt;&gt;Buffer: pop_first_older_than() 获取延迟传感器数据</span><br><span class="line">    AidSrc-&gt;&gt;Core: measurementUpdate() 卡尔曼更新</span><br><span class="line">    Core-&gt;&gt;Output: correctOutputStates() 用延迟修正量校正实时积分</span><br><span class="line">    EKF2-&gt;&gt;EKF2: PublishAttitude / LocalPosition / ...</span><br></pre></td></tr></table></figure>
+<h2 id="四、核心处理时序"><a href="#四、核心处理时序" class="headerlink" title="四、核心处理时序"></a>四、核心处理时序</h2><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line">sequenceDiagram</span><br><span class="line">    participant Sensor as 传感器驱动</span><br><span class="line">    participant EKF2 as EKF2.cpp</span><br><span class="line">    participant Buffer as RingBuffer</span><br><span class="line">    participant Core as ekf.cpp</span><br><span class="line">    participant Control as control.cpp</span><br><span class="line">    participant AidSrc as aid_sources/*</span><br><span class="line">    participant Output as output_predictor</span><br><span class="line"></span><br><span class="line">    Sensor-&gt;&gt;EKF2: uORB回调("IMU数据到达")</span><br><span class="line">    EKF2-&gt;&gt;EKF2: Run()主循环</span><br><span class="line">    EKF2-&gt;&gt;Buffer: push("imu_downsampled")</span><br><span class="line">    EKF2-&gt;&gt;Buffer: push("sensor_sample, GPS/Mag等")</span><br><span class="line">    Output-&gt;&gt;Output: calculateOutputStates() 实时积分（无延迟）</span><br><span class="line">    EKF2-&gt;&gt;Core: update()</span><br><span class="line">    Core-&gt;&gt;Buffer: get_oldest() 获取延迟时刻IMU</span><br><span class="line">    Core-&gt;&gt;Core: predictState() 状态预测</span><br><span class="line">    Core-&gt;&gt;Core: predictCovariance() P=FPF'+Q</span><br><span class="line">    Core-&gt;&gt;Control: controlFusionModes()</span><br><span class="line">    Control-&gt;&gt;AidSrc: controlGpsFusion()等</span><br><span class="line">    AidSrc-&gt;&gt;Buffer: pop_first_older_than() 获取延迟传感器数据</span><br><span class="line">    AidSrc-&gt;&gt;Core: measurementUpdate() 卡尔曼更新</span><br><span class="line">    Core-&gt;&gt;Output: correctOutputStates() 用延迟修正量校正实时积分</span><br><span class="line">    EKF2-&gt;&gt;EKF2: PublishAttitude / LocalPosition / ...</span><br></pre></td></tr></table></figure>
 
 <hr>
 <blockquote>
@@ -721,8 +721,8 @@ mjx-container[display="true"] + br {
               <a href="/tags/%E6%8A%80%E6%9C%AF%E5%8D%9A%E6%96%87/" rel="tag"><i class="fa fa-tag"></i> 技术博文</a>
               <a href="/tags/PX4/" rel="tag"><i class="fa fa-tag"></i> PX4</a>
               <a href="/tags/EKF2/" rel="tag"><i class="fa fa-tag"></i> EKF2</a>
-              <a href="/tags/%E7%8A%B6%E6%80%81%E4%BC%B0%E8%AE%A1/" rel="tag"><i class="fa fa-tag"></i> 状态估计</a>
               <a href="/tags/%E6%9E%B6%E6%9E%84/" rel="tag"><i class="fa fa-tag"></i> 架构</a>
+              <a href="/tags/%E7%8A%B6%E6%80%81%E4%BC%B0%E8%AE%A1/" rel="tag"><i class="fa fa-tag"></i> 状态估计</a>
           </div>
 
         
@@ -801,6 +801,13 @@ mjx-container[display="true"] + br {
 <script>
 (function() {
   'use strict';
+
+  function withRoot(path) {
+    var root = (window.CONFIG && CONFIG.root) ? CONFIG.root : '/';
+    root = root.endsWith('/') ? root : root + '/';
+    path = path.startsWith('/') ? path.slice(1) : path;
+    return root + path;
+  }
 
   // ============================================
   // 顶部 Banner 背景图轮播
@@ -962,8 +969,17 @@ mjx-container[display="true"] + br {
     var searchInput = document.querySelector('.search-input');
     if (!searchContainer || !searchInput) return;
 
+    if (searchInput.dataset.qsEnhanced === 'true') {
+      if (!searchInput.value.trim() && window._recentPostsHTML) {
+        searchContainer.innerHTML = window._recentPostsHTML;
+      }
+      return;
+    }
+
+    searchInput.dataset.qsEnhanced = 'true';
+
     function showRecentPosts() {
-      fetch('/search.xml')
+      fetch(withRoot('search.xml'))
         .then(function(res) { return res.text(); })
         .then(function(xmlText) {
           var parser = new DOMParser();
@@ -1002,23 +1018,27 @@ mjx-container[display="true"] + br {
         .catch(function() {});
     }
 
-    // 监听搜索弹窗打开
-    var observer = new MutationObserver(function(mutations) {
-      mutations.forEach(function(mutation) {
-        if (mutation.target.classList && mutation.target.classList.contains('search-active')) {
-          setTimeout(function() {
-            if (!searchInput.value.trim()) {
+    // 监听搜索弹窗打开；避免在 PJAX 后重复创建 observer。
+    if (!window.__qsSearchObserverBound) {
+      var observer = new MutationObserver(function(mutations) {
+        mutations.forEach(function(mutation) {
+          if (mutation.target.classList && mutation.target.classList.contains('search-active')) {
+            setTimeout(function() {
+              var activeContainer = document.querySelector('.search-result-container');
+              var activeInput = document.querySelector('.search-input');
+              if (!activeContainer || !activeInput || activeInput.value.trim()) return;
               if (window._recentPostsHTML) {
-                searchContainer.innerHTML = window._recentPostsHTML;
+                activeContainer.innerHTML = window._recentPostsHTML;
               } else {
                 showRecentPosts();
               }
-            }
-          }, 300);
-        }
+            }, 300);
+          }
+        });
       });
-    });
-    observer.observe(document.body, { attributes: true, attributeFilter: ['class'] });
+      observer.observe(document.body, { attributes: true, attributeFilter: ['class'] });
+      window.__qsSearchObserverBound = true;
+    }
 
     searchInput.addEventListener('input', function() {
       if (!searchInput.value.trim() && window._recentPostsHTML) {

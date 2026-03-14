@@ -28,7 +28,7 @@
 <meta property="og:description" content="详细解析 PX4 Navigator 的任务数据协议层，包括 NAV_CMD 命令枚举、NAV_FRAME 坐标系、mission_item_s 结构体的完整字段分析，以及各字段在导航链路中的使用位置。">
 <meta property="og:locale" content="zh_CN">
 <meta property="article:published_time" content="2026-03-06T06:00:00.000Z">
-<meta property="article:modified_time" content="2026-03-14T13:21:42.000Z">
+<meta property="article:modified_time" content="2026-03-14T13:45:12.000Z">
 <meta property="article:author" content="QingShan Li">
 <meta property="article:tag" content="Navigator">
 <meta property="article:tag" content="PX4">
@@ -415,7 +415,7 @@ mjx-container[display="true"] + br {
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">更新于</span>
-      <time title="修改时间：2026-03-14 21:21:42" itemprop="dateModified" datetime="2026-03-14T21:21:42+08:00">2026-03-14</time>
+      <time title="修改时间：2026-03-14 21:45:12" itemprop="dateModified" datetime="2026-03-14T21:45:12+08:00">2026-03-14</time>
     </span>
     <span class="post-meta-item">
       <span class="post-meta-item-icon">
@@ -590,7 +590,7 @@ mjx-container[display="true"] + br {
 </tbody></table>
 <hr>
 <h2 id="五、mission-item-to-position-setpoint-翻译过程"><a href="#五、mission-item-to-position-setpoint-翻译过程" class="headerlink" title="五、mission_item_to_position_setpoint() 翻译过程"></a>五、<code>mission_item_to_position_setpoint()</code> 翻译过程</h2><p>这是从任务语义到控制量的<strong>核心翻译函数</strong>，将 <code>mission_item_s</code> 转为 <code>position_setpoint_s</code>：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">flowchart TD</span><br><span class="line">    MS["mission_item_s"] --&gt; CMD{nav_cmd 类型}</span><br><span class="line">    CMD --&gt;|WAYPOINT/LOITER| POS["填充 lat/lon/alt\n设置 type=POSITION\n写入 acceptance_radius"]</span><br><span class="line">    CMD --&gt;|TAKEOFF| TKO["设置 type=TAKEOFF\n填充起飞高度"]</span><br><span class="line">    CMD --&gt;|LAND| LND["设置 type=LAND\n填充落地位置"]</span><br><span class="line">    CMD --&gt;|DO_*| CMD2["直接发 vehicle_command\n不生成 setpoint"]</span><br><span class="line">    POS --&gt; SP["position_setpoint_s"]</span><br><span class="line">    TKO --&gt; SP</span><br><span class="line">    LND --&gt; SP</span><br><span class="line">    SP --&gt; TRIP["position_setpoint_triplet.current"]</span><br></pre></td></tr></table></figure>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">flowchart TD</span><br><span class="line">    MS["mission_item_s"] --&gt; CMD{"nav_cmd 类型"}</span><br><span class="line">    CMD --&gt;|WAYPOINT/LOITER| POS["填充 lat/lon/alt&lt;br/&gt;设置 type=POSITION&lt;br/&gt;写入 acceptance_radius"]</span><br><span class="line">    CMD --&gt;|TAKEOFF| TKO["设置 type=TAKEOFF&lt;br/&gt;填充起飞高度"]</span><br><span class="line">    CMD --&gt;|LAND| LND["设置 type=LAND&lt;br/&gt;填充落地位置"]</span><br><span class="line">    CMD --&gt;|DO_*| CMD2["直接发 vehicle_command&lt;br/&gt;不生成 setpoint"]</span><br><span class="line">    POS --&gt; SP["position_setpoint_s"]</span><br><span class="line">    TKO --&gt; SP</span><br><span class="line">    LND --&gt; SP</span><br><span class="line">    SP --&gt; TRIP["position_setpoint_triplet.current"]</span><br></pre></td></tr></table></figure>
 
 <p><code>position_setpoint_s</code> 的核心字段：</p>
 <table>
@@ -741,6 +741,13 @@ mjx-container[display="true"] + br {
 <script>
 (function() {
   'use strict';
+
+  function withRoot(path) {
+    var root = (window.CONFIG && CONFIG.root) ? CONFIG.root : '/';
+    root = root.endsWith('/') ? root : root + '/';
+    path = path.startsWith('/') ? path.slice(1) : path;
+    return root + path;
+  }
 
   // ============================================
   // 顶部 Banner 背景图轮播
@@ -902,8 +909,17 @@ mjx-container[display="true"] + br {
     var searchInput = document.querySelector('.search-input');
     if (!searchContainer || !searchInput) return;
 
+    if (searchInput.dataset.qsEnhanced === 'true') {
+      if (!searchInput.value.trim() && window._recentPostsHTML) {
+        searchContainer.innerHTML = window._recentPostsHTML;
+      }
+      return;
+    }
+
+    searchInput.dataset.qsEnhanced = 'true';
+
     function showRecentPosts() {
-      fetch('/search.xml')
+      fetch(withRoot('search.xml'))
         .then(function(res) { return res.text(); })
         .then(function(xmlText) {
           var parser = new DOMParser();
@@ -942,23 +958,27 @@ mjx-container[display="true"] + br {
         .catch(function() {});
     }
 
-    // 监听搜索弹窗打开
-    var observer = new MutationObserver(function(mutations) {
-      mutations.forEach(function(mutation) {
-        if (mutation.target.classList && mutation.target.classList.contains('search-active')) {
-          setTimeout(function() {
-            if (!searchInput.value.trim()) {
+    // 监听搜索弹窗打开；避免在 PJAX 后重复创建 observer。
+    if (!window.__qsSearchObserverBound) {
+      var observer = new MutationObserver(function(mutations) {
+        mutations.forEach(function(mutation) {
+          if (mutation.target.classList && mutation.target.classList.contains('search-active')) {
+            setTimeout(function() {
+              var activeContainer = document.querySelector('.search-result-container');
+              var activeInput = document.querySelector('.search-input');
+              if (!activeContainer || !activeInput || activeInput.value.trim()) return;
               if (window._recentPostsHTML) {
-                searchContainer.innerHTML = window._recentPostsHTML;
+                activeContainer.innerHTML = window._recentPostsHTML;
               } else {
                 showRecentPosts();
               }
-            }
-          }, 300);
-        }
+            }, 300);
+          }
+        });
       });
-    });
-    observer.observe(document.body, { attributes: true, attributeFilter: ['class'] });
+      observer.observe(document.body, { attributes: true, attributeFilter: ['class'] });
+      window.__qsSearchObserverBound = true;
+    }
 
     searchInput.addEventListener('input', function() {
       if (!searchInput.value.trim() && window._recentPostsHTML) {

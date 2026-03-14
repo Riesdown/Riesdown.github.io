@@ -5,6 +5,10 @@ const MERMAID_SYNTAX = /^(?:graph|flowchart|sequenceDiagram|classDiagram|stateDi
 function normalizeMermaidSource(source) {
   let normalized = source.replace(/\\n/g, '<br/>');
 
+  normalized = normalized.replace(/^(\s*subgraph\s+)([\w-]+)\s+\[(.+?)\]\s*$/gm, (_match, prefix, id, label) => {
+    return `${prefix}${id}["${label}"]`;
+  });
+
   // Mermaid 11 is stricter for multiline labels in decision / rect nodes.
   // Convert `A[text<br/>text]` => `A["text<br/>text"]`
   normalized = normalized.replace(/(\b[\w-]+)\[(?!")([^\]]*<br\/>[^\]]*)\]/g, (_match, id, label) => {
@@ -15,10 +19,6 @@ function normalizeMermaidSource(source) {
     return `${id}{"${label}"}`;
   });
 
-  normalized = normalized.replace(/(\b[\w-]+)\((?!")([^)]*<br\/>[^)]*)\)/g, (_match, id, label) => {
-    return `${id}("${label}")`;
-  });
-
   return normalized;
 }
 
@@ -26,11 +26,11 @@ function extractHighlightedCodeText(codeElement) {
   const lineElements = codeElement.querySelectorAll('.line');
   if (lineElements.length) {
     return Array.from(lineElements)
-      .map(line => line.textContent)
+      .map(line => line.textContent || line.innerText || '')
       .join('\n');
   }
 
-  return codeElement.textContent;
+  return codeElement.textContent || codeElement.innerText || '';
 }
 
 document.addEventListener('page:loaded', async () => {

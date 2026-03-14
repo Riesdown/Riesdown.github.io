@@ -28,7 +28,7 @@
 <meta property="og:description" content="解析 px4_custom_mode.h 的主&#x2F;子模式枚举定义、32 位 custom_mode union 位布局，以及 PX4 内部 nav_state 与 MAVLink custom_mode 的双向映射链路。">
 <meta property="og:locale" content="zh_CN">
 <meta property="article:published_time" content="2026-03-02T06:00:00.000Z">
-<meta property="article:modified_time" content="2026-03-14T13:21:42.000Z">
+<meta property="article:modified_time" content="2026-03-14T13:45:12.000Z">
 <meta property="article:author" content="QingShan Li">
 <meta property="article:tag" content="Commander">
 <meta property="article:tag" content="MAVLink">
@@ -415,7 +415,7 @@ mjx-container[display="true"] + br {
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">更新于</span>
-      <time title="修改时间：2026-03-14 21:21:42" itemprop="dateModified" datetime="2026-03-14T21:21:42+08:00">2026-03-14</time>
+      <time title="修改时间：2026-03-14 21:45:12" itemprop="dateModified" datetime="2026-03-14T21:45:12+08:00">2026-03-14</time>
     </span>
     <span class="post-meta-item">
       <span class="post-meta-item-icon">
@@ -519,7 +519,7 @@ mjx-container[display="true"] + br {
 </tbody></table>
 <p><code>DEFINE_GET_PX4_CUSTOM_MODE</code> 宏门控的目的：本文件既作类型/枚举定义，又可选择性提供映射实现，避免所有 <code>include</code> 都引入 uORB 依赖与潜在编译耦合。</p>
 <hr>
-<h2 id="六、下行链路：MAVLink-custom-mode-→-PX4-nav-state"><a href="#六、下行链路：MAVLink-custom-mode-→-PX4-nav-state" class="headerlink" title="六、下行链路：MAVLink custom_mode → PX4 nav_state"></a>六、下行链路：MAVLink custom_mode → PX4 nav_state</h2><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">flowchart LR</span><br><span class="line">    GCS["地面站 SET_MODE 命令"]</span><br><span class="line">    --&gt; MR["mavlink_receiver.cpp\nSET_MODE.custom_mode\n按 union 解析\n-&gt; vcmd.param2/param3"]</span><br><span class="line">    --&gt; CMD["vehicle_command uORB"]</span><br><span class="line">    --&gt; HC["Commander::handle_command()\n反解 param1/2/3 → 模式选择"]</span><br><span class="line">    --&gt; UM["UserModeIntention::change()"]</span><br><span class="line">    --&gt; NS["vehicle_status.nav_state"]</span><br></pre></td></tr></table></figure>
+<h2 id="六、下行链路：MAVLink-custom-mode-→-PX4-nav-state"><a href="#六、下行链路：MAVLink-custom-mode-→-PX4-nav-state" class="headerlink" title="六、下行链路：MAVLink custom_mode → PX4 nav_state"></a>六、下行链路：MAVLink custom_mode → PX4 nav_state</h2><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">flowchart LR</span><br><span class="line">    GCS["地面站 SET_MODE 命令"]</span><br><span class="line">    --&gt; MR["mavlink_receiver.cpp&lt;br/&gt;SET_MODE.custom_mode&lt;br/&gt;按 union 解析&lt;br/&gt;-&gt; vcmd.param2/param3"]</span><br><span class="line">    --&gt; CMD["vehicle_command uORB"]</span><br><span class="line">    --&gt; HC["Commander::handle_command()&lt;br/&gt;反解 param1/2/3 → 模式选择"]</span><br><span class="line">    --&gt; UM["UserModeIntention::change()"]</span><br><span class="line">    --&gt; NS["vehicle_status.nav_state"]</span><br></pre></td></tr></table></figure>
 
 <p><code>handle_command()</code> 中的参数含义：</p>
 <table>
@@ -651,6 +651,13 @@ mjx-container[display="true"] + br {
 <script>
 (function() {
   'use strict';
+
+  function withRoot(path) {
+    var root = (window.CONFIG && CONFIG.root) ? CONFIG.root : '/';
+    root = root.endsWith('/') ? root : root + '/';
+    path = path.startsWith('/') ? path.slice(1) : path;
+    return root + path;
+  }
 
   // ============================================
   // 顶部 Banner 背景图轮播
@@ -812,8 +819,17 @@ mjx-container[display="true"] + br {
     var searchInput = document.querySelector('.search-input');
     if (!searchContainer || !searchInput) return;
 
+    if (searchInput.dataset.qsEnhanced === 'true') {
+      if (!searchInput.value.trim() && window._recentPostsHTML) {
+        searchContainer.innerHTML = window._recentPostsHTML;
+      }
+      return;
+    }
+
+    searchInput.dataset.qsEnhanced = 'true';
+
     function showRecentPosts() {
-      fetch('/search.xml')
+      fetch(withRoot('search.xml'))
         .then(function(res) { return res.text(); })
         .then(function(xmlText) {
           var parser = new DOMParser();
@@ -852,23 +868,27 @@ mjx-container[display="true"] + br {
         .catch(function() {});
     }
 
-    // 监听搜索弹窗打开
-    var observer = new MutationObserver(function(mutations) {
-      mutations.forEach(function(mutation) {
-        if (mutation.target.classList && mutation.target.classList.contains('search-active')) {
-          setTimeout(function() {
-            if (!searchInput.value.trim()) {
+    // 监听搜索弹窗打开；避免在 PJAX 后重复创建 observer。
+    if (!window.__qsSearchObserverBound) {
+      var observer = new MutationObserver(function(mutations) {
+        mutations.forEach(function(mutation) {
+          if (mutation.target.classList && mutation.target.classList.contains('search-active')) {
+            setTimeout(function() {
+              var activeContainer = document.querySelector('.search-result-container');
+              var activeInput = document.querySelector('.search-input');
+              if (!activeContainer || !activeInput || activeInput.value.trim()) return;
               if (window._recentPostsHTML) {
-                searchContainer.innerHTML = window._recentPostsHTML;
+                activeContainer.innerHTML = window._recentPostsHTML;
               } else {
                 showRecentPosts();
               }
-            }
-          }, 300);
-        }
+            }, 300);
+          }
+        });
       });
-    });
-    observer.observe(document.body, { attributes: true, attributeFilter: ['class'] });
+      observer.observe(document.body, { attributes: true, attributeFilter: ['class'] });
+      window.__qsSearchObserverBound = true;
+    }
 
     searchInput.addEventListener('input', function() {
       if (!searchInput.value.trim() && window._recentPostsHTML) {

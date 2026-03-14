@@ -28,7 +28,7 @@
 <meta property="og:description" content="全面梳理 PX4 多旋翼位置控制模块 mc_pos_control 的整体架构、上下游接口关系，以及模块内部从 trajectory_setpoint 到 vehicle_attitude_setpoint 的完整串级控制链路。">
 <meta property="og:locale" content="zh_CN">
 <meta property="article:published_time" content="2026-03-09T02:00:00.000Z">
-<meta property="article:modified_time" content="2026-03-14T13:21:42.000Z">
+<meta property="article:modified_time" content="2026-03-14T13:45:12.000Z">
 <meta property="article:author" content="QingShan Li">
 <meta property="article:tag" content="PX4">
 <meta property="article:tag" content="mc_pos_control">
@@ -415,7 +415,7 @@ mjx-container[display="true"] + br {
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">更新于</span>
-      <time title="修改时间：2026-03-14 21:21:42" itemprop="dateModified" datetime="2026-03-14T21:21:42+08:00">2026-03-14</time>
+      <time title="修改时间：2026-03-14 21:45:12" itemprop="dateModified" datetime="2026-03-14T21:45:12+08:00">2026-03-14</time>
     </span>
     <span class="post-meta-item">
       <span class="post-meta-item-icon">
@@ -474,7 +474,7 @@ mjx-container[display="true"] + br {
 <p>相关上游：<a href="/2026/03/06/px4-v116-04-03-navigator-main-loop/">Navigator 主循环与模式调度</a></p>
 </blockquote>
 <hr>
-<h2 id="二、全局控制链路"><a href="#二、全局控制链路" class="headerlink" title="二、全局控制链路"></a>二、全局控制链路</h2><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">flowchart LR</span><br><span class="line">    NAV["Navigator\nposition_setpoint_triplet"] --&gt; FMM["flight_mode_manager\nFlightTaskAuto\ntriplet → trajectory_setpoint"]</span><br><span class="line">    MANUAL["手动模式\nFlightTaskPosition/Altitude"] --&gt;|trajectory_setpoint\nvehicle_constraints| MPC</span><br><span class="line">    OFFBOARD["Offboard\nmavlink_receiver"] --&gt;|trajectory_setpoint| MPC</span><br><span class="line">    GOTO["goto_setpoint"] --&gt;|goto_setpoint| MPC</span><br><span class="line">    FMM --&gt;|trajectory_setpoint\nvehicle_constraints| MPC["mc_pos_control"]</span><br><span class="line">    EKF["EKF2\nvehicle_local_position"] --&gt; MPC</span><br><span class="line">    MODE["vehicle_control_mode"] --&gt; MPC</span><br><span class="line">    HTE["hover_thrust_estimate"] --&gt; MPC</span><br><span class="line">    MPC --&gt;|vehicle_attitude_setpoint| ATT["mc_att_control"]</span><br><span class="line">    MPC --&gt;|vehicle_local_position_setpoint| Land["land_detector / 其他"]</span><br><span class="line">    MPC --&gt;|takeoff_status| FMM2["flight_mode_manager\n任务切换逻辑"]</span><br></pre></td></tr></table></figure>
+<h2 id="二、全局控制链路"><a href="#二、全局控制链路" class="headerlink" title="二、全局控制链路"></a>二、全局控制链路</h2><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">flowchart LR</span><br><span class="line">    NAV["Navigator&lt;br/&gt;position_setpoint_triplet"] --&gt; FMM["flight_mode_manager&lt;br/&gt;FlightTaskAuto&lt;br/&gt;triplet → trajectory_setpoint"]</span><br><span class="line">    MANUAL["手动模式&lt;br/&gt;FlightTaskPosition/Altitude"] --&gt;|trajectory_setpoint&lt;br/&gt;vehicle_constraints| MPC</span><br><span class="line">    OFFBOARD["Offboard&lt;br/&gt;mavlink_receiver"] --&gt;|trajectory_setpoint| MPC</span><br><span class="line">    GOTO["goto_setpoint"] --&gt;|goto_setpoint| MPC</span><br><span class="line">    FMM --&gt;|trajectory_setpoint&lt;br/&gt;vehicle_constraints| MPC["mc_pos_control"]</span><br><span class="line">    EKF["EKF2&lt;br/&gt;vehicle_local_position"] --&gt; MPC</span><br><span class="line">    MODE["vehicle_control_mode"] --&gt; MPC</span><br><span class="line">    HTE["hover_thrust_estimate"] --&gt; MPC</span><br><span class="line">    MPC --&gt;|vehicle_attitude_setpoint| ATT["mc_att_control"]</span><br><span class="line">    MPC --&gt;|vehicle_local_position_setpoint| Land["land_detector / 其他"]</span><br><span class="line">    MPC --&gt;|takeoff_status| FMM2["flight_mode_manager&lt;br/&gt;任务切换逻辑"]</span><br></pre></td></tr></table></figure>
 
 <p><strong>关键链路说明</strong>：</p>
 <ul>
@@ -483,7 +483,7 @@ mjx-container[display="true"] + br {
 <li>Offboard 模式：<code>mavlink_receiver</code> 直接发布 <code>trajectory_setpoint</code>，绕过 Navigator</li>
 </ul>
 <hr>
-<h2 id="三、模块内部层级"><a href="#三、模块内部层级" class="headerlink" title="三、模块内部层级"></a>三、模块内部层级</h2><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">flowchart TD</span><br><span class="line">    subgraph MPC["mc_pos_control"]</span><br><span class="line">        Top["MulticopterPositionControl.cpp\n顶层调度与集成层"]</span><br><span class="line">        Filter["set_vehicle_states\n状态预处理（陷波+低通滤波）"]</span><br><span class="line">        EKFReset["adjustSetpointForEKFResets\nEKF重置鲁棒补偿"]</span><br><span class="line">        Takeoff["TakeoffHandling\n起飞状态机与推力斜坡"]</span><br><span class="line">        Goto["GotoControl\ngoto目标平滑桥接层"]</span><br><span class="line">        Core["PositionControl.cpp\n核心串级控制算法\n位置P + 速度PID + 推力映射"]</span><br><span class="line">        Math["ControlMath.cpp\n几何映射与向量约束"]</span><br><span class="line">        Failsafe["generateFailsafeSetpoint\n故障回退层"]</span><br><span class="line">    end</span><br><span class="line">    Top --&gt; Filter</span><br><span class="line">    Top --&gt; EKFReset</span><br><span class="line">    Top --&gt; Takeoff</span><br><span class="line">    Top --&gt; Goto</span><br><span class="line">    Top --&gt; Core</span><br><span class="line">    Core --&gt; Math</span><br><span class="line">    Top --&gt; Failsafe</span><br><span class="line">    Failsafe --&gt; Core</span><br></pre></td></tr></table></figure>
+<h2 id="三、模块内部层级"><a href="#三、模块内部层级" class="headerlink" title="三、模块内部层级"></a>三、模块内部层级</h2><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">flowchart TD</span><br><span class="line">    subgraph MPC["mc_pos_control"]</span><br><span class="line">        Top["MulticopterPositionControl.cpp&lt;br/&gt;顶层调度与集成层"]</span><br><span class="line">        Filter["set_vehicle_states&lt;br/&gt;状态预处理（陷波+低通滤波）"]</span><br><span class="line">        EKFReset["adjustSetpointForEKFResets&lt;br/&gt;EKF重置鲁棒补偿"]</span><br><span class="line">        Takeoff["TakeoffHandling&lt;br/&gt;起飞状态机与推力斜坡"]</span><br><span class="line">        Goto["GotoControl&lt;br/&gt;goto目标平滑桥接层"]</span><br><span class="line">        Core["PositionControl.cpp&lt;br/&gt;核心串级控制算法&lt;br/&gt;位置P + 速度PID + 推力映射"]</span><br><span class="line">        Math["ControlMath.cpp&lt;br/&gt;几何映射与向量约束"]</span><br><span class="line">        Failsafe["generateFailsafeSetpoint&lt;br/&gt;故障回退层"]</span><br><span class="line">    end</span><br><span class="line">    Top --&gt; Filter</span><br><span class="line">    Top --&gt; EKFReset</span><br><span class="line">    Top --&gt; Takeoff</span><br><span class="line">    Top --&gt; Goto</span><br><span class="line">    Top --&gt; Core</span><br><span class="line">    Core --&gt; Math</span><br><span class="line">    Top --&gt; Failsafe</span><br><span class="line">    Failsafe --&gt; Core</span><br></pre></td></tr></table></figure>
 
 <hr>
 <h2 id="四、目录结构"><a href="#四、目录结构" class="headerlink" title="四、目录结构"></a>四、目录结构</h2><table>
@@ -741,6 +741,13 @@ mjx-container[display="true"] + br {
 (function() {
   'use strict';
 
+  function withRoot(path) {
+    var root = (window.CONFIG && CONFIG.root) ? CONFIG.root : '/';
+    root = root.endsWith('/') ? root : root + '/';
+    path = path.startsWith('/') ? path.slice(1) : path;
+    return root + path;
+  }
+
   // ============================================
   // 顶部 Banner 背景图轮播
   // ============================================
@@ -901,8 +908,17 @@ mjx-container[display="true"] + br {
     var searchInput = document.querySelector('.search-input');
     if (!searchContainer || !searchInput) return;
 
+    if (searchInput.dataset.qsEnhanced === 'true') {
+      if (!searchInput.value.trim() && window._recentPostsHTML) {
+        searchContainer.innerHTML = window._recentPostsHTML;
+      }
+      return;
+    }
+
+    searchInput.dataset.qsEnhanced = 'true';
+
     function showRecentPosts() {
-      fetch('/search.xml')
+      fetch(withRoot('search.xml'))
         .then(function(res) { return res.text(); })
         .then(function(xmlText) {
           var parser = new DOMParser();
@@ -941,23 +957,27 @@ mjx-container[display="true"] + br {
         .catch(function() {});
     }
 
-    // 监听搜索弹窗打开
-    var observer = new MutationObserver(function(mutations) {
-      mutations.forEach(function(mutation) {
-        if (mutation.target.classList && mutation.target.classList.contains('search-active')) {
-          setTimeout(function() {
-            if (!searchInput.value.trim()) {
+    // 监听搜索弹窗打开；避免在 PJAX 后重复创建 observer。
+    if (!window.__qsSearchObserverBound) {
+      var observer = new MutationObserver(function(mutations) {
+        mutations.forEach(function(mutation) {
+          if (mutation.target.classList && mutation.target.classList.contains('search-active')) {
+            setTimeout(function() {
+              var activeContainer = document.querySelector('.search-result-container');
+              var activeInput = document.querySelector('.search-input');
+              if (!activeContainer || !activeInput || activeInput.value.trim()) return;
               if (window._recentPostsHTML) {
-                searchContainer.innerHTML = window._recentPostsHTML;
+                activeContainer.innerHTML = window._recentPostsHTML;
               } else {
                 showRecentPosts();
               }
-            }
-          }, 300);
-        }
+            }, 300);
+          }
+        });
       });
-    });
-    observer.observe(document.body, { attributes: true, attributeFilter: ['class'] });
+      observer.observe(document.body, { attributes: true, attributeFilter: ['class'] });
+      window.__qsSearchObserverBound = true;
+    }
 
     searchInput.addEventListener('input', function() {
       if (!searchInput.value.trim() && window._recentPostsHTML) {

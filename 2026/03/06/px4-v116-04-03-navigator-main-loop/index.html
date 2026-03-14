@@ -28,7 +28,7 @@
 <meta property="og:description" content="解析 PX4 Navigator 主循环 run() 的完整执行流程，说明如何根据 nav_state 选择并驱动各导航模式，以及围栏安全检查、RTL 策略树、MissionBase 执行框架的运行机制。">
 <meta property="og:locale" content="zh_CN">
 <meta property="article:published_time" content="2026-03-06T10:00:00.000Z">
-<meta property="article:modified_time" content="2026-03-14T13:21:42.000Z">
+<meta property="article:modified_time" content="2026-03-14T13:45:12.000Z">
 <meta property="article:author" content="QingShan Li">
 <meta property="article:tag" content="Navigator">
 <meta property="article:tag" content="PX4">
@@ -415,7 +415,7 @@ mjx-container[display="true"] + br {
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">更新于</span>
-      <time title="修改时间：2026-03-14 21:21:42" itemprop="dateModified" datetime="2026-03-14T21:21:42+08:00">2026-03-14</time>
+      <time title="修改时间：2026-03-14 21:45:12" itemprop="dateModified" datetime="2026-03-14T21:45:12+08:00">2026-03-14</time>
     </span>
     <span class="post-meta-item">
       <span class="post-meta-item-icon">
@@ -469,10 +469,10 @@ mjx-container[display="true"] + br {
     
     
     <div class="post-body" itemprop="articleBody"><h2 id="一、Navigator-run-主循环"><a href="#一、Navigator-run-主循环" class="headerlink" title="一、Navigator::run() 主循环"></a>一、<code>Navigator::run()</code> 主循环</h2><p>Navigator 运行在 WorkQueue 上，主循环执行顺序如下：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">flowchart TD</span><br><span class="line">    A[run 开始] --&gt; B[参数更新\nparams_update]</span><br><span class="line">    B --&gt; C[轮询核心 uORB topic\nvehicle_status / local_pos / global_pos\nhome_pos / mission / command / land_detected]</span><br><span class="line">    C --&gt; D[geofence_breach_check\n围栏安全检查 - 优先]</span><br><span class="line">    D --&gt; E[根据 nav_state\n选择当前模式对象]</span><br><span class="line">    E --&gt; F[NavigatorMode::run active\n驱动当前模式生命周期]</span><br><span class="line">    F --&gt; G{triplet 有更新?}</span><br><span class="line">    G --&gt;|是| H[发布 position_setpoint_triplet]</span><br><span class="line">    G --&gt;|否| I[不发布]</span><br><span class="line">    H --&gt; J[发布辅助 topic\nmission_result / navigator_status\ngeofence_result / navigator_status]</span><br><span class="line">    I --&gt; J</span><br><span class="line">    J --&gt; K[run 结束 等待下次回调]</span><br></pre></td></tr></table></figure>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">flowchart TD</span><br><span class="line">    A["run 开始"] --&gt; B["参数更新&lt;br/&gt;params_update"]</span><br><span class="line">    B --&gt; C["轮询核心 uORB topic&lt;br/&gt;vehicle_status / local_pos / global_pos&lt;br/&gt;home_pos / mission / command / land_detected"]</span><br><span class="line">    C --&gt; D["geofence_breach_check&lt;br/&gt;围栏安全检查 - 优先"]</span><br><span class="line">    D --&gt; E["根据 nav_state&lt;br/&gt;选择当前模式对象"]</span><br><span class="line">    E --&gt; F["NavigatorMode::run active&lt;br/&gt;驱动当前模式生命周期"]</span><br><span class="line">    F --&gt; G{"triplet 有更新?"}</span><br><span class="line">    G --&gt;|是| H["发布 position_setpoint_triplet"]</span><br><span class="line">    G --&gt;|否| I["不发布"]</span><br><span class="line">    H --&gt; J["发布辅助 topic&lt;br/&gt;mission_result / navigator_status&lt;br/&gt;geofence_result / navigator_status"]</span><br><span class="line">    I --&gt; J</span><br><span class="line">    J --&gt; K["run 结束 等待下次回调"]</span><br></pre></td></tr></table></figure>
 
 <hr>
-<h2 id="二、模式选择逻辑"><a href="#二、模式选择逻辑" class="headerlink" title="二、模式选择逻辑"></a>二、模式选择逻辑</h2><p>根据 <code>vehicle_status.nav_state</code>（由 Commander 设定，见<a href="/2026/03/02/px4-v116-02-03-flight-mode-encoding/">飞行模式编码</a>）选择对应的模式对象：</p>
+<h2 id="二、模式选择逻辑"><a href="#二、模式选择逻辑" class="headerlink" title="二、模式选择逻辑"></a>二、模式选择逻辑</h2><p>根据 <code>vehicle_status.nav_state</code>（由 Commander 设定，见<a href="/2026/03/02/px4-v116-02-03-custom-mode/">飞行模式编码</a>）选择对应的模式对象：</p>
 <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// Navigator::run() 中的模式选择（简化）</span></span><br><span class="line">NavigatorMode *navigation_mode_new = <span class="literal">nullptr</span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">switch</span> (_vehicle_status.nav_state) {</span><br><span class="line">    <span class="keyword">case</span> vehicle_status_s::NAVIGATION_STATE_AUTO_MISSION:</span><br><span class="line">        navigation_mode_new = &amp;_mission;</span><br><span class="line">        <span class="keyword">break</span>;</span><br><span class="line">    <span class="keyword">case</span> vehicle_status_s::NAVIGATION_STATE_AUTO_LOITER:</span><br><span class="line">        navigation_mode_new = &amp;_loiter;</span><br><span class="line">        <span class="keyword">break</span>;</span><br><span class="line">    <span class="keyword">case</span> vehicle_status_s::NAVIGATION_STATE_AUTO_RTL:</span><br><span class="line">        navigation_mode_new = &amp;_rtl;</span><br><span class="line">        <span class="keyword">break</span>;</span><br><span class="line">    <span class="keyword">case</span> vehicle_status_s::NAVIGATION_STATE_AUTO_TAKEOFF:</span><br><span class="line">        navigation_mode_new = &amp;_takeoff;</span><br><span class="line">        <span class="keyword">break</span>;</span><br><span class="line">    <span class="keyword">case</span> vehicle_status_s::NAVIGATION_STATE_AUTO_LAND:</span><br><span class="line">        navigation_mode_new = &amp;_land;</span><br><span class="line">        <span class="keyword">break</span>;</span><br><span class="line">    <span class="keyword">case</span> vehicle_status_s::NAVIGATION_STATE_AUTO_PRECLAND:</span><br><span class="line">        navigation_mode_new = &amp;_precland;</span><br><span class="line">        <span class="keyword">break</span>;</span><br><span class="line">    <span class="comment">// ...</span></span><br><span class="line">}</span><br><span class="line"><span class="comment">// 若模式发生切换，触发 on_inactivation() + on_activation()</span></span><br><span class="line"><span class="keyword">if</span> (navigation_mode_new != _navigation_mode) {</span><br><span class="line">    <span class="keyword">if</span> (_navigation_mode) _navigation_mode-&gt;<span class="built_in">run</span>(<span class="literal">false</span>);  <span class="comment">// 触发 on_inactivation</span></span><br><span class="line">    _navigation_mode = navigation_mode_new;</span><br><span class="line">}</span><br><span class="line"><span class="comment">// 驱动当前模式</span></span><br><span class="line"><span class="keyword">if</span> (_navigation_mode) _navigation_mode-&gt;<span class="built_in">run</span>(<span class="literal">true</span>);  <span class="comment">// 触发 on_active</span></span><br><span class="line"><span class="comment">// 驱动所有非活跃模式（后台维护）</span></span><br><span class="line"><span class="keyword">for</span> (<span class="keyword">auto</span> *mode : _navigation_mode_array) {</span><br><span class="line">    <span class="keyword">if</span> (mode != _navigation_mode) mode-&gt;<span class="built_in">run</span>(<span class="literal">false</span>);  <span class="comment">// 触发 on_inactive</span></span><br><span class="line">}</span><br></pre></td></tr></table></figure>
 
 <hr>
@@ -486,21 +486,21 @@ mjx-container[display="true"] + br {
 </ul>
 <hr>
 <h2 id="四、MissionBase-—-任务执行框架"><a href="#四、MissionBase-—-任务执行框架" class="headerlink" title="四、MissionBase — 任务执行框架"></a>四、MissionBase — 任务执行框架</h2><p>Mission 系模式（Mission、RtlMissionFast 等）都使用 <code>MissionBase</code> 框架管理任务：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">flowchart TD</span><br><span class="line">    MB[MissionBase::on_active] --&gt; A[updateMavlinkMission\n从 mission topic 同步元信息]</span><br><span class="line">    A --&gt; B[updateDatamanCache\n从 dataman 读取任务项]</span><br><span class="line">    B --&gt; C[loadCurrentMissionItem\n加载当前 mission_item_s]</span><br><span class="line">    C --&gt; D[生成 current/next triplet\nsetActiveMissionItems]</span><br><span class="line">    D --&gt; E{当前任务是否完成?}</span><br><span class="line">    E --&gt;|否| F[维持当前 setpoint]</span><br><span class="line">    E --&gt;|是| G[advance_mission\n推进到下一任务项]</span><br><span class="line">    G --&gt; H{autocontinue?}</span><br><span class="line">    H --&gt;|是| D</span><br><span class="line">    H --&gt;|否| I[等待用户命令]</span><br></pre></td></tr></table></figure>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">flowchart TD</span><br><span class="line">    MB["MissionBase::on_active"] --&gt; A["updateMavlinkMission&lt;br/&gt;从 mission topic 同步元信息"]</span><br><span class="line">    A --&gt; B["updateDatamanCache&lt;br/&gt;从 dataman 读取任务项"]</span><br><span class="line">    B --&gt; C["loadCurrentMissionItem&lt;br/&gt;加载当前 mission_item_s"]</span><br><span class="line">    C --&gt; D["生成 current/next triplet&lt;br/&gt;setActiveMissionItems"]</span><br><span class="line">    D --&gt; E{"当前任务是否完成?"}</span><br><span class="line">    E --&gt;|否| F["维持当前 setpoint"]</span><br><span class="line">    E --&gt;|是| G["advance_mission&lt;br/&gt;推进到下一任务项"]</span><br><span class="line">    G --&gt; H{"autocontinue?"}</span><br><span class="line">    H --&gt;|是| D</span><br><span class="line">    H --&gt;|否| I["等待用户命令"]</span><br></pre></td></tr></table></figure>
 
 <p>任务数据读取链：</p>
 <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">uORB: mission_s（元信息：count, current_seq）</span><br><span class="line">    ↓ updateMavlinkMission()</span><br><span class="line">DatamanCache（异步预取）</span><br><span class="line">    ↓ updateDatamanCache()</span><br><span class="line">DatamanClient（按需读取）</span><br><span class="line">    ↓ loadCurrentMissionItem()</span><br><span class="line">当前 mission_item_s</span><br></pre></td></tr></table></figure>
 
 <hr>
 <h2 id="五、MissionBlock-—-公共任务语义"><a href="#五、MissionBlock-—-公共任务语义" class="headerlink" title="五、MissionBlock — 公共任务语义"></a>五、MissionBlock — 公共任务语义</h2><p>所有模式在生成任务时都通过 <code>MissionBlock</code> 进行：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">flowchart LR</span><br><span class="line">    Mode["具体模式\n(Mission/Loiter/RTL)"] --&gt;|构造/修改| MS["mission_item_s"]</span><br><span class="line">    MS --&gt; MB["MissionBlock\n公共语义解释器"]</span><br><span class="line">    MB --&gt;|位置型任务| SP["position_setpoint_s"]</span><br><span class="line">    MB --&gt;|动作型任务| CMD["vehicle_command"]</span><br><span class="line">    SP --&gt; TRIP["position_setpoint_triplet.current"]</span><br><span class="line">    TRIP --&gt; FMM["flight_mode_manager\nFlightTaskAuto"]</span><br></pre></td></tr></table></figure>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">flowchart LR</span><br><span class="line">    Mode["具体模式&lt;br/&gt;(Mission/Loiter/RTL)"] --&gt;|构造/修改| MS["mission_item_s"]</span><br><span class="line">    MS --&gt; MB["MissionBlock&lt;br/&gt;公共语义解释器"]</span><br><span class="line">    MB --&gt;|位置型任务| SP["position_setpoint_s"]</span><br><span class="line">    MB --&gt;|动作型任务| CMD["vehicle_command"]</span><br><span class="line">    SP --&gt; TRIP["position_setpoint_triplet.current"]</span><br><span class="line">    TRIP --&gt; FMM["flight_mode_manager&lt;br/&gt;FlightTaskAuto"]</span><br></pre></td></tr></table></figure>
 
 <p>具体实现中，模式通过设置 <code>_mission_item</code>（<code>MissionBlock</code> 的成员）并调用 <code>mission_item_to_position_setpoint()</code> 来生成 triplet：</p>
 <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 以 Loiter 为例：</span></span><br><span class="line"><span class="function"><span class="type">void</span> <span class="title">Loiter::set_loiter_position</span><span class="params">()</span> </span>{</span><br><span class="line">    _mission_item.nav_cmd = NAV_CMD_LOITER_UNLIMITED;</span><br><span class="line">    _mission_item.lat     = _navigator-&gt;<span class="built_in">get_global_position</span>()-&gt;lat;</span><br><span class="line">    _mission_item.lon     = _navigator-&gt;<span class="built_in">get_global_position</span>()-&gt;lon;</span><br><span class="line">    _mission_item.altitude = _navigator-&gt;<span class="built_in">get_global_position</span>()-&gt;alt + _navigator-&gt;<span class="built_in">get_loiter_min_alt</span>();</span><br><span class="line">    _mission_item.acceptance_radius = _navigator-&gt;<span class="built_in">get_acceptance_radius</span>();</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 通过 MissionBlock 翻译并写入 triplet</span></span><br><span class="line">    <span class="built_in">mission_item_to_position_setpoint</span>(_mission_item, &amp;pos_sp_triplet-&gt;current);</span><br><span class="line">    _navigator-&gt;<span class="built_in">set_position_setpoint_triplet_updated</span>();</span><br><span class="line">}</span><br></pre></td></tr></table></figure>
 
 <hr>
 <h2 id="六、RTL-策略树"><a href="#六、RTL-策略树" class="headerlink" title="六、RTL 策略树"></a>六、RTL 策略树</h2><p>RTL 不是单一状态机，而是<strong>顶层策略选择器</strong>：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">flowchart TD</span><br><span class="line">    RTL["RTL::on_activation"] --&gt; Decide["setRtlTypeAndDestination\nfindRtlDestination"]</span><br><span class="line">    Decide --&gt; Type{RTL_TYPE 参数}</span><br><span class="line">    Type --&gt;|0: 直接返航| Direct["RtlDirect\n直飞→盘旋→降落"]</span><br><span class="line">    Type --&gt;|1: 直飞任务降落段| DML["RtlDirectMissionLand\n直飞到任务降落起点→沿任务落地"]</span><br><span class="line">    Type --&gt;|2: 任务正向快速返回| MF["RtlMissionFast\n沿任务正向到降落段"]</span><br><span class="line">    Type --&gt;|3: 任务反向回溯| MFR["RtlMissionFastReverse\n沿任务反向回溯→接入降落"]</span><br><span class="line">    Direct --&gt; Exec["执行返航状态机\n更新 triplet"]</span><br><span class="line">    DML --&gt; Exec</span><br><span class="line">    MF --&gt; Exec</span><br><span class="line">    MFR --&gt; Exec</span><br></pre></td></tr></table></figure>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">flowchart TD</span><br><span class="line">    RTL["RTL::on_activation"] --&gt; Decide["setRtlTypeAndDestination&lt;br/&gt;findRtlDestination"]</span><br><span class="line">    Decide --&gt; Type{"RTL_TYPE 参数"}</span><br><span class="line">    Type --&gt;|0: 直接返航| Direct["RtlDirect&lt;br/&gt;直飞→盘旋→降落"]</span><br><span class="line">    Type --&gt;|1: 直飞任务降落段| DML["RtlDirectMissionLand&lt;br/&gt;直飞到任务降落起点→沿任务落地"]</span><br><span class="line">    Type --&gt;|2: 任务正向快速返回| MF["RtlMissionFast&lt;br/&gt;沿任务正向到降落段"]</span><br><span class="line">    Type --&gt;|3: 任务反向回溯| MFR["RtlMissionFastReverse&lt;br/&gt;沿任务反向回溯→接入降落"]</span><br><span class="line">    Direct --&gt; Exec["执行返航状态机&lt;br/&gt;更新 triplet"]</span><br><span class="line">    DML --&gt; Exec</span><br><span class="line">    MF --&gt; Exec</span><br><span class="line">    MFR --&gt; Exec</span><br></pre></td></tr></table></figure>
 
 <p><code>RtlDirect</code> 的核心状态机（最常用）：</p>
 <table>
@@ -541,7 +541,7 @@ mjx-container[display="true"] + br {
 </tbody></table>
 <hr>
 <h2 id="七、围栏安全链"><a href="#七、围栏安全链" class="headerlink" title="七、围栏安全链"></a>七、围栏安全链</h2><p>围栏检查优先于所有模式执行，在每次主循环中调用：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">flowchart TD</span><br><span class="line">    Check["geofence_breach_check"] --&gt; Predict{GF_PREDICT 开启?}</span><br><span class="line">    Predict --&gt;|是| PredPos["GeofenceBreachAvoidance\n基于速度/加速度预测未来位置"]</span><br><span class="line">    Predict --&gt;|否| CurPos["用当前位置检查"]</span><br><span class="line">    PredPos --&gt; GF["Geofence\n检查是否越界\n(距离/高度/多边形/圆形)"]</span><br><span class="line">    CurPos --&gt; GF</span><br><span class="line">    GF --&gt; Result{是否越界?}</span><br><span class="line">    Result --&gt;|否| NoAction[继续正常执行]</span><br><span class="line">    Result --&gt;|是| Action{GF_ACTION 参数}</span><br><span class="line">    Action --&gt;|1: Warning| Warn["发布警告\n继续执行"]</span><br><span class="line">    Action --&gt;|2: Hold| Hold["注入 Loiter 到安全点"]</span><br><span class="line">    Action --&gt;|3: RTL| RTLA["触发 RTL"]</span><br><span class="line">    Action --&gt;|4: Land| Land["触发就地降落"]</span><br></pre></td></tr></table></figure>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">flowchart TD</span><br><span class="line">    Check["geofence_breach_check"] --&gt; Predict{"GF_PREDICT 开启?"}</span><br><span class="line">    Predict --&gt;|是| PredPos["GeofenceBreachAvoidance&lt;br/&gt;基于速度/加速度预测未来位置"]</span><br><span class="line">    Predict --&gt;|否| CurPos["用当前位置检查"]</span><br><span class="line">    PredPos --&gt; GF["Geofence&lt;br/&gt;检查是否越界&lt;br/&gt;(距离/高度/多边形/圆形)"]</span><br><span class="line">    CurPos --&gt; GF</span><br><span class="line">    GF --&gt; Result{"是否越界?"}</span><br><span class="line">    Result --&gt;|否| NoAction["继续正常执行"]</span><br><span class="line">    Result --&gt;|是| Action{"GF_ACTION 参数"}</span><br><span class="line">    Action --&gt;|1: Warning| Warn["发布警告&lt;br/&gt;继续执行"]</span><br><span class="line">    Action --&gt;|2: Hold| Hold["注入 Loiter 到安全点"]</span><br><span class="line">    Action --&gt;|3: RTL| RTLA["触发 RTL"]</span><br><span class="line">    Action --&gt;|4: Land| Land["触发就地降落"]</span><br></pre></td></tr></table></figure>
 
 <hr>
 <h2 id="八、小结"><a href="#八、小结" class="headerlink" title="八、小结"></a>八、小结</h2><p>Navigator 主循环的核心机制：</p>
@@ -566,8 +566,8 @@ mjx-container[display="true"] + br {
               <a href="/tags/%E6%8A%80%E6%9C%AF%E5%8D%9A%E6%96%87/" rel="tag"><i class="fa fa-tag"></i> 技术博文</a>
               <a href="/tags/PX4/" rel="tag"><i class="fa fa-tag"></i> PX4</a>
               <a href="/tags/%E7%8A%B6%E6%80%81%E6%9C%BA/" rel="tag"><i class="fa fa-tag"></i> 状态机</a>
-              <a href="/tags/Navigator/" rel="tag"><i class="fa fa-tag"></i> Navigator</a>
               <a href="/tags/%E8%B0%83%E5%BA%A6/" rel="tag"><i class="fa fa-tag"></i> 调度</a>
+              <a href="/tags/Navigator/" rel="tag"><i class="fa fa-tag"></i> Navigator</a>
           </div>
 
         
@@ -646,6 +646,13 @@ mjx-container[display="true"] + br {
 <script>
 (function() {
   'use strict';
+
+  function withRoot(path) {
+    var root = (window.CONFIG && CONFIG.root) ? CONFIG.root : '/';
+    root = root.endsWith('/') ? root : root + '/';
+    path = path.startsWith('/') ? path.slice(1) : path;
+    return root + path;
+  }
 
   // ============================================
   // 顶部 Banner 背景图轮播
@@ -807,8 +814,17 @@ mjx-container[display="true"] + br {
     var searchInput = document.querySelector('.search-input');
     if (!searchContainer || !searchInput) return;
 
+    if (searchInput.dataset.qsEnhanced === 'true') {
+      if (!searchInput.value.trim() && window._recentPostsHTML) {
+        searchContainer.innerHTML = window._recentPostsHTML;
+      }
+      return;
+    }
+
+    searchInput.dataset.qsEnhanced = 'true';
+
     function showRecentPosts() {
-      fetch('/search.xml')
+      fetch(withRoot('search.xml'))
         .then(function(res) { return res.text(); })
         .then(function(xmlText) {
           var parser = new DOMParser();
@@ -847,23 +863,27 @@ mjx-container[display="true"] + br {
         .catch(function() {});
     }
 
-    // 监听搜索弹窗打开
-    var observer = new MutationObserver(function(mutations) {
-      mutations.forEach(function(mutation) {
-        if (mutation.target.classList && mutation.target.classList.contains('search-active')) {
-          setTimeout(function() {
-            if (!searchInput.value.trim()) {
+    // 监听搜索弹窗打开；避免在 PJAX 后重复创建 observer。
+    if (!window.__qsSearchObserverBound) {
+      var observer = new MutationObserver(function(mutations) {
+        mutations.forEach(function(mutation) {
+          if (mutation.target.classList && mutation.target.classList.contains('search-active')) {
+            setTimeout(function() {
+              var activeContainer = document.querySelector('.search-result-container');
+              var activeInput = document.querySelector('.search-input');
+              if (!activeContainer || !activeInput || activeInput.value.trim()) return;
               if (window._recentPostsHTML) {
-                searchContainer.innerHTML = window._recentPostsHTML;
+                activeContainer.innerHTML = window._recentPostsHTML;
               } else {
                 showRecentPosts();
               }
-            }
-          }, 300);
-        }
+            }, 300);
+          }
+        });
       });
-    });
-    observer.observe(document.body, { attributes: true, attributeFilter: ['class'] });
+      observer.observe(document.body, { attributes: true, attributeFilter: ['class'] });
+      window.__qsSearchObserverBound = true;
+    }
 
     searchInput.addEventListener('input', function() {
       if (!searchInput.value.trim() && window._recentPostsHTML) {

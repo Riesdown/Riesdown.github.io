@@ -28,7 +28,7 @@
 <meta property="og:description" content="深入解析 PX4 EKF2 control.cpp 中的融合调度中心 controlFusionModes()，以 GPS 融合为例说明各传感器融合的启用条件、新息检验、降级策略，以及高度源仲裁逻辑。">
 <meta property="og:locale" content="zh_CN">
 <meta property="article:published_time" content="2026-02-26T06:00:00.000Z">
-<meta property="article:modified_time" content="2026-03-14T13:21:42.000Z">
+<meta property="article:modified_time" content="2026-03-14T13:45:12.000Z">
 <meta property="article:author" content="QingShan Li">
 <meta property="article:tag" content="EKF2">
 <meta property="article:tag" content="PX4">
@@ -415,7 +415,7 @@ mjx-container[display="true"] + br {
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">更新于</span>
-      <time title="修改时间：2026-03-14 21:21:42" itemprop="dateModified" datetime="2026-03-14T21:21:42+08:00">2026-03-14</time>
+      <time title="修改时间：2026-03-14 21:45:12" itemprop="dateModified" datetime="2026-03-14T21:45:12+08:00">2026-03-14</time>
     </span>
     <span class="post-meta-item">
       <span class="post-meta-item-icon">
@@ -487,7 +487,7 @@ mjx-container[display="true"] + br {
 <p><strong>Gate 参数意义</strong>：<code>EKF2_GPS_P_GATE = 5.0</code>（默认）表示：若 GPS 新息超过 5σ，则拒绝该测量。调大可接受更差的 GPS，调小则对 GPS 质量要求更严。</p>
 <hr>
 <h2 id="三、高度融合仲裁-controlHeightFusion"><a href="#三、高度融合仲裁-controlHeightFusion" class="headerlink" title="三、高度融合仲裁 controlHeightFusion()"></a>三、高度融合仲裁 <code>controlHeightFusion()</code></h2><p>高度是最复杂的融合场景，需要在多个高度源之间进行<strong>仲裁和降级切换</strong>：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">flowchart TD</span><br><span class="line">    Start[controlHeightFusion] --&gt; CheckAcc[checkVerticalAccelHealth\n检查垂直加速度健康]</span><br><span class="line">    CheckAcc --&gt; GndEff[controlGroundEffect\n地面效应补偿]</span><br><span class="line">    GndEff --&gt; BaroCtrl[controlBaroHeightFusion\n气压计高度]</span><br><span class="line">    BaroCtrl --&gt; GnssCtrl[controlGnssHeightFusion\nGPS高度]</span><br><span class="line">    GnssCtrl --&gt; RngCtrl[controlRangeHeightFusion\n测距仪高度]</span><br><span class="line">    RngCtrl --&gt; EvCtrl[controlEvHeightFusion\n外部视觉高度]</span><br><span class="line">    EvCtrl --&gt; Fallback[checkHeightSensorRefFallback\n高度参考自动切换]</span><br><span class="line">    Fallback --&gt; CheckRef{主参考源\n是否有效?}</span><br><span class="line">    CheckRef --&gt;|有效| Done([继续使用主参考])</span><br><span class="line">    CheckRef --&gt;|失效| Switch[按优先级切换:\n1.EV → 2.测距仪 → 3.GPS → 4.气压计]</span><br><span class="line">    Switch --&gt; Done</span><br></pre></td></tr></table></figure>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">flowchart TD</span><br><span class="line">    Start["controlHeightFusion"] --&gt; CheckAcc["checkVerticalAccelHealth&lt;br/&gt;检查垂直加速度健康"]</span><br><span class="line">    CheckAcc --&gt; GndEff["controlGroundEffect&lt;br/&gt;地面效应补偿"]</span><br><span class="line">    GndEff --&gt; BaroCtrl["controlBaroHeightFusion&lt;br/&gt;气压计高度"]</span><br><span class="line">    BaroCtrl --&gt; GnssCtrl["controlGnssHeightFusion&lt;br/&gt;GPS高度"]</span><br><span class="line">    GnssCtrl --&gt; RngCtrl["controlRangeHeightFusion&lt;br/&gt;测距仪高度"]</span><br><span class="line">    RngCtrl --&gt; EvCtrl["controlEvHeightFusion&lt;br/&gt;外部视觉高度"]</span><br><span class="line">    EvCtrl --&gt; Fallback["checkHeightSensorRefFallback&lt;br/&gt;高度参考自动切换"]</span><br><span class="line">    Fallback --&gt; CheckRef{"主参考源&lt;br/&gt;是否有效?"}</span><br><span class="line">    CheckRef --&gt;|有效| Done("[继续使用主参考]")</span><br><span class="line">    CheckRef --&gt;|失效| Switch["按优先级切换:&lt;br/&gt;1.EV → 2.测距仪 → 3.GPS → 4.气压计"]</span><br><span class="line">    Switch --&gt; Done</span><br></pre></td></tr></table></figure>
 
 <h3 id="3-1-高度参考优先级"><a href="#3-1-高度参考优先级" class="headerlink" title="3.1 高度参考优先级"></a>3.1 高度参考优先级</h3><p>默认优先级（<code>EKF2_HGT_REF</code> 参数控制）：</p>
 <table>
@@ -696,6 +696,13 @@ mjx-container[display="true"] + br {
 (function() {
   'use strict';
 
+  function withRoot(path) {
+    var root = (window.CONFIG && CONFIG.root) ? CONFIG.root : '/';
+    root = root.endsWith('/') ? root : root + '/';
+    path = path.startsWith('/') ? path.slice(1) : path;
+    return root + path;
+  }
+
   // ============================================
   // 顶部 Banner 背景图轮播
   // ============================================
@@ -856,8 +863,17 @@ mjx-container[display="true"] + br {
     var searchInput = document.querySelector('.search-input');
     if (!searchContainer || !searchInput) return;
 
+    if (searchInput.dataset.qsEnhanced === 'true') {
+      if (!searchInput.value.trim() && window._recentPostsHTML) {
+        searchContainer.innerHTML = window._recentPostsHTML;
+      }
+      return;
+    }
+
+    searchInput.dataset.qsEnhanced = 'true';
+
     function showRecentPosts() {
-      fetch('/search.xml')
+      fetch(withRoot('search.xml'))
         .then(function(res) { return res.text(); })
         .then(function(xmlText) {
           var parser = new DOMParser();
@@ -896,23 +912,27 @@ mjx-container[display="true"] + br {
         .catch(function() {});
     }
 
-    // 监听搜索弹窗打开
-    var observer = new MutationObserver(function(mutations) {
-      mutations.forEach(function(mutation) {
-        if (mutation.target.classList && mutation.target.classList.contains('search-active')) {
-          setTimeout(function() {
-            if (!searchInput.value.trim()) {
+    // 监听搜索弹窗打开；避免在 PJAX 后重复创建 observer。
+    if (!window.__qsSearchObserverBound) {
+      var observer = new MutationObserver(function(mutations) {
+        mutations.forEach(function(mutation) {
+          if (mutation.target.classList && mutation.target.classList.contains('search-active')) {
+            setTimeout(function() {
+              var activeContainer = document.querySelector('.search-result-container');
+              var activeInput = document.querySelector('.search-input');
+              if (!activeContainer || !activeInput || activeInput.value.trim()) return;
               if (window._recentPostsHTML) {
-                searchContainer.innerHTML = window._recentPostsHTML;
+                activeContainer.innerHTML = window._recentPostsHTML;
               } else {
                 showRecentPosts();
               }
-            }
-          }, 300);
-        }
+            }, 300);
+          }
+        });
       });
-    });
-    observer.observe(document.body, { attributes: true, attributeFilter: ['class'] });
+      observer.observe(document.body, { attributes: true, attributeFilter: ['class'] });
+      window.__qsSearchObserverBound = true;
+    }
 
     searchInput.addEventListener('input', function() {
       if (!searchInput.value.trim() && window._recentPostsHTML) {
