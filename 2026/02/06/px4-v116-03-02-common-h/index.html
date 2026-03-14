@@ -28,7 +28,7 @@
 <meta property="og:description" content="详细解析 PX4 EKF2 中 common.h 定义的核心数据结构，包括 IMU、GPS 等传感器样本结构体、EKF 参数结构体，以及辅助源状态结构。">
 <meta property="og:locale" content="zh_CN">
 <meta property="article:published_time" content="2026-02-06T02:00:00.000Z">
-<meta property="article:modified_time" content="2026-03-14T13:02:40.000Z">
+<meta property="article:modified_time" content="2026-03-14T13:21:42.000Z">
 <meta property="article:author" content="QingShan Li">
 <meta property="article:tag" content="C++">
 <meta property="article:tag" content="EKF2">
@@ -79,12 +79,6 @@
 
 
 
-  
-
-  <script class="next-config" data-name="enableMath" type="application/json">true</script><script class="next-config" data-name="mathjax" type="application/json">{"enable":true,"tags":"ams","js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.js","integrity":"sha256-MASABpB4tYktI2Oitl4t+78w/lyA+D7b/s9GEP0JOGI="}}</script>
-<script src="/js/third-party/math/mathjax.js" defer></script>
-
-
 <!-- Custom Head Injection for QingShan Blog -->
 
 <!-- Google Fonts: Noto Sans SC for better Chinese rendering -->
@@ -120,7 +114,119 @@
   <noscript>
     <link rel="stylesheet" href="/css/noscript.css">
   </noscript>
-</head>
+<style>mjx-container[jax="SVG"] {
+  direction: ltr;
+}
+
+mjx-container[jax="SVG"] > svg {
+  overflow: visible;
+}
+
+mjx-container[jax="SVG"][display="true"] {
+  display: block;
+  text-align: center;
+  margin: 1em 0;
+}
+
+mjx-container[jax="SVG"][justify="left"] {
+  text-align: left;
+}
+
+mjx-container[jax="SVG"][justify="right"] {
+  text-align: right;
+}
+
+g[data-mml-node="merror"] > g {
+  fill: red;
+  stroke: red;
+}
+
+g[data-mml-node="merror"] > rect[data-background] {
+  fill: yellow;
+  stroke: none;
+}
+
+g[data-mml-node="mtable"] > line[data-line] {
+  stroke-width: 70px;
+  fill: none;
+}
+
+g[data-mml-node="mtable"] > rect[data-frame] {
+  stroke-width: 70px;
+  fill: none;
+}
+
+g[data-mml-node="mtable"] > .mjx-dashed {
+  stroke-dasharray: 140;
+}
+
+g[data-mml-node="mtable"] > .mjx-dotted {
+  stroke-linecap: round;
+  stroke-dasharray: 0,140;
+}
+
+g[data-mml-node="mtable"] > svg {
+  overflow: visible;
+}
+
+[jax="SVG"] mjx-tool {
+  display: inline-block;
+  position: relative;
+  width: 0;
+  height: 0;
+}
+
+[jax="SVG"] mjx-tool > mjx-tip {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+mjx-tool > mjx-tip {
+  display: inline-block;
+  padding: .2em;
+  border: 1px solid #888;
+  font-size: 70%;
+  background-color: #F8F8F8;
+  color: black;
+  box-shadow: 2px 2px 5px #AAAAAA;
+}
+
+g[data-mml-node="maction"][data-toggle] {
+  cursor: pointer;
+}
+
+mjx-status {
+  display: block;
+  position: fixed;
+  left: 1em;
+  bottom: 1em;
+  min-width: 25%;
+  padding: .2em .4em;
+  border: 1px solid #888;
+  font-size: 90%;
+  background-color: #F8F8F8;
+  color: black;
+}
+
+foreignObject[data-mjx-xml] {
+  font-family: initial;
+  line-height: normal;
+  overflow: visible;
+}
+
+.MathJax path {
+  stroke-width: 3;
+}
+
+mjx-container[display="true"] {
+  overflow: auto hidden;
+}
+
+mjx-container[display="true"] + br {
+  display: none;
+}
+</style></head>
 
 <body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
   <div class="headband"></div>
@@ -309,7 +415,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">更新于</span>
-      <time title="修改时间：2026-03-14 21:02:40" itemprop="dateModified" datetime="2026-03-14T21:02:40+08:00">2026-03-14</time>
+      <time title="修改时间：2026-03-14 21:21:42" itemprop="dateModified" datetime="2026-03-14T21:21:42+08:00">2026-03-14</time>
     </span>
     <span class="post-meta-item">
       <span class="post-meta-item-icon">
@@ -363,16 +469,16 @@
     
     
     <div class="post-body" itemprop="articleBody"><h2 id="一、传感器样本结构体"><a href="#一、传感器样本结构体" class="headerlink" title="一、传感器样本结构体"></a>一、传感器样本结构体</h2><p><code>common.h</code> 是 EKF 库的公共头文件，定义了所有模块共享的<strong>数据结构</strong>和<strong>枚举类型</strong>。这些结构体被 <code>RingBuffer&lt;T&gt;</code> 模板类直接实例化使用。</p>
-<h3 id="1-1-IMU-样本-imuSample"><a href="#1-1-IMU-样本-imuSample" class="headerlink" title="1.1 IMU 样本 imuSample"></a>1.1 IMU 样本 <code>imuSample</code></h3><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">struct</span> <span class="title class_">imuSample</span> &#123;</span><br><span class="line">    <span class="type">uint64_t</span>    time_us&#123;&#125;;           <span class="comment">// 采样时间戳（微秒）</span></span><br><span class="line">    Vector3f    delta_ang&#123;&#125;;         <span class="comment">// 角增量（rad），= ω * dt（陀螺仪积分）</span></span><br><span class="line">    Vector3f    delta_vel&#123;&#125;;         <span class="comment">// 速度增量（m/s），= a * dt（加速度计积分）</span></span><br><span class="line">    <span class="type">float</span>       delta_ang_dt&#123;&#125;;      <span class="comment">// 角增量对应的时间间隔</span></span><br><span class="line">    <span class="type">float</span>       delta_vel_dt&#123;&#125;;      <span class="comment">// 速度增量对应的时间间隔</span></span><br><span class="line">    <span class="type">bool</span>        delta_vel_clipping[<span class="number">3</span>]&#123;&#125;;  <span class="comment">// 各轴加速度削波标志</span></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<h3 id="1-1-IMU-样本-imuSample"><a href="#1-1-IMU-样本-imuSample" class="headerlink" title="1.1 IMU 样本 imuSample"></a>1.1 IMU 样本 <code>imuSample</code></h3><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">struct</span> <span class="title class_">imuSample</span> {</span><br><span class="line">    <span class="type">uint64_t</span>    time_us{};           <span class="comment">// 采样时间戳（微秒）</span></span><br><span class="line">    Vector3f    delta_ang{};         <span class="comment">// 角增量（rad），= ω * dt（陀螺仪积分）</span></span><br><span class="line">    Vector3f    delta_vel{};         <span class="comment">// 速度增量（m/s），= a * dt（加速度计积分）</span></span><br><span class="line">    <span class="type">float</span>       delta_ang_dt{};      <span class="comment">// 角增量对应的时间间隔</span></span><br><span class="line">    <span class="type">float</span>       delta_vel_dt{};      <span class="comment">// 速度增量对应的时间间隔</span></span><br><span class="line">    <span class="type">bool</span>        delta_vel_clipping[<span class="number">3</span>]{};  <span class="comment">// 各轴加速度削波标志</span></span><br><span class="line">};</span><br></pre></td></tr></table></figure>
 
 <p><strong>关键设计说明</strong>：</p>
 <ul>
-<li>存储的是<strong>增量</strong>（delta），而非原始角速度&#x2F;加速度。增量在降采样过程中累积，避免混叠。</li>
+<li>存储的是<strong>增量</strong>（delta），而非原始角速度/加速度。增量在降采样过程中累积，避免混叠。</li>
 <li><code>delta_vel_clipping</code> 用于检测加速度计饱和，饱和时抑制对应轴的卡尔曼增益（<code>clearInhibitedStateKalmanGains</code>）。</li>
 </ul>
-<h3 id="1-2-GNSS-样本-gnssSample"><a href="#1-2-GNSS-样本-gnssSample" class="headerlink" title="1.2 GNSS 样本 gnssSample"></a>1.2 GNSS 样本 <code>gnssSample</code></h3><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">struct</span> <span class="title class_">gnssSample</span> &#123;</span><br><span class="line">    <span class="type">uint64_t</span> time_us&#123;&#125;;             <span class="comment">// 时间戳</span></span><br><span class="line">    <span class="type">double</span>   lat&#123;&#125;;                 <span class="comment">// 纬度（度）</span></span><br><span class="line">    <span class="type">double</span>   lon&#123;&#125;;                 <span class="comment">// 经度（度）</span></span><br><span class="line">    <span class="type">float</span>    alt&#123;&#125;;                 <span class="comment">// WGS84 高度（米）</span></span><br><span class="line">    <span class="type">float</span>    sacc&#123;&#125;;                <span class="comment">// 速度精度（m/s，1σ）</span></span><br><span class="line">    <span class="type">float</span>    hacc&#123;&#125;;                <span class="comment">// 水平位置精度（m，1σ）</span></span><br><span class="line">    <span class="type">float</span>    vacc&#123;&#125;;                <span class="comment">// 垂直位置精度（m，1σ）</span></span><br><span class="line">    Vector3f vel&#123;&#125;;                 <span class="comment">// NED 速度（m/s）</span></span><br><span class="line">    <span class="type">float</span>    pdop&#123;&#125;;                <span class="comment">// 位置精度因子</span></span><br><span class="line">    <span class="type">uint8_t</span>  nsats&#123;&#125;;               <span class="comment">// 可见卫星数</span></span><br><span class="line">    <span class="type">bool</span>     fix_type&#123;&#125;;            <span class="comment">// 定位类型（3D FIX）</span></span><br><span class="line">    <span class="type">float</span>    yaw&#123;&#125;;                 <span class="comment">// GPS 航向（需双天线）</span></span><br><span class="line">    <span class="type">float</span>    yaw_acc&#123;&#125;;             <span class="comment">// 航向精度</span></span><br><span class="line">    <span class="type">float</span>    yaw_offset&#123;&#125;;          <span class="comment">// 安装偏置</span></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<h3 id="1-2-GNSS-样本-gnssSample"><a href="#1-2-GNSS-样本-gnssSample" class="headerlink" title="1.2 GNSS 样本 gnssSample"></a>1.2 GNSS 样本 <code>gnssSample</code></h3><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">struct</span> <span class="title class_">gnssSample</span> {</span><br><span class="line">    <span class="type">uint64_t</span> time_us{};             <span class="comment">// 时间戳</span></span><br><span class="line">    <span class="type">double</span>   lat{};                 <span class="comment">// 纬度（度）</span></span><br><span class="line">    <span class="type">double</span>   lon{};                 <span class="comment">// 经度（度）</span></span><br><span class="line">    <span class="type">float</span>    alt{};                 <span class="comment">// WGS84 高度（米）</span></span><br><span class="line">    <span class="type">float</span>    sacc{};                <span class="comment">// 速度精度（m/s，1σ）</span></span><br><span class="line">    <span class="type">float</span>    hacc{};                <span class="comment">// 水平位置精度（m，1σ）</span></span><br><span class="line">    <span class="type">float</span>    vacc{};                <span class="comment">// 垂直位置精度（m，1σ）</span></span><br><span class="line">    Vector3f vel{};                 <span class="comment">// NED 速度（m/s）</span></span><br><span class="line">    <span class="type">float</span>    pdop{};                <span class="comment">// 位置精度因子</span></span><br><span class="line">    <span class="type">uint8_t</span>  nsats{};               <span class="comment">// 可见卫星数</span></span><br><span class="line">    <span class="type">bool</span>     fix_type{};            <span class="comment">// 定位类型（3D FIX）</span></span><br><span class="line">    <span class="type">float</span>    yaw{};                 <span class="comment">// GPS 航向（需双天线）</span></span><br><span class="line">    <span class="type">float</span>    yaw_acc{};             <span class="comment">// 航向精度</span></span><br><span class="line">    <span class="type">float</span>    yaw_offset{};          <span class="comment">// 安装偏置</span></span><br><span class="line">};</span><br></pre></td></tr></table></figure>
 
-<h3 id="1-3-磁力计样本-magSample"><a href="#1-3-磁力计样本-magSample" class="headerlink" title="1.3 磁力计样本 magSample"></a>1.3 磁力计样本 <code>magSample</code></h3><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">struct</span> <span class="title class_">magSample</span> &#123;</span><br><span class="line">    <span class="type">uint64_t</span> time_us&#123;&#125;;</span><br><span class="line">    Vector3f mag&#123;&#125;;    <span class="comment">// 机体坐标系磁场矢量（Gauss）</span></span><br><span class="line">    <span class="type">bool</span>     reset&#123;&#125;;  <span class="comment">// 传感器重置标志</span></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<h3 id="1-3-磁力计样本-magSample"><a href="#1-3-磁力计样本-magSample" class="headerlink" title="1.3 磁力计样本 magSample"></a>1.3 磁力计样本 <code>magSample</code></h3><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">struct</span> <span class="title class_">magSample</span> {</span><br><span class="line">    <span class="type">uint64_t</span> time_us{};</span><br><span class="line">    Vector3f mag{};    <span class="comment">// 机体坐标系磁场矢量（Gauss）</span></span><br><span class="line">    <span class="type">bool</span>     reset{};  <span class="comment">// 传感器重置标志</span></span><br><span class="line">};</span><br></pre></td></tr></table></figure>
 
 <p>磁力计在 EKF 中负责<strong>航向约束</strong>（yaw fusion）以及地球磁场矢量估计（3 维）+ 机体磁偏差估计（3 维），共 6 个状态分量。</p>
 <h3 id="1-4-其他样本结构"><a href="#1-4-其他样本结构" class="headerlink" title="1.4 其他样本结构"></a>1.4 其他样本结构</h3><table>
@@ -421,7 +527,7 @@
 </tbody></table>
 <hr>
 <h2 id="二、辅助源状态结构-AidSourceStatus"><a href="#二、辅助源状态结构-AidSourceStatus" class="headerlink" title="二、辅助源状态结构 AidSourceStatus"></a>二、辅助源状态结构 <code>AidSourceStatus</code></h2><p><code>AidSourceStatus&lt;N&gt;</code> 是一个模板结构，N 为观测维数（1、2 或 3 维）：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">template</span>&lt;<span class="type">int</span> N&gt;</span><br><span class="line"><span class="keyword">struct</span> <span class="title class_">AidSourceStatus</span> &#123;</span><br><span class="line">    <span class="comment">// 融合决策标志</span></span><br><span class="line">    <span class="type">bool</span>    fusion_enabled   &#123;<span class="literal">false</span>&#125;;  <span class="comment">// 该辅助源是否使能</span></span><br><span class="line">    <span class="type">bool</span>    data_available   &#123;<span class="literal">false</span>&#125;;  <span class="comment">// 当前是否有有效数据</span></span><br><span class="line">    <span class="type">bool</span>    innovation_rejected &#123;<span class="literal">false</span>&#125;; <span class="comment">// 新息检验是否拒绝</span></span><br><span class="line">    <span class="type">bool</span>    fused            &#123;<span class="literal">false</span>&#125;;  <span class="comment">// 本周期是否完成融合</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">// 新息相关</span></span><br><span class="line">    matrix::Vector&lt;<span class="type">float</span>, N&gt; innovation&#123;&#125;;           <span class="comment">// 新息 y = z - Hx</span></span><br><span class="line">    matrix::Vector&lt;<span class="type">float</span>, N&gt; innovation_variance&#123;&#125;;  <span class="comment">// 新息方差 S = HPH&#x27;+R</span></span><br><span class="line">    matrix::Vector&lt;<span class="type">float</span>, N&gt; observation&#123;&#125;;          <span class="comment">// 观测值 z</span></span><br><span class="line">    matrix::Vector&lt;<span class="type">float</span>, N&gt; observation_variance&#123;&#125;; <span class="comment">// 观测噪声方差 R</span></span><br><span class="line"></span><br><span class="line">    <span class="type">float</span>    test_ratio&#123;&#125;;         <span class="comment">// 归一化新息平方 χ² 检验比率</span></span><br><span class="line">    <span class="type">uint64_t</span> time_last_fuse_us&#123;&#125;;  <span class="comment">// 上次成功融合的时间戳</span></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">template</span>&lt;<span class="type">int</span> N&gt;</span><br><span class="line"><span class="keyword">struct</span> <span class="title class_">AidSourceStatus</span> {</span><br><span class="line">    <span class="comment">// 融合决策标志</span></span><br><span class="line">    <span class="type">bool</span>    fusion_enabled   {<span class="literal">false</span>};  <span class="comment">// 该辅助源是否使能</span></span><br><span class="line">    <span class="type">bool</span>    data_available   {<span class="literal">false</span>};  <span class="comment">// 当前是否有有效数据</span></span><br><span class="line">    <span class="type">bool</span>    innovation_rejected {<span class="literal">false</span>}; <span class="comment">// 新息检验是否拒绝</span></span><br><span class="line">    <span class="type">bool</span>    fused            {<span class="literal">false</span>};  <span class="comment">// 本周期是否完成融合</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">// 新息相关</span></span><br><span class="line">    matrix::Vector&lt;<span class="type">float</span>, N&gt; innovation{};           <span class="comment">// 新息 y = z - Hx</span></span><br><span class="line">    matrix::Vector&lt;<span class="type">float</span>, N&gt; innovation_variance{};  <span class="comment">// 新息方差 S = HPH'+R</span></span><br><span class="line">    matrix::Vector&lt;<span class="type">float</span>, N&gt; observation{};          <span class="comment">// 观测值 z</span></span><br><span class="line">    matrix::Vector&lt;<span class="type">float</span>, N&gt; observation_variance{}; <span class="comment">// 观测噪声方差 R</span></span><br><span class="line"></span><br><span class="line">    <span class="type">float</span>    test_ratio{};         <span class="comment">// 归一化新息平方 χ² 检验比率</span></span><br><span class="line">    <span class="type">uint64_t</span> time_last_fuse_us{};  <span class="comment">// 上次成功融合的时间戳</span></span><br><span class="line">};</span><br></pre></td></tr></table></figure>
 
 <p><strong>设计要点</strong>：</p>
 <ul>
@@ -430,7 +536,7 @@
 </ul>
 <hr>
 <h2 id="三、EKF-参数结构-parameters"><a href="#三、EKF-参数结构-parameters" class="headerlink" title="三、EKF 参数结构 parameters"></a>三、EKF 参数结构 <code>parameters</code></h2><p><code>parameters</code> 结构体集中存放所有 EKF 可调参数。大部分与 <code>EKF2_*</code> 类 PX4 参数对应，通过 <code>EKF2.cpp</code> 的 <code>updateParams()</code> 写入。</p>
-<h3 id="关键参数分类"><a href="#关键参数分类" class="headerlink" title="关键参数分类"></a>关键参数分类</h3><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">struct</span> <span class="title class_">parameters</span> &#123;</span><br><span class="line">    <span class="comment">// ---- 传感器噪声 ----</span></span><br><span class="line">    <span class="type">float</span> gyro_noise        &#123;<span class="number">1.5e-2f</span>&#125;;  <span class="comment">// 陀螺仪过程噪声（rad/s）</span></span><br><span class="line">    <span class="type">float</span> accel_noise       &#123;<span class="number">3.5e-1f</span>&#125;;  <span class="comment">// 加速度计过程噪声（m/s²）</span></span><br><span class="line">    <span class="type">float</span> baro_noise        &#123;<span class="number">2.0f</span>&#125;;     <span class="comment">// 气压计高度噪声（m，1σ）</span></span><br><span class="line">    <span class="type">float</span> gps_vel_noise     &#123;<span class="number">0.5f</span>&#125;;     <span class="comment">// GPS速度噪声（m/s）</span></span><br><span class="line">    <span class="type">float</span> gps_pos_noise     &#123;<span class="number">0.5f</span>&#125;;     <span class="comment">// GPS位置噪声（m）</span></span><br><span class="line">    <span class="type">float</span> mag_noise         &#123;<span class="number">5.0e-2f</span>&#125;;  <span class="comment">// 磁力计噪声（Gauss）</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">// ---- 新息拒绝阈值（&quot;gate&quot; = 标准差倍数的平方）----</span></span><br><span class="line">    <span class="type">float</span> heading_innov_gate   &#123;<span class="number">2.6f</span>&#125;;  <span class="comment">// 航向新息门 (σ)</span></span><br><span class="line">    <span class="type">float</span> gps_vel_innov_gate   &#123;<span class="number">5.0f</span>&#125;;</span><br><span class="line">    <span class="type">float</span> gps_pos_innov_gate   &#123;<span class="number">5.0f</span>&#125;;</span><br><span class="line">    <span class="type">float</span> baro_innov_gate      &#123;<span class="number">5.0f</span>&#125;;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// ---- 时间延迟（ms）----</span></span><br><span class="line">    <span class="type">int32_t</span> gps_delay_ms    &#123;<span class="number">110</span>&#125;;</span><br><span class="line">    <span class="type">int32_t</span> baro_delay_ms   &#123;<span class="number">0</span>&#125;;</span><br><span class="line">    <span class="type">int32_t</span> mag_delay_ms    &#123;<span class="number">0</span>&#125;;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// ---- 传感器使能标志 ----</span></span><br><span class="line">    <span class="type">int32_t</span> mag_fusion_type  &#123;<span class="number">0</span>&#125;;  <span class="comment">// 0=自动, 1=磁力计(3D), 4=无磁力计</span></span><br><span class="line">    <span class="type">bool</span>    gnss_vel_use     &#123;<span class="literal">true</span>&#125;;</span><br><span class="line">    <span class="type">bool</span>    gnss_pos_use     &#123;<span class="literal">true</span>&#125;;</span><br><span class="line">    <span class="type">bool</span>    gnss_hgt_use     &#123;<span class="literal">false</span>&#125;;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// ---- 零偏估计限幅 ----</span></span><br><span class="line">    <span class="type">float</span> gyro_bias_lim      &#123;<span class="number">0.349f</span>&#125;;  <span class="comment">// ≈20°/s，陀螺仪零偏上限（rad/s）</span></span><br><span class="line">    <span class="type">float</span> accel_bias_lim     &#123;<span class="number">0.4f</span>&#125;;    <span class="comment">// 加速度计零偏上限（m/s²）</span></span><br><span class="line">    <span class="comment">// ...</span></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<h3 id="关键参数分类"><a href="#关键参数分类" class="headerlink" title="关键参数分类"></a>关键参数分类</h3><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">struct</span> <span class="title class_">parameters</span> {</span><br><span class="line">    <span class="comment">// ---- 传感器噪声 ----</span></span><br><span class="line">    <span class="type">float</span> gyro_noise        {<span class="number">1.5e-2f</span>};  <span class="comment">// 陀螺仪过程噪声（rad/s）</span></span><br><span class="line">    <span class="type">float</span> accel_noise       {<span class="number">3.5e-1f</span>};  <span class="comment">// 加速度计过程噪声（m/s²）</span></span><br><span class="line">    <span class="type">float</span> baro_noise        {<span class="number">2.0f</span>};     <span class="comment">// 气压计高度噪声（m，1σ）</span></span><br><span class="line">    <span class="type">float</span> gps_vel_noise     {<span class="number">0.5f</span>};     <span class="comment">// GPS速度噪声（m/s）</span></span><br><span class="line">    <span class="type">float</span> gps_pos_noise     {<span class="number">0.5f</span>};     <span class="comment">// GPS位置噪声（m）</span></span><br><span class="line">    <span class="type">float</span> mag_noise         {<span class="number">5.0e-2f</span>};  <span class="comment">// 磁力计噪声（Gauss）</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">// ---- 新息拒绝阈值（"gate" = 标准差倍数的平方）----</span></span><br><span class="line">    <span class="type">float</span> heading_innov_gate   {<span class="number">2.6f</span>};  <span class="comment">// 航向新息门 (σ)</span></span><br><span class="line">    <span class="type">float</span> gps_vel_innov_gate   {<span class="number">5.0f</span>};</span><br><span class="line">    <span class="type">float</span> gps_pos_innov_gate   {<span class="number">5.0f</span>};</span><br><span class="line">    <span class="type">float</span> baro_innov_gate      {<span class="number">5.0f</span>};</span><br><span class="line"></span><br><span class="line">    <span class="comment">// ---- 时间延迟（ms）----</span></span><br><span class="line">    <span class="type">int32_t</span> gps_delay_ms    {<span class="number">110</span>};</span><br><span class="line">    <span class="type">int32_t</span> baro_delay_ms   {<span class="number">0</span>};</span><br><span class="line">    <span class="type">int32_t</span> mag_delay_ms    {<span class="number">0</span>};</span><br><span class="line"></span><br><span class="line">    <span class="comment">// ---- 传感器使能标志 ----</span></span><br><span class="line">    <span class="type">int32_t</span> mag_fusion_type  {<span class="number">0</span>};  <span class="comment">// 0=自动, 1=磁力计(3D), 4=无磁力计</span></span><br><span class="line">    <span class="type">bool</span>    gnss_vel_use     {<span class="literal">true</span>};</span><br><span class="line">    <span class="type">bool</span>    gnss_pos_use     {<span class="literal">true</span>};</span><br><span class="line">    <span class="type">bool</span>    gnss_hgt_use     {<span class="literal">false</span>};</span><br><span class="line"></span><br><span class="line">    <span class="comment">// ---- 零偏估计限幅 ----</span></span><br><span class="line">    <span class="type">float</span> gyro_bias_lim      {<span class="number">0.349f</span>};  <span class="comment">// ≈20°/s，陀螺仪零偏上限（rad/s）</span></span><br><span class="line">    <span class="type">float</span> accel_bias_lim     {<span class="number">0.4f</span>};    <span class="comment">// 加速度计零偏上限（m/s²）</span></span><br><span class="line">    <span class="comment">// ...</span></span><br><span class="line">};</span><br></pre></td></tr></table></figure>
 
 <p><strong>设计原则</strong>：EKF 的参数调试核心在于<strong>过程噪声</strong> vs <strong>观测噪声</strong>的权衡：</p>
 <ul>
@@ -438,9 +544,9 @@
 <li>观测噪声大 → EKF 对传感器置信度低 → 更信任模型预测 → 平滑但滞后</li>
 </ul>
 <hr>
-<h2 id="四、枚举类型"><a href="#四、枚举类型" class="headerlink" title="四、枚举类型"></a>四、枚举类型</h2><h3 id="4-1-高度传感器类型"><a href="#4-1-高度传感器类型" class="headerlink" title="4.1 高度传感器类型"></a>4.1 高度传感器类型</h3><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">enum class</span> <span class="title class_">HeightSensor</span> &#123;</span><br><span class="line">    BARO  = <span class="number">0</span>,</span><br><span class="line">    GNSS  = <span class="number">1</span>,</span><br><span class="line">    RANGE = <span class="number">2</span>,</span><br><span class="line">    EV    = <span class="number">3</span>,</span><br><span class="line">    NONE  = <span class="number">4</span>,</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<h2 id="四、枚举类型"><a href="#四、枚举类型" class="headerlink" title="四、枚举类型"></a>四、枚举类型</h2><h3 id="4-1-高度传感器类型"><a href="#4-1-高度传感器类型" class="headerlink" title="4.1 高度传感器类型"></a>4.1 高度传感器类型</h3><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">enum class</span> <span class="title class_">HeightSensor</span> {</span><br><span class="line">    BARO  = <span class="number">0</span>,</span><br><span class="line">    GNSS  = <span class="number">1</span>,</span><br><span class="line">    RANGE = <span class="number">2</span>,</span><br><span class="line">    EV    = <span class="number">3</span>,</span><br><span class="line">    NONE  = <span class="number">4</span>,</span><br><span class="line">};</span><br></pre></td></tr></table></figure>
 
-<h3 id="4-2-偏航估计模式"><a href="#4-2-偏航估计模式" class="headerlink" title="4.2 偏航估计模式"></a>4.2 偏航估计模式</h3><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">enum class</span> <span class="title class_">MagFuseType</span> &#123;</span><br><span class="line">    AUTO   = <span class="number">0</span>,   <span class="comment">// 自动（室外用磁力计，室内用陀螺积分）</span></span><br><span class="line">    HEADING = <span class="number">1</span>,  <span class="comment">// 仅航向融合</span></span><br><span class="line">    MAG_3D  = <span class="number">2</span>,  <span class="comment">// 完整3D磁场融合</span></span><br><span class="line">    NONE    = <span class="number">5</span>,  <span class="comment">// 无磁力计（依赖双天线GPS或EV）</span></span><br><span class="line">    <span class="comment">// ...</span></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<h3 id="4-2-偏航估计模式"><a href="#4-2-偏航估计模式" class="headerlink" title="4.2 偏航估计模式"></a>4.2 偏航估计模式</h3><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">enum class</span> <span class="title class_">MagFuseType</span> {</span><br><span class="line">    AUTO   = <span class="number">0</span>,   <span class="comment">// 自动（室外用磁力计，室内用陀螺积分）</span></span><br><span class="line">    HEADING = <span class="number">1</span>,  <span class="comment">// 仅航向融合</span></span><br><span class="line">    MAG_3D  = <span class="number">2</span>,  <span class="comment">// 完整3D磁场融合</span></span><br><span class="line">    NONE    = <span class="number">5</span>,  <span class="comment">// 无磁力计（依赖双天线GPS或EV）</span></span><br><span class="line">    <span class="comment">// ...</span></span><br><span class="line">};</span><br></pre></td></tr></table></figure>
 
 <hr>
 <h2 id="五、小结"><a href="#五、小结" class="headerlink" title="五、小结"></a>五、小结</h2><p><code>common.h</code> 是 EKF 内部所有模块的数据契约：</p>
@@ -465,8 +571,8 @@
               <a href="/tags/%E6%8A%80%E6%9C%AF%E5%8D%9A%E6%96%87/" rel="tag"><i class="fa fa-tag"></i> 技术博文</a>
               <a href="/tags/PX4/" rel="tag"><i class="fa fa-tag"></i> PX4</a>
               <a href="/tags/EKF2/" rel="tag"><i class="fa fa-tag"></i> EKF2</a>
-              <a href="/tags/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/" rel="tag"><i class="fa fa-tag"></i> 数据结构</a>
               <a href="/tags/C/" rel="tag"><i class="fa fa-tag"></i> C++</a>
+              <a href="/tags/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/" rel="tag"><i class="fa fa-tag"></i> 数据结构</a>
           </div>
 
         

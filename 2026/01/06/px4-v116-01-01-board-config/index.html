@@ -28,7 +28,7 @@
 <meta property="og:description" content="以 FMU-v5 为例，解析 PX4 boards&#x2F; 目录下 board_config.h 对 GPIO、ADC、HRT&#x2F;PPM、PWM、蜂鸣器、PX4IO 等硬件资源的抽象与配置方式，阐明 Board 层在整个编译体系中的定位。">
 <meta property="og:locale" content="zh_CN">
 <meta property="article:published_time" content="2026-01-06T04:00:00.000Z">
-<meta property="article:modified_time" content="2026-03-14T13:02:40.000Z">
+<meta property="article:modified_time" content="2026-03-14T13:21:42.000Z">
 <meta property="article:author" content="QingShan Li">
 <meta property="article:tag" content="Board">
 <meta property="article:tag" content="NuttX">
@@ -79,12 +79,6 @@
 
 
 
-  
-
-  <script class="next-config" data-name="enableMath" type="application/json">true</script><script class="next-config" data-name="mathjax" type="application/json">{"enable":true,"tags":"ams","js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.js","integrity":"sha256-MASABpB4tYktI2Oitl4t+78w/lyA+D7b/s9GEP0JOGI="}}</script>
-<script src="/js/third-party/math/mathjax.js" defer></script>
-
-
 <!-- Custom Head Injection for QingShan Blog -->
 
 <!-- Google Fonts: Noto Sans SC for better Chinese rendering -->
@@ -120,7 +114,119 @@
   <noscript>
     <link rel="stylesheet" href="/css/noscript.css">
   </noscript>
-</head>
+<style>mjx-container[jax="SVG"] {
+  direction: ltr;
+}
+
+mjx-container[jax="SVG"] > svg {
+  overflow: visible;
+}
+
+mjx-container[jax="SVG"][display="true"] {
+  display: block;
+  text-align: center;
+  margin: 1em 0;
+}
+
+mjx-container[jax="SVG"][justify="left"] {
+  text-align: left;
+}
+
+mjx-container[jax="SVG"][justify="right"] {
+  text-align: right;
+}
+
+g[data-mml-node="merror"] > g {
+  fill: red;
+  stroke: red;
+}
+
+g[data-mml-node="merror"] > rect[data-background] {
+  fill: yellow;
+  stroke: none;
+}
+
+g[data-mml-node="mtable"] > line[data-line] {
+  stroke-width: 70px;
+  fill: none;
+}
+
+g[data-mml-node="mtable"] > rect[data-frame] {
+  stroke-width: 70px;
+  fill: none;
+}
+
+g[data-mml-node="mtable"] > .mjx-dashed {
+  stroke-dasharray: 140;
+}
+
+g[data-mml-node="mtable"] > .mjx-dotted {
+  stroke-linecap: round;
+  stroke-dasharray: 0,140;
+}
+
+g[data-mml-node="mtable"] > svg {
+  overflow: visible;
+}
+
+[jax="SVG"] mjx-tool {
+  display: inline-block;
+  position: relative;
+  width: 0;
+  height: 0;
+}
+
+[jax="SVG"] mjx-tool > mjx-tip {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+mjx-tool > mjx-tip {
+  display: inline-block;
+  padding: .2em;
+  border: 1px solid #888;
+  font-size: 70%;
+  background-color: #F8F8F8;
+  color: black;
+  box-shadow: 2px 2px 5px #AAAAAA;
+}
+
+g[data-mml-node="maction"][data-toggle] {
+  cursor: pointer;
+}
+
+mjx-status {
+  display: block;
+  position: fixed;
+  left: 1em;
+  bottom: 1em;
+  min-width: 25%;
+  padding: .2em .4em;
+  border: 1px solid #888;
+  font-size: 90%;
+  background-color: #F8F8F8;
+  color: black;
+}
+
+foreignObject[data-mjx-xml] {
+  font-family: initial;
+  line-height: normal;
+  overflow: visible;
+}
+
+.MathJax path {
+  stroke-width: 3;
+}
+
+mjx-container[display="true"] {
+  overflow: auto hidden;
+}
+
+mjx-container[display="true"] + br {
+  display: none;
+}
+</style></head>
 
 <body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
   <div class="headband"></div>
@@ -309,7 +415,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">更新于</span>
-      <time title="修改时间：2026-03-14 21:02:40" itemprop="dateModified" datetime="2026-03-14T21:02:40+08:00">2026-03-14</time>
+      <time title="修改时间：2026-03-14 21:21:42" itemprop="dateModified" datetime="2026-03-14T21:21:42+08:00">2026-03-14</time>
     </span>
     <span class="post-meta-item">
       <span class="post-meta-item-icon">
@@ -373,11 +479,11 @@
 </thead>
 <tbody><tr>
 <td>硬件事实</td>
-<td>引脚分配、外设实例、总线拓扑、Flash&#x2F;RAM 布局、是否含 IO MCU</td>
+<td>引脚分配、外设实例、总线拓扑、Flash/RAM 布局、是否含 IO MCU</td>
 </tr>
 <tr>
 <td>RTOS 配置</td>
-<td>NuttX 内核裁剪、驱动开关、堆栈&#x2F;内存区、链接脚本</td>
+<td>NuttX 内核裁剪、驱动开关、堆栈/内存区、链接脚本</td>
 </tr>
 <tr>
 <td>系统装配</td>
@@ -385,20 +491,20 @@
 </tr>
 <tr>
 <td>可选变体</td>
-<td>同一板的不同固件组合：default&#x2F;protected&#x2F;cyphal&#x2F;debug&#x2F;test 等</td>
+<td>同一板的不同固件组合：default/protected/cyphal/debug/test 等</td>
 </tr>
 </tbody></table>
 <hr>
 <h2 id="二、目录文件结构"><a href="#二、目录文件结构" class="headerlink" title="二、目录文件结构"></a>二、目录文件结构</h2><p>以 <code>boards/px4/fmu-v5/</code> 为例：</p>
 <figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">boards/px4/fmu-v5/</span><br><span class="line">├── board_config.h          # 核心：GPIO/ADC/定时器/外设宏定义</span><br><span class="line">├── CMakeLists.txt          # 板级 CMake</span><br><span class="line">├── src/</span><br><span class="line">│   ├── init.c              # NuttX bringup 入口（stm32_boardinitialize）</span><br><span class="line">│   ├── board_config.h      # 同上</span><br><span class="line">│   └── timer_config.cpp    # PWM 通道到 TIM 的映射表</span><br><span class="line">├── extras/                 # bootloader bin、IO MCU 固件等</span><br><span class="line">├── init/                   # 启动脚本（rc.board_sensors 等）</span><br><span class="line">└── nuttx-config/           # NuttX defconfig 变体</span><br><span class="line">    ├── nsh/defconfig       # 常规调试配置（带 NSH Shell）</span><br><span class="line">    ├── debug/defconfig     # 调试版：严格断言、符号表</span><br><span class="line">    ├── protected/defconfig # 内存保护版：kernel/user 分离</span><br><span class="line">    ├── cyphal/defconfig    # Cyphal 网络栈配置</span><br><span class="line">    └── stackcheck/defconfig# 栈水位检测配置</span><br></pre></td></tr></table></figure>
 
-<h3 id="extras-目录"><a href="#extras-目录" class="headerlink" title="extras&#x2F; 目录"></a>extras&#x2F; 目录</h3><p>该目录存放板级配套镜像，会被打包进 ROMFS，属于硬件生命周期管理的一部分，不参与模块逻辑：</p>
+<h3 id="extras-目录"><a href="#extras-目录" class="headerlink" title="extras/ 目录"></a>extras/ 目录</h3><p>该目录存放板级配套镜像，会被打包进 ROMFS，属于硬件生命周期管理的一部分，不参与模块逻辑：</p>
 <ul>
 <li><code>px4_fmu-v5_bootloader.bin</code>：bootloader，比固件先运行，负责固件升级</li>
 <li><code>PX4_io-v2_default.bin</code>：IO MCU 侧的固件镜像</li>
 </ul>
-<p>FMU-v5 采用 FMU + IO 双 MCU 架构：FMU 运行 PX4 主系统，IO 专职处理 PWM&#x2F;RC 等实时 IO，分担 FMU 负载。</p>
-<h3 id="init-目录"><a href="#init-目录" class="headerlink" title="init&#x2F; 目录"></a>init&#x2F; 目录</h3><p>存放启动装配脚本。不同板的传感器配置不同，例如 CUAV 7nano 与 FMU-v5 的默认 IMU 驱动存在差异。关键文件：</p>
+<p>FMU-v5 采用 FMU + IO 双 MCU 架构：FMU 运行 PX4 主系统，IO 专职处理 PWM/RC 等实时 IO，分担 FMU 负载。</p>
+<h3 id="init-目录"><a href="#init-目录" class="headerlink" title="init/ 目录"></a>init/ 目录</h3><p>存放启动装配脚本。不同板的传感器配置不同，例如 CUAV 7nano 与 FMU-v5 的默认 IMU 驱动存在差异。关键文件：</p>
 <ul>
 <li><code>rc.board_defaults</code>：设置该板的默认参数与环境变量</li>
 <li><code>rc.board_sensors</code>：启动并配置传感器驱动，指定总线、片选、安装方向</li>
@@ -411,7 +517,7 @@
 <li><code>SYSCMDS</code>：命令</li>
 <li><code>BOARD</code>：默认串口映射、架构、工具链</li>
 </ul>
-<p>Kconfig 定义所有可选项与依赖规则，<code>default.px4board</code> 给出 FMU-v5 的默认配置快照，依赖求解后生成最终的 <code>.config</code>，CMake&#x2F;编译器再消费 <code>.config</code> 与 <code>autoconf.h</code>，决定固件内容。</p>
+<p>Kconfig 定义所有可选项与依赖规则，<code>default.px4board</code> 给出 FMU-v5 的默认配置快照，依赖求解后生成最终的 <code>.config</code>，CMake/编译器再消费 <code>.config</code> 与 <code>autoconf.h</code>，决定固件内容。</p>
 <p>板级变体的两个维度相互配套但不绝对一一对应：</p>
 <table>
 <thead>
@@ -426,7 +532,7 @@
 </tr>
 <tr>
 <td>PX4 board variant（.px4board）</td>
-<td>决定固件包含哪些模块&#x2F;ROMFS&#x2F;参数</td>
+<td>决定固件包含哪些模块/ROMFS/参数</td>
 </tr>
 </tbody></table>
 <hr>
@@ -438,13 +544,13 @@
 
 <p><strong><code>boards/px4/fmu-v5/src/board_config.h</code></strong> 集中定义了所有引脚宏，位域编码由 <code>platforms/nuttx/Nuttx/nuttx/arch/arm/src/stm32f7/stm32_gpio.h</code> 提供。</p>
 <hr>
-<h2 id="五、ADC-通道映射"><a href="#五、ADC-通道映射" class="headerlink" title="五、ADC 通道映射"></a>五、ADC 通道映射</h2><p>Board 层将对应 GPIO 配成模拟输入，并为每个采样功能分配逻辑通道。<code>ADC_CHANNELS</code> 位图决定驱动实际采样哪些通道，该位图会配合 <code>BOARD_HAS_NBAT_V</code> &#x2F; <code>BOARD_HAS_NBAT_T</code> 条件编译生成不同结果，以适配不同的电池监控配置。</p>
+<h2 id="五、ADC-通道映射"><a href="#五、ADC-通道映射" class="headerlink" title="五、ADC 通道映射"></a>五、ADC 通道映射</h2><p>Board 层将对应 GPIO 配成模拟输入，并为每个采样功能分配逻辑通道。<code>ADC_CHANNELS</code> 位图决定驱动实际采样哪些通道，该位图会配合 <code>BOARD_HAS_NBAT_V</code> / <code>BOARD_HAS_NBAT_T</code> 条件编译生成不同结果，以适配不同的电池监控配置。</p>
 <hr>
-<h2 id="六、HRT-PPM-定时器"><a href="#六、HRT-PPM-定时器" class="headerlink" title="六、HRT&#x2F;PPM 定时器"></a>六、HRT&#x2F;PPM 定时器</h2><p>HRT（High Resolution Timer）提供系统微秒级时间基准：</p>
+<h2 id="六、HRT-PPM-定时器"><a href="#六、HRT-PPM-定时器" class="headerlink" title="六、HRT/PPM 定时器"></a>六、HRT/PPM 定时器</h2><p>HRT（High Resolution Timer）提供系统微秒级时间基准：</p>
 <ul>
 <li><code>hrt_absolute_time()</code>：整个系统的唯一微秒时间戳来源</li>
 <li>定时回调：周期任务触发</li>
-<li>与传感器&#x2F;控制周期相关的精确定时</li>
+<li>与传感器/控制周期相关的精确定时</li>
 </ul>
 <p>选择一个硬件定时器作 free-running 基准与比较中断，以 FMU-v5 为例：</p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">define</span> HRT_TIMER           8      <span class="comment">// 使用 TIM8</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> HRT_TIMER_CHANNEL   3      <span class="comment">// CH3 做比较捕获</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> HRT_PPM_CHANNEL     1      <span class="comment">// CH1 做 PPM 输入捕获</span></span></span><br></pre></td></tr></table></figure>
@@ -459,14 +565,14 @@
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">define</span> TONE_ALARM_TIMER    9     <span class="comment">// TIM9</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> TONE_ALARM_CHANNEL  1     <span class="comment">// CH1（PE5）</span></span></span><br></pre></td></tr></table></figure>
 
 <ul>
-<li>不响时：配置为 GPIO 输出固定电平，避免漂浮&#x2F;杂音</li>
+<li>不响时：配置为 GPIO 输出固定电平，避免漂浮/杂音</li>
 <li>要响时：切换到 <code>TIM9_CH1</code>，由定时器改变频率与占空比产生音调</li>
 </ul>
 <hr>
 <h2 id="八、PX4IO-串口链路"><a href="#八、PX4IO-串口链路" class="headerlink" title="八、PX4IO 串口链路"></a>八、PX4IO 串口链路</h2><p>FMU-v5 将 FMU 与 IO MCU 之间的高速通信链路固定为 UART8：</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">define</span> BOARD_USES_PX4IO_VERSION     2</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> PX4IO_SERIAL_DEVICE          <span class="string">&quot;/dev/ttyS6&quot;</span>    <span class="comment">// NuttX 设备节点</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> PX4IO_SERIAL_BASE            STM32_UART8_BASE</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> PX4IO_SERIAL_VECTOR          STM32_IRQ_UART8</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> PX4IO_SERIAL_BITRATE         1500000          <span class="comment">// 1.5 Mbps</span></span></span><br></pre></td></tr></table></figure>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">define</span> BOARD_USES_PX4IO_VERSION     2</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> PX4IO_SERIAL_DEVICE          <span class="string">"/dev/ttyS6"</span>    <span class="comment">// NuttX 设备节点</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> PX4IO_SERIAL_BASE            STM32_UART8_BASE</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> PX4IO_SERIAL_VECTOR          STM32_IRQ_UART8</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> PX4IO_SERIAL_BITRATE         1500000          <span class="comment">// 1.5 Mbps</span></span></span><br></pre></td></tr></table></figure>
 
-<p>完整宏集合还包括 TX&#x2F;RX 引脚复用宏、DMA 映射、RCC 时钟门控寄存器等。</p>
+<p>完整宏集合还包括 TX/RX 引脚复用宏、DMA 映射、RCC 时钟门控寄存器等。</p>
 <h3 id="ttyS6-到-UART8-的映射链"><a href="#ttyS6-到-UART8-的映射链" class="headerlink" title="ttyS6 到 UART8 的映射链"></a>ttyS6 到 UART8 的映射链</h3><p>NuttX 串口驱动层在启动时根据 <code>nuttx-config</code> 决定启用哪些 UART 实例，注册顺序决定编号。<code>board_config.h</code> 通过宏将关键链路固定到具体设备节点，并同时提供底层寄存器信息供驱动直接使用，不依赖 NuttX 通用串口驱动层的动态查找。</p>
 <hr>
 <h2 id="九、PX4-GPIO-INIT-LIST"><a href="#九、PX4-GPIO-INIT-LIST" class="headerlink" title="九、PX4_GPIO_INIT_LIST"></a>九、PX4_GPIO_INIT_LIST</h2><p>上电阶段一次性将关键引脚配置到正确状态，主要工作：</p>
@@ -486,31 +592,31 @@
 <td>配合 ADC 读数识别硬件版本</td>
 </tr>
 <tr>
-<td>CAN TX&#x2F;RX 复用 AF，收发器静默脚默认电平</td>
+<td>CAN TX/RX 复用 AF，收发器静默脚默认电平</td>
 <td>保证总线上电后不被错误驱动</td>
 </tr>
 <tr>
-<td>I2C SCL&#x2F;SDA 强制拉低</td>
+<td>I2C SCL/SDA 强制拉低</td>
 <td>清理可能挂死的 I2C 总线</td>
 </tr>
 </tbody></table>
-<p>I2C 总线恢复原理：外设异常复位或上电顺序不一致时，SCL&#x2F;SDA 可能被拉住导致总线挂死。将线路临时改为 GPIO 并输出低&#x2F;释放序列，可抢回总线控制权，随后再切换到 I2C 复用模式由驱动接管。</p>
+<p>I2C 总线恢复原理：外设异常复位或上电顺序不一致时，SCL/SDA 可能被拉住导致总线挂死。将线路临时改为 GPIO 并输出低/释放序列，可抢回总线控制权，随后再切换到 I2C 复用模式由驱动接管。</p>
 <hr>
 <h2 id="十、I2C-功能实现"><a href="#十、I2C-功能实现" class="headerlink" title="十、I2C 功能实现"></a>十、I2C 功能实现</h2><p>I2C 功能的最小闭环：</p>
 <figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">传感器驱动调用 I2C transfer -&gt; 写寄存器地址（参照数据手册 WHOAMI 等） -&gt; 读数据</span><br><span class="line">-&gt; 驱动解析数据并发布 uORB（磁力计、气压计、距离传感器）</span><br><span class="line">-&gt; 上层模块订阅 uORB 使用</span><br></pre></td></tr></table></figure>
 
 <p>常见 I2C 挂死原因：</p>
 <ul>
-<li>传输过程中外设掉电&#x2F;复位，状态机停在等待时钟或拉住 SDA</li>
+<li>传输过程中外设掉电/复位，状态机停在等待时钟或拉住 SDA</li>
 <li>外设时钟拉伸异常或内部卡死（调试期不要打印大量日志，否则 WorkQueue 阻塞后 I2C 超时概率上升）</li>
 <li>上电时序导致外设误识别起始条件</li>
 </ul>
 <hr>
 <h2 id="十一、Board-层梳理"><a href="#十一、Board-层梳理" class="headerlink" title="十一、Board 层梳理"></a>十一、Board 层梳理</h2><p><code>board_config.h</code> 是板级硬件抽象层，被 <code>NuttX bringup</code>、<code>PX4 平台层</code>、<code>驱动层</code>共同使用，集中定义：</p>
 <ul>
-<li>GPIO 配置宏：LED、电源使能、过流输入、PPM&#x2F;PWMIN、蜂鸣器等</li>
+<li>GPIO 配置宏：LED、电源使能、过流输入、PPM/PWMIN、蜂鸣器等</li>
 <li>ADC 通道定义与位图</li>
-<li>HRT&#x2F;PPM&#x2F;TONE alarm&#x2F;PWMIN 的定时器选择</li>
+<li>HRT/PPM/TONE alarm/PWMIN 的定时器选择</li>
 <li>PX4IO 串口链路完整参数</li>
 </ul>
 <p><code>init.c</code> 作为 NuttX 板级 bringup 的入口，执行顺序：</p>

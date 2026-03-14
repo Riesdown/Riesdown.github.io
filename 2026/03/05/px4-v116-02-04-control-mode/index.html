@@ -28,7 +28,7 @@
 <meta property="og:description" content="解析 ModeUtil&#x2F;control_mode.cpp 如何根据 nav_state、vehicle_type 与 offboard_control_mode 生成 vehicle_control_mode_s 控制器使能位图，阐明各控制环的开关逻辑。">
 <meta property="og:locale" content="zh_CN">
 <meta property="article:published_time" content="2026-03-05T04:00:00.000Z">
-<meta property="article:modified_time" content="2026-03-14T13:02:40.000Z">
+<meta property="article:modified_time" content="2026-03-14T13:21:42.000Z">
 <meta property="article:author" content="QingShan Li">
 <meta property="article:tag" content="Commander">
 <meta property="article:tag" content="PX4">
@@ -79,12 +79,6 @@
 
 
 
-  
-
-  <script class="next-config" data-name="enableMath" type="application/json">true</script><script class="next-config" data-name="mathjax" type="application/json">{"enable":true,"tags":"ams","js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.js","integrity":"sha256-MASABpB4tYktI2Oitl4t+78w/lyA+D7b/s9GEP0JOGI="}}</script>
-<script src="/js/third-party/math/mathjax.js" defer></script>
-
-
 <!-- Custom Head Injection for QingShan Blog -->
 
 <!-- Google Fonts: Noto Sans SC for better Chinese rendering -->
@@ -120,7 +114,119 @@
   <noscript>
     <link rel="stylesheet" href="/css/noscript.css">
   </noscript>
-</head>
+<style>mjx-container[jax="SVG"] {
+  direction: ltr;
+}
+
+mjx-container[jax="SVG"] > svg {
+  overflow: visible;
+}
+
+mjx-container[jax="SVG"][display="true"] {
+  display: block;
+  text-align: center;
+  margin: 1em 0;
+}
+
+mjx-container[jax="SVG"][justify="left"] {
+  text-align: left;
+}
+
+mjx-container[jax="SVG"][justify="right"] {
+  text-align: right;
+}
+
+g[data-mml-node="merror"] > g {
+  fill: red;
+  stroke: red;
+}
+
+g[data-mml-node="merror"] > rect[data-background] {
+  fill: yellow;
+  stroke: none;
+}
+
+g[data-mml-node="mtable"] > line[data-line] {
+  stroke-width: 70px;
+  fill: none;
+}
+
+g[data-mml-node="mtable"] > rect[data-frame] {
+  stroke-width: 70px;
+  fill: none;
+}
+
+g[data-mml-node="mtable"] > .mjx-dashed {
+  stroke-dasharray: 140;
+}
+
+g[data-mml-node="mtable"] > .mjx-dotted {
+  stroke-linecap: round;
+  stroke-dasharray: 0,140;
+}
+
+g[data-mml-node="mtable"] > svg {
+  overflow: visible;
+}
+
+[jax="SVG"] mjx-tool {
+  display: inline-block;
+  position: relative;
+  width: 0;
+  height: 0;
+}
+
+[jax="SVG"] mjx-tool > mjx-tip {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+mjx-tool > mjx-tip {
+  display: inline-block;
+  padding: .2em;
+  border: 1px solid #888;
+  font-size: 70%;
+  background-color: #F8F8F8;
+  color: black;
+  box-shadow: 2px 2px 5px #AAAAAA;
+}
+
+g[data-mml-node="maction"][data-toggle] {
+  cursor: pointer;
+}
+
+mjx-status {
+  display: block;
+  position: fixed;
+  left: 1em;
+  bottom: 1em;
+  min-width: 25%;
+  padding: .2em .4em;
+  border: 1px solid #888;
+  font-size: 90%;
+  background-color: #F8F8F8;
+  color: black;
+}
+
+foreignObject[data-mjx-xml] {
+  font-family: initial;
+  line-height: normal;
+  overflow: visible;
+}
+
+.MathJax path {
+  stroke-width: 3;
+}
+
+mjx-container[display="true"] {
+  overflow: auto hidden;
+}
+
+mjx-container[display="true"] + br {
+  display: none;
+}
+</style></head>
 
 <body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
   <div class="headband"></div>
@@ -309,7 +415,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">更新于</span>
-      <time title="修改时间：2026-03-14 21:02:40" itemprop="dateModified" datetime="2026-03-14T21:02:40+08:00">2026-03-14</time>
+      <time title="修改时间：2026-03-14 21:21:42" itemprop="dateModified" datetime="2026-03-14T21:21:42+08:00">2026-03-14</time>
     </span>
     <span class="post-meta-item">
       <span class="post-meta-item-icon">
@@ -362,7 +468,7 @@
     
     
     
-    <div class="post-body" itemprop="articleBody"><h2 id="一、功能定位"><a href="#一、功能定位" class="headerlink" title="一、功能定位"></a>一、功能定位</h2><p><code>ModeUtil/control_mode.cpp</code> 的职责：根据当前飞行模式（<code>nav_state</code>）、机型（<code>vehicle_type</code>）与 Offboard 输入类型（<code>offboard_control_mode</code>），生成一份 <code>vehicle_control_mode_s</code> 控制器使能位图，决定哪些控制环&#x2F;任务应当运行。</p>
+    <div class="post-body" itemprop="articleBody"><h2 id="一、功能定位"><a href="#一、功能定位" class="headerlink" title="一、功能定位"></a>一、功能定位</h2><p><code>ModeUtil/control_mode.cpp</code> 的职责：根据当前飞行模式（<code>nav_state</code>）、机型（<code>vehicle_type</code>）与 Offboard 输入类型（<code>offboard_control_mode</code>），生成一份 <code>vehicle_control_mode_s</code> 控制器使能位图，决定哪些控制环/任务应当运行。</p>
 <p>这份使能位图是 Commander 输出给全系统的控制权配置，由 <code>Commander::updateControlMode()</code> 计算后发布。</p>
 <blockquote>
 <p>相关前置：<a href="/2026/03/02/px4-v116-02-03-custom-mode/">飞行模式编码与映射</a></p>
@@ -384,19 +490,19 @@
 <tr>
 <td><code>vehicle_type</code></td>
 <td><code>vehicle_status_s::VEHICLE_TYPE_*</code></td>
-<td>旋翼&#x2F;固定翼&#x2F;车辆</td>
+<td>旋翼/固定翼/车辆</td>
 </tr>
 <tr>
 <td><code>offboard_control_mode</code></td>
 <td>offboard 期望控制的 setpoint 类型</td>
-<td>position&#x2F;velocity&#x2F;acceleration&#x2F;attitude&#x2F;body_rate&#x2F;thrust_and_torque</td>
+<td>position/velocity/acceleration/attitude/body_rate/thrust_and_torque</td>
 </tr>
 </tbody></table>
 <h3 id="输出"><a href="#输出" class="headerlink" title="输出"></a>输出</h3><p><code>vehicle_control_mode_s</code> 引用写入，包含若干 <code>flag_control_*_enabled</code> 布尔位：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">struct</span> <span class="title class_">vehicle_control_mode_s</span> &#123;</span><br><span class="line">    <span class="type">bool</span> flag_control_manual_enabled;     <span class="comment">// 手动控制模式</span></span><br><span class="line">    <span class="type">bool</span> flag_control_auto_enabled;       <span class="comment">// 自动控制模式</span></span><br><span class="line">    <span class="type">bool</span> flag_control_position_enabled;   <span class="comment">// 位置控制环使能</span></span><br><span class="line">    <span class="type">bool</span> flag_control_velocity_enabled;   <span class="comment">// 速度控制环使能</span></span><br><span class="line">    <span class="type">bool</span> flag_control_altitude_enabled;   <span class="comment">// 高度控制环使能</span></span><br><span class="line">    <span class="type">bool</span> flag_control_attitude_enabled;   <span class="comment">// 姿态控制环使能</span></span><br><span class="line">    <span class="type">bool</span> flag_control_rates_enabled;      <span class="comment">// 角速率控制环使能</span></span><br><span class="line">    <span class="type">bool</span> flag_control_allocation_enabled; <span class="comment">// 控制分配使能</span></span><br><span class="line">    <span class="comment">// ...</span></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">struct</span> <span class="title class_">vehicle_control_mode_s</span> {</span><br><span class="line">    <span class="type">bool</span> flag_control_manual_enabled;     <span class="comment">// 手动控制模式</span></span><br><span class="line">    <span class="type">bool</span> flag_control_auto_enabled;       <span class="comment">// 自动控制模式</span></span><br><span class="line">    <span class="type">bool</span> flag_control_position_enabled;   <span class="comment">// 位置控制环使能</span></span><br><span class="line">    <span class="type">bool</span> flag_control_velocity_enabled;   <span class="comment">// 速度控制环使能</span></span><br><span class="line">    <span class="type">bool</span> flag_control_altitude_enabled;   <span class="comment">// 高度控制环使能</span></span><br><span class="line">    <span class="type">bool</span> flag_control_attitude_enabled;   <span class="comment">// 姿态控制环使能</span></span><br><span class="line">    <span class="type">bool</span> flag_control_rates_enabled;      <span class="comment">// 角速率控制环使能</span></span><br><span class="line">    <span class="type">bool</span> flag_control_allocation_enabled; <span class="comment">// 控制分配使能</span></span><br><span class="line">    <span class="comment">// ...</span></span><br><span class="line">};</span><br></pre></td></tr></table></figure>
 
 <hr>
-<h2 id="三、控制模式与控制环的对应关系"><a href="#三、控制模式与控制环的对应关系" class="headerlink" title="三、控制模式与控制环的对应关系"></a>三、控制模式与控制环的对应关系</h2><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line">flowchart LR</span><br><span class="line">    subgraph 控制环层级</span><br><span class="line">        POS[&quot;位置控制\nmc_pos_control&quot;]</span><br><span class="line">        VEL[&quot;速度控制&quot;]</span><br><span class="line">        ATT[&quot;姿态控制\nmc_att_control&quot;]</span><br><span class="line">        RATE[&quot;角速率控制\nmc_rate_control&quot;]</span><br><span class="line">        ALLOC[&quot;控制分配\ncontrol_allocator&quot;]</span><br><span class="line">    end</span><br><span class="line"></span><br><span class="line">    subgraph 飞行模式</span><br><span class="line">        POSCTL[&quot;POSCTL/AUTO_*&quot;]</span><br><span class="line">        ALTCTL[&quot;ALTCTL&quot;]</span><br><span class="line">        STAB[&quot;STABILIZED&quot;]</span><br><span class="line">        ACRO[&quot;ACRO&quot;]</span><br><span class="line">        OFFBOARD[&quot;OFFBOARD&quot;]</span><br><span class="line">    end</span><br><span class="line"></span><br><span class="line">    POSCTL --&gt;|&quot;pos+vel+att+rate&quot;| POS</span><br><span class="line">    POSCTL --&gt; VEL</span><br><span class="line">    POSCTL --&gt; ATT</span><br><span class="line">    POSCTL --&gt; RATE</span><br><span class="line">    ALTCTL --&gt;|&quot;vel+att+rate&quot;| VEL</span><br><span class="line">    ALTCTL --&gt; ATT</span><br><span class="line">    ALTCTL --&gt; RATE</span><br><span class="line">    STAB --&gt;|&quot;att+rate&quot;| ATT</span><br><span class="line">    STAB --&gt; RATE</span><br><span class="line">    ACRO --&gt;|&quot;rate only&quot;| RATE</span><br><span class="line">    OFFBOARD --&gt;|&quot;根据 offboard_control_mode 动态选择&quot;| POS</span><br><span class="line">    </span><br><span class="line">    RATE --&gt; ALLOC</span><br></pre></td></tr></table></figure>
+<h2 id="三、控制模式与控制环的对应关系"><a href="#三、控制模式与控制环的对应关系" class="headerlink" title="三、控制模式与控制环的对应关系"></a>三、控制模式与控制环的对应关系</h2><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line">flowchart LR</span><br><span class="line">    subgraph 控制环层级</span><br><span class="line">        POS["位置控制\nmc_pos_control"]</span><br><span class="line">        VEL["速度控制"]</span><br><span class="line">        ATT["姿态控制\nmc_att_control"]</span><br><span class="line">        RATE["角速率控制\nmc_rate_control"]</span><br><span class="line">        ALLOC["控制分配\ncontrol_allocator"]</span><br><span class="line">    end</span><br><span class="line"></span><br><span class="line">    subgraph 飞行模式</span><br><span class="line">        POSCTL["POSCTL/AUTO_*"]</span><br><span class="line">        ALTCTL["ALTCTL"]</span><br><span class="line">        STAB["STABILIZED"]</span><br><span class="line">        ACRO["ACRO"]</span><br><span class="line">        OFFBOARD["OFFBOARD"]</span><br><span class="line">    end</span><br><span class="line"></span><br><span class="line">    POSCTL --&gt;|"pos+vel+att+rate"| POS</span><br><span class="line">    POSCTL --&gt; VEL</span><br><span class="line">    POSCTL --&gt; ATT</span><br><span class="line">    POSCTL --&gt; RATE</span><br><span class="line">    ALTCTL --&gt;|"vel+att+rate"| VEL</span><br><span class="line">    ALTCTL --&gt; ATT</span><br><span class="line">    ALTCTL --&gt; RATE</span><br><span class="line">    STAB --&gt;|"att+rate"| ATT</span><br><span class="line">    STAB --&gt; RATE</span><br><span class="line">    ACRO --&gt;|"rate only"| RATE</span><br><span class="line">    OFFBOARD --&gt;|"根据 offboard_control_mode 动态选择"| POS</span><br><span class="line">    </span><br><span class="line">    RATE --&gt; ALLOC</span><br></pre></td></tr></table></figure>
 
 <p>各模式激活的控制环（多旋翼为例）：</p>
 <table>
@@ -505,9 +611,9 @@
 <h2 id="五、conversions-hpp"><a href="#五、conversions-hpp" class="headerlink" title="五、conversions.hpp"></a>五、conversions.hpp</h2><p><code>conversions.hpp</code> 提供 <code>nav_state</code> 到 events 体系的 <code>navigation_mode_t</code> 的转换：</p>
 <ul>
 <li>输入：<code>nav_state</code></li>
-<li>输出：<code>events</code> 体系的 <code>navigation_mode_t</code>，用于事件&#x2F;日志参数的稳定表达</li>
+<li>输出：<code>events</code> 体系的 <code>navigation_mode_t</code>，用于事件/日志参数的稳定表达</li>
 </ul>
-<p>与 <code>control_mode.cpp</code> 的区别：<code>control_mode</code> 用于控制运行时控制环开关；<code>conversions</code> 用于日志&#x2F;事件的模式描述，两者均由 Commander 内部调用但服务于不同目的。</p>
+<p>与 <code>control_mode.cpp</code> 的区别：<code>control_mode</code> 用于控制运行时控制环开关；<code>conversions</code> 用于日志/事件的模式描述，两者均由 Commander 内部调用但服务于不同目的。</p>
 <hr>
 <h2 id="六、vehicle-control-mode-的消费者"><a href="#六、vehicle-control-mode-的消费者" class="headerlink" title="六、vehicle_control_mode 的消费者"></a>六、vehicle_control_mode 的消费者</h2><p><code>vehicle_control_mode_s</code> 发布后，被多个下游模块订阅：</p>
 <table>
@@ -519,7 +625,7 @@
 </thead>
 <tbody><tr>
 <td><code>mc_pos_control</code></td>
-<td>判断是否执行位置&#x2F;速度控制</td>
+<td>判断是否执行位置/速度控制</td>
 </tr>
 <tr>
 <td><code>mc_att_control</code></td>

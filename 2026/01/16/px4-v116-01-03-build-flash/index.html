@@ -28,7 +28,7 @@
 <meta property="og:description" content="从 make px4_fmu-v5_default 出发，解析 Kconfig 求解、CMake 配置、Ninja 编译、链接、镜像封装、Bootloader 烧写全流程，以及上电后 MCU 的执行路径。">
 <meta property="og:locale" content="zh_CN">
 <meta property="article:published_time" content="2026-01-16T04:00:00.000Z">
-<meta property="article:modified_time" content="2026-03-14T13:02:40.000Z">
+<meta property="article:modified_time" content="2026-03-14T13:21:42.000Z">
 <meta property="article:author" content="QingShan Li">
 <meta property="article:tag" content="Kconfig">
 <meta property="article:tag" content="NuttX">
@@ -79,12 +79,6 @@
 
 
 
-  
-
-  <script class="next-config" data-name="enableMath" type="application/json">true</script><script class="next-config" data-name="mathjax" type="application/json">{"enable":true,"tags":"ams","js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.js","integrity":"sha256-MASABpB4tYktI2Oitl4t+78w/lyA+D7b/s9GEP0JOGI="}}</script>
-<script src="/js/third-party/math/mathjax.js" defer></script>
-
-
 <!-- Custom Head Injection for QingShan Blog -->
 
 <!-- Google Fonts: Noto Sans SC for better Chinese rendering -->
@@ -120,7 +114,119 @@
   <noscript>
     <link rel="stylesheet" href="/css/noscript.css">
   </noscript>
-</head>
+<style>mjx-container[jax="SVG"] {
+  direction: ltr;
+}
+
+mjx-container[jax="SVG"] > svg {
+  overflow: visible;
+}
+
+mjx-container[jax="SVG"][display="true"] {
+  display: block;
+  text-align: center;
+  margin: 1em 0;
+}
+
+mjx-container[jax="SVG"][justify="left"] {
+  text-align: left;
+}
+
+mjx-container[jax="SVG"][justify="right"] {
+  text-align: right;
+}
+
+g[data-mml-node="merror"] > g {
+  fill: red;
+  stroke: red;
+}
+
+g[data-mml-node="merror"] > rect[data-background] {
+  fill: yellow;
+  stroke: none;
+}
+
+g[data-mml-node="mtable"] > line[data-line] {
+  stroke-width: 70px;
+  fill: none;
+}
+
+g[data-mml-node="mtable"] > rect[data-frame] {
+  stroke-width: 70px;
+  fill: none;
+}
+
+g[data-mml-node="mtable"] > .mjx-dashed {
+  stroke-dasharray: 140;
+}
+
+g[data-mml-node="mtable"] > .mjx-dotted {
+  stroke-linecap: round;
+  stroke-dasharray: 0,140;
+}
+
+g[data-mml-node="mtable"] > svg {
+  overflow: visible;
+}
+
+[jax="SVG"] mjx-tool {
+  display: inline-block;
+  position: relative;
+  width: 0;
+  height: 0;
+}
+
+[jax="SVG"] mjx-tool > mjx-tip {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+mjx-tool > mjx-tip {
+  display: inline-block;
+  padding: .2em;
+  border: 1px solid #888;
+  font-size: 70%;
+  background-color: #F8F8F8;
+  color: black;
+  box-shadow: 2px 2px 5px #AAAAAA;
+}
+
+g[data-mml-node="maction"][data-toggle] {
+  cursor: pointer;
+}
+
+mjx-status {
+  display: block;
+  position: fixed;
+  left: 1em;
+  bottom: 1em;
+  min-width: 25%;
+  padding: .2em .4em;
+  border: 1px solid #888;
+  font-size: 90%;
+  background-color: #F8F8F8;
+  color: black;
+}
+
+foreignObject[data-mjx-xml] {
+  font-family: initial;
+  line-height: normal;
+  overflow: visible;
+}
+
+.MathJax path {
+  stroke-width: 3;
+}
+
+mjx-container[display="true"] {
+  overflow: auto hidden;
+}
+
+mjx-container[display="true"] + br {
+  display: none;
+}
+</style></head>
 
 <body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
   <div class="headband"></div>
@@ -309,7 +415,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">更新于</span>
-      <time title="修改时间：2026-03-14 21:02:40" itemprop="dateModified" datetime="2026-03-14T21:02:40+08:00">2026-03-14</time>
+      <time title="修改时间：2026-03-14 21:21:42" itemprop="dateModified" datetime="2026-03-14T21:21:42+08:00">2026-03-14</time>
     </span>
     <span class="post-meta-item">
       <span class="post-meta-item-icon">
@@ -371,11 +477,11 @@
 <hr>
 <h2 id="二、各阶段详解"><a href="#二、各阶段详解" class="headerlink" title="二、各阶段详解"></a>二、各阶段详解</h2><h3 id="2-1-目标解析"><a href="#2-1-目标解析" class="headerlink" title="2.1 目标解析"></a>2.1 目标解析</h3><p>顶层 Makefile 包装器解析 <code>px4_fmu-v5_default</code>，得到：</p>
 <ul>
-<li>board &#x3D; <code>px4/fmu-v5</code></li>
-<li>label &#x3D; <code>default</code></li>
-<li>generator &#x3D; Ninja（优先选择）</li>
+<li>board = <code>px4/fmu-v5</code></li>
+<li>label = <code>default</code></li>
+<li>generator = Ninja（优先选择）</li>
 </ul>
-<p>随后管理 CMake 配置缓存，调用 CMake&#x2F;Ninja 执行真正的编译。</p>
+<p>随后管理 CMake 配置缓存，调用 CMake/Ninja 执行真正的编译。</p>
 <h3 id="2-2-Kconfig-阶段"><a href="#2-2-Kconfig-阶段" class="headerlink" title="2.2 Kconfig 阶段"></a>2.2 Kconfig 阶段</h3><p>Kconfig 将 <code>default.px4board</code> 变成 <code>.config</code> 与 <code>autoconf.h</code>。</p>
 <p>Kconfig 两类输入：</p>
 <ul>
@@ -395,12 +501,12 @@
 <li><code>autoconf.h</code>：将事实表变成 C 宏 <code>#define CONFIG_XXX 1</code></li>
 </ul>
 <p>CMake 根据 <code>CONFIG_*</code> 决定编译哪些目录，代码按 <code>#ifdef CONFIG_*</code> 裁剪。</p>
-<h3 id="2-3-CMake-配置阶段"><a href="#2-3-CMake-配置阶段" class="headerlink" title="2.3 CMake 配置阶段"></a>2.3 CMake 配置阶段</h3><p>输入：<code>.config</code> + 工具链 + 平台&#x2F;板目录</p>
+<h3 id="2-3-CMake-配置阶段"><a href="#2-3-CMake-配置阶段" class="headerlink" title="2.3 CMake 配置阶段"></a>2.3 CMake 配置阶段</h3><p>输入：<code>.config</code> + 工具链 + 平台/板目录</p>
 <p>输出：<code>build.ninja</code> + <code>CMakeCache.txt</code></p>
 <h3 id="2-4-编译阶段"><a href="#2-4-编译阶段" class="headerlink" title="2.4 编译阶段"></a>2.4 编译阶段</h3><p>Ninja 调用 <code>arm-none-eabi-gcc/g++</code> 将每个 <code>.c/.cpp</code> 编译为 <code>.o</code>，关键编译参数：</p>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">-mcpu=cortex-m7 -mthumb -mfpu=fpv5-d16 -mfloat-abi=hard</span><br></pre></td></tr></table></figure>
 
-<h3 id="2-5-链接阶段"><a href="#2-5-链接阶段" class="headerlink" title="2.5 链接阶段"></a>2.5 链接阶段</h3><p><code>arm-none-eabi-ld</code> 使用链接脚本（来自 NuttX&#x2F;板级配置的 <code>nuttx-config</code> 与 Board ldscript）将所有 <code>.o</code> 与静态库 <code>.a</code> 组合成 <code>px4_fmu-v5_default.elf</code>（带符号与段信息）。</p>
+<h3 id="2-5-链接阶段"><a href="#2-5-链接阶段" class="headerlink" title="2.5 链接阶段"></a>2.5 链接阶段</h3><p><code>arm-none-eabi-ld</code> 使用链接脚本（来自 NuttX/板级配置的 <code>nuttx-config</code> 与 Board ldscript）将所有 <code>.o</code> 与静态库 <code>.a</code> 组合成 <code>px4_fmu-v5_default.elf</code>（带符号与段信息）。</p>
 <h3 id="2-6-镜像封装"><a href="#2-6-镜像封装" class="headerlink" title="2.6 镜像封装"></a>2.6 镜像封装</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">objcopy    firmware.elf -&gt; firmware.bin / firmware.hex</span><br><span class="line">PX4 封装工具 -&gt; firmware.px4（含版本、校验等元信息）</span><br></pre></td></tr></table></figure>
 
 <h3 id="2-7-Bootloader-烧写"><a href="#2-7-Bootloader-烧写" class="headerlink" title="2.7 Bootloader 烧写"></a>2.7 Bootloader 烧写</h3><p>通过以下方式将镜像写入 MCU 内部 Flash 的固定地址区间：</p>
@@ -426,7 +532,7 @@
 <td>PX4 顶层 Makefile</td>
 <td><code>px4_fmu-v5_default</code></td>
 <td>board、label、generator</td>
-<td>后续 Kconfig&#x2F;CMake</td>
+<td>后续 Kconfig/CMake</td>
 </tr>
 <tr>
 <td>Kconfig 求解</td>
@@ -438,13 +544,13 @@
 <tr>
 <td>CMake 配置</td>
 <td>cmake</td>
-<td><code>.config</code> + toolchain + 平台&#x2F;板目录</td>
+<td><code>.config</code> + toolchain + 平台/板目录</td>
 <td><code>build.ninja</code> + <code>CMakeCache.txt</code></td>
 <td>Ninja</td>
 </tr>
 <tr>
-<td>编译&#x2F;归档</td>
-<td>ninja → arm-none-eabi-gcc&#x2F;g++</td>
+<td>编译/归档</td>
+<td>ninja → arm-none-eabi-gcc/g++</td>
 <td>源码 + 头文件 + <code>autoconf.h</code></td>
 <td><code>.o</code>、<code>lib*.a</code></td>
 <td>链接器</td>
@@ -454,17 +560,17 @@
 <td>arm-none-eabi-ld</td>
 <td><code>.o/.a</code> + 链接脚本</td>
 <td><code>firmware.elf</code></td>
-<td>objcopy&#x2F;封装&#x2F;调试</td>
+<td>objcopy/封装/调试</td>
 </tr>
 <tr>
-<td>提取&#x2F;封装</td>
+<td>提取/封装</td>
 <td>objcopy + PX4 封装工具</td>
 <td><code>firmware.elf</code></td>
 <td><code>.bin/.hex/.px4</code></td>
-<td>bootloader&#x2F;QGC</td>
+<td>bootloader/QGC</td>
 </tr>
 <tr>
-<td>擦写&#x2F;启动</td>
+<td>擦写/启动</td>
 <td>bootloader + QGC</td>
 <td><code>.px4</code> 或等价数据流</td>
 <td>Flash 应用区固件</td>
@@ -478,7 +584,7 @@
 <h3 id="stm32-boardinitialize"><a href="#stm32-boardinitialize" class="headerlink" title="stm32_boardinitialize()"></a>stm32_boardinitialize()</h3><p>将 Board 层的 GPIO 初始化清单写进寄存器：</p>
 <figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">Board 层提供 PX4_GPIO_INIT_LIST（GPIO_xxx 宏/Pinset 位域）</span><br><span class="line">BSP 层 micro_hal.h: px4_arch_configgpio(pinset) -&gt; stm32_configgpio(pinset)</span><br><span class="line">NuttX STM32 arch 层寄存器写入：</span><br><span class="line">  -&gt; 开 GPIO 端口时钟（写 RCC）</span><br><span class="line">  -&gt; 写 GPIO-&gt;MODER/OTYPER/OSPEEDR/PUPDR/AFR</span><br><span class="line">  -&gt; 写 GPIO-&gt;BSRR 设置默认电平</span><br></pre></td></tr></table></figure>
 
-<h3 id="board-app-initialize"><a href="#board-app-initialize" class="headerlink" title="board_app_initialize()"></a>board_app_initialize()</h3><p>点亮 HRT&#x2F;ADC&#x2F;HW_INFO&#x2F;SPI&#x2F;IO_TIMER 功能，为 PX4 主系统启动做最后准备：</p>
+<h3 id="board-app-initialize"><a href="#board-app-initialize" class="headerlink" title="board_app_initialize()"></a>board_app_initialize()</h3><p>点亮 HRT/ADC/HW_INFO/SPI/IO_TIMER 功能，为 PX4 主系统启动做最后准备：</p>
 <figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">-&gt; HRT 初始化（要求先跑起来，后续 ADC/SPI 初始化依赖时间戳）</span><br><span class="line">-&gt; ADC 初始化，读取硬件版本</span><br><span class="line">-&gt; SPI 初始化（依赖 HW 版本结果）</span><br><span class="line">-&gt; IO_TIMER 初始化</span><br><span class="line">-&gt; 进入 PX4 主系统（modules 逐一 start）</span><br></pre></td></tr></table></figure>
 
 <hr>

@@ -28,7 +28,7 @@
 <meta property="og:description" content="解析 PX4 模块统一 CLI 入口 ModuleBase::main() 的分发逻辑，说明独立线程模式与 WorkQueue 模式的区别，并以 mc_att_control 为例梳理完整参数链路。">
 <meta property="og:locale" content="zh_CN">
 <meta property="article:published_time" content="2026-01-16T06:00:00.000Z">
-<meta property="article:modified_time" content="2026-03-14T13:02:40.000Z">
+<meta property="article:modified_time" content="2026-03-14T13:21:42.000Z">
 <meta property="article:author" content="QingShan Li">
 <meta property="article:tag" content="ModuleBase">
 <meta property="article:tag" content="NuttX">
@@ -79,12 +79,6 @@
 
 
 
-  
-
-  <script class="next-config" data-name="enableMath" type="application/json">true</script><script class="next-config" data-name="mathjax" type="application/json">{"enable":true,"tags":"ams","js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.js","integrity":"sha256-MASABpB4tYktI2Oitl4t+78w/lyA+D7b/s9GEP0JOGI="}}</script>
-<script src="/js/third-party/math/mathjax.js" defer></script>
-
-
 <!-- Custom Head Injection for QingShan Blog -->
 
 <!-- Google Fonts: Noto Sans SC for better Chinese rendering -->
@@ -120,7 +114,119 @@
   <noscript>
     <link rel="stylesheet" href="/css/noscript.css">
   </noscript>
-</head>
+<style>mjx-container[jax="SVG"] {
+  direction: ltr;
+}
+
+mjx-container[jax="SVG"] > svg {
+  overflow: visible;
+}
+
+mjx-container[jax="SVG"][display="true"] {
+  display: block;
+  text-align: center;
+  margin: 1em 0;
+}
+
+mjx-container[jax="SVG"][justify="left"] {
+  text-align: left;
+}
+
+mjx-container[jax="SVG"][justify="right"] {
+  text-align: right;
+}
+
+g[data-mml-node="merror"] > g {
+  fill: red;
+  stroke: red;
+}
+
+g[data-mml-node="merror"] > rect[data-background] {
+  fill: yellow;
+  stroke: none;
+}
+
+g[data-mml-node="mtable"] > line[data-line] {
+  stroke-width: 70px;
+  fill: none;
+}
+
+g[data-mml-node="mtable"] > rect[data-frame] {
+  stroke-width: 70px;
+  fill: none;
+}
+
+g[data-mml-node="mtable"] > .mjx-dashed {
+  stroke-dasharray: 140;
+}
+
+g[data-mml-node="mtable"] > .mjx-dotted {
+  stroke-linecap: round;
+  stroke-dasharray: 0,140;
+}
+
+g[data-mml-node="mtable"] > svg {
+  overflow: visible;
+}
+
+[jax="SVG"] mjx-tool {
+  display: inline-block;
+  position: relative;
+  width: 0;
+  height: 0;
+}
+
+[jax="SVG"] mjx-tool > mjx-tip {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+mjx-tool > mjx-tip {
+  display: inline-block;
+  padding: .2em;
+  border: 1px solid #888;
+  font-size: 70%;
+  background-color: #F8F8F8;
+  color: black;
+  box-shadow: 2px 2px 5px #AAAAAA;
+}
+
+g[data-mml-node="maction"][data-toggle] {
+  cursor: pointer;
+}
+
+mjx-status {
+  display: block;
+  position: fixed;
+  left: 1em;
+  bottom: 1em;
+  min-width: 25%;
+  padding: .2em .4em;
+  border: 1px solid #888;
+  font-size: 90%;
+  background-color: #F8F8F8;
+  color: black;
+}
+
+foreignObject[data-mjx-xml] {
+  font-family: initial;
+  line-height: normal;
+  overflow: visible;
+}
+
+.MathJax path {
+  stroke-width: 3;
+}
+
+mjx-container[display="true"] {
+  overflow: auto hidden;
+}
+
+mjx-container[display="true"] + br {
+  display: none;
+}
+</style></head>
 
 <body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
   <div class="headband"></div>
@@ -309,7 +415,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">更新于</span>
-      <time title="修改时间：2026-03-14 21:02:40" itemprop="dateModified" datetime="2026-03-14T21:02:40+08:00">2026-03-14</time>
+      <time title="修改时间：2026-03-14 21:21:42" itemprop="dateModified" datetime="2026-03-14T21:21:42+08:00">2026-03-14</time>
     </span>
     <span class="post-meta-item">
       <span class="post-meta-item-icon">
@@ -370,10 +476,10 @@
 <p>相关知识：<a href="/2026/01/22/px4-v116-01-06-uorb-part1/">uORB 通信机制（上）</a> 理解模块间数据流的基础</p>
 </blockquote>
 <hr>
-<h2 id="二、ModuleBase-main-的分发逻辑"><a href="#二、ModuleBase-main-的分发逻辑" class="headerlink" title="二、ModuleBase::main() 的分发逻辑"></a>二、ModuleBase<T>::main() 的分发逻辑</h2><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">flowchart TD</span><br><span class="line">    A[&quot;&lt;module&gt;_main(argc, argv)&quot;] --&gt; B[&quot;ModuleBase&lt;T&gt;::main(argc, argv)&quot;]</span><br><span class="line">    B --&gt; C&#123;argv[1] 是什么?&#125;</span><br><span class="line">    C --&gt;|&quot;-h/help/usage&quot;| D[&quot;T::print_usage()&quot;]</span><br><span class="line">    C --&gt;|&quot;start&quot;| E[&quot;start_command_base(argc-1, argv+1)&quot;]</span><br><span class="line">    C --&gt;|&quot;status&quot;| F[&quot;status_command()\n-&gt; print_status()&quot;]</span><br><span class="line">    C --&gt;|&quot;stop&quot;| G[&quot;stop_command()\n-&gt; request_stop() + 等待退出&quot;]</span><br><span class="line">    C --&gt;|&quot;其他&quot;| H[&quot;T::custom_command(argc-1, argv+1)&quot;]</span><br><span class="line">    E --&gt; I[&quot;T::task_spawn(argc, argv)&quot;]</span><br></pre></td></tr></table></figure>
+<h2 id="二、ModuleBase-main-的分发逻辑"><a href="#二、ModuleBase-main-的分发逻辑" class="headerlink" title="二、ModuleBase::main() 的分发逻辑"></a>二、ModuleBase<t>::main() 的分发逻辑</t></h2><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">flowchart TD</span><br><span class="line">    A["&lt;module&gt;_main(argc, argv)"] --&gt; B["ModuleBase&lt;T&gt;::main(argc, argv)"]</span><br><span class="line">    B --&gt; C{argv[1] 是什么?}</span><br><span class="line">    C --&gt;|"-h/help/usage"| D["T::print_usage()"]</span><br><span class="line">    C --&gt;|"start"| E["start_command_base(argc-1, argv+1)"]</span><br><span class="line">    C --&gt;|"status"| F["status_command()\n-&gt; print_status()"]</span><br><span class="line">    C --&gt;|"stop"| G["stop_command()\n-&gt; request_stop() + 等待退出"]</span><br><span class="line">    C --&gt;|"其他"| H["T::custom_command(argc-1, argv+1)"]</span><br><span class="line">    E --&gt; I["T::task_spawn(argc, argv)"]</span><br></pre></td></tr></table></figure>
 
-<p><code>start</code> 分支将 <code>start</code> 字符串保留作为 <code>argv[0]</code> 占位，因为后续 <code>px4_getopt()</code> 从 <code>index=1</code> 开始解析，<code>argv[0]</code> 被当作命令名&#x2F;占位，不参与选项解析。</p>
-<h3 id="全局互斥锁"><a href="#全局互斥锁" class="headerlink" title="全局互斥锁"></a>全局互斥锁</h3><p><code>ModuleBase</code> 启动&#x2F;停止&#x2F;查询依赖两个全局静态成员：</p>
+<p><code>start</code> 分支将 <code>start</code> 字符串保留作为 <code>argv[0]</code> 占位，因为后续 <code>px4_getopt()</code> 从 <code>index=1</code> 开始解析，<code>argv[0]</code> 被当作命令名/占位，不参与选项解析。</p>
+<h3 id="全局互斥锁"><a href="#全局互斥锁" class="headerlink" title="全局互斥锁"></a>全局互斥锁</h3><p><code>ModuleBase</code> 启动/停止/查询依赖两个全局静态成员：</p>
 <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> px4::atomic&lt;T *&gt; _object;</span><br><span class="line"><span class="type">static</span> <span class="type">int</span> _task_id;</span><br></pre></td></tr></table></figure>
 
 <p><code>start/stop/status</code> 这些命令可能并行执行，全局互斥锁 <code>px4_modules_mutex</code> 保证对 <code>_object/_task_id</code> 的复合读写是原子的，避免并发踩踏。</p>
@@ -382,7 +488,7 @@
 <h3 id="run-trampoline-的定位"><a href="#run-trampoline-的定位" class="headerlink" title="run_trampoline 的定位"></a>run_trampoline 的定位</h3><p>新线程的入口函数，生命周期分三段：</p>
 <figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">instantiate(argc, argv)  // 在新线程里创建对象</span><br><span class="line">object-&gt;run()            // 进入模块主循环</span><br><span class="line">exit_and_cleanup()       // delete 对象，清 task_id，通知 stop 等待者</span><br></pre></td></tr></table></figure>
 
-<h3 id="为什么-run-trampoline-先丢弃-argv-0"><a href="#为什么-run-trampoline-先丢弃-argv-0" class="headerlink" title="为什么 run_trampoline 先丢弃 argv[0]"></a>为什么 run_trampoline 先丢弃 argv[0]</h3><p><code>px4_task_spawn_cmd()</code> 会把 task 名称塞到 <code>argv[0]</code>（POSIX 明确行为），而 <code>instantiate()</code> 期望看到的 <code>argv[0]</code> 是 <code>&quot;start&quot;</code>（作为 <code>px4_getopt</code> 的占位）。因此 <code>run_trampoline</code> 必须先执行：</p>
+<h3 id="为什么-run-trampoline-先丢弃-argv-0"><a href="#为什么-run-trampoline-先丢弃-argv-0" class="headerlink" title="为什么 run_trampoline 先丢弃 argv[0]"></a>为什么 run_trampoline 先丢弃 argv[0]</h3><p><code>px4_task_spawn_cmd()</code> 会把 task 名称塞到 <code>argv[0]</code>（POSIX 明确行为），而 <code>instantiate()</code> 期望看到的 <code>argv[0]</code> 是 <code>"start"</code>（作为 <code>px4_getopt</code> 的占位）。因此 <code>run_trampoline</code> 必须先执行：</p>
 <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">argc -= <span class="number">1</span>;</span><br><span class="line">argv += <span class="number">1</span>;</span><br></pre></td></tr></table></figure>
 
 <h3 id="各函数职责"><a href="#各函数职责" class="headerlink" title="各函数职责"></a>各函数职责</h3><table>
@@ -406,15 +512,15 @@
 </tr>
 </tbody></table>
 <p>独立线程模式的典型 <code>run()</code> 结构：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="type">void</span> <span class="title">MyModule::run</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    uORB::Subscription _topic_sub&#123;<span class="built_in">ORB_ID</span>(some_topic)&#125;;</span><br><span class="line">    <span class="keyword">while</span> (!<span class="built_in">should_exit</span>()) &#123;</span><br><span class="line">        <span class="built_in">px4_poll</span>(...);   <span class="comment">// 阻塞等待数据</span></span><br><span class="line">        some_topic_s msg&#123;&#125;;</span><br><span class="line">        <span class="keyword">if</span> (_topic_sub.<span class="built_in">update</span>(&amp;msg)) &#123;</span><br><span class="line">            <span class="comment">// 处理数据</span></span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="type">void</span> <span class="title">MyModule::run</span><span class="params">()</span> </span>{</span><br><span class="line">    uORB::Subscription _topic_sub{<span class="built_in">ORB_ID</span>(some_topic)};</span><br><span class="line">    <span class="keyword">while</span> (!<span class="built_in">should_exit</span>()) {</span><br><span class="line">        <span class="built_in">px4_poll</span>(...);   <span class="comment">// 阻塞等待数据</span></span><br><span class="line">        some_topic_s msg{};</span><br><span class="line">        <span class="keyword">if</span> (_topic_sub.<span class="built_in">update</span>(&amp;msg)) {</span><br><span class="line">            <span class="comment">// 处理数据</span></span><br><span class="line">        }</span><br><span class="line">    }</span><br><span class="line">}</span><br></pre></td></tr></table></figure>
 
 <hr>
 <h2 id="四、WorkQueue-模式"><a href="#四、WorkQueue-模式" class="headerlink" title="四、WorkQueue 模式"></a>四、WorkQueue 模式</h2><p>以 <code>mc_att_control</code> 为例。</p>
 <p><code>task_spawn()</code> 不创建独立线程，而是设置 <code>_task_id = task_id_is_work_queue</code>，声明跑在 WorkQueue 里：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="type">static</span> <span class="type">int</span> <span class="title">task_spawn</span><span class="params">(<span class="type">int</span> argc, <span class="type">char</span> *argv[])</span> </span>&#123;</span><br><span class="line">    MulticopterAttitudeControl *inst = <span class="keyword">new</span> <span class="built_in">MulticopterAttitudeControl</span>(vtol);</span><br><span class="line">    _object.<span class="built_in">store</span>(inst);</span><br><span class="line">    _task_id = task_id_is_work_queue;  <span class="comment">// 不创建独立线程</span></span><br><span class="line">    inst-&gt;<span class="built_in">init</span>();   <span class="comment">// 注册 uORB 回调</span></span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="type">static</span> <span class="type">int</span> <span class="title">task_spawn</span><span class="params">(<span class="type">int</span> argc, <span class="type">char</span> *argv[])</span> </span>{</span><br><span class="line">    MulticopterAttitudeControl *inst = <span class="keyword">new</span> <span class="built_in">MulticopterAttitudeControl</span>(vtol);</span><br><span class="line">    _object.<span class="built_in">store</span>(inst);</span><br><span class="line">    _task_id = task_id_is_work_queue;  <span class="comment">// 不创建独立线程</span></span><br><span class="line">    inst-&gt;<span class="built_in">init</span>();   <span class="comment">// 注册 uORB 回调</span></span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">}</span><br></pre></td></tr></table></figure>
 
 <p><code>init()</code> 中通过 <code>vehicle_attitude_sub.registerCallback()</code> 注册 uORB 回调，失败则启动失败：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="type">bool</span> <span class="title">init</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (!_att_sub.<span class="built_in">registerCallback</span>()) &#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="built_in">ScheduleDelayed</span>(<span class="number">10</span>_ms);  <span class="comment">// 定时兜底</span></span><br><span class="line">    <span class="keyword">return</span> <span class="literal">true</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="type">bool</span> <span class="title">init</span><span class="params">()</span> </span>{</span><br><span class="line">    <span class="keyword">if</span> (!_att_sub.<span class="built_in">registerCallback</span>()) {</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line">    }</span><br><span class="line">    <span class="built_in">ScheduleDelayed</span>(<span class="number">10</span>_ms);  <span class="comment">// 定时兜底</span></span><br><span class="line">    <span class="keyword">return</span> <span class="literal">true</span>;</span><br><span class="line">}</span><br></pre></td></tr></table></figure>
 
 <p>启动成功后，模块不进入 <code>while(1)</code> 循环，而是等 uORB 触发回调，由 WorkQueue 线程调用 <code>Run()</code>。</p>
 <h3 id="工作流对比"><a href="#工作流对比" class="headerlink" title="工作流对比"></a>工作流对比</h3><table>
@@ -448,16 +554,16 @@
 </tbody></table>
 <hr>
 <h2 id="五、完整参数链路"><a href="#五、完整参数链路" class="headerlink" title="五、完整参数链路"></a>五、完整参数链路</h2><p>以 <code>module start -f -p 42</code> 为例追踪参数流转：</p>
-<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">module start -f -p 42</span><br><span class="line">  -&gt; &lt;module&gt;_main(argc=5, argv=[&quot;module&quot;,&quot;start&quot;,&quot;-f&quot;,&quot;-p&quot;,&quot;42&quot;])</span><br><span class="line">  -&gt; ModuleBase&lt;T&gt;::main()  命中 start 分支</span><br><span class="line">  -&gt; start_command_base(argc-1=4, argv+1=[&quot;start&quot;,&quot;-f&quot;,&quot;-p&quot;,&quot;42&quot;])</span><br><span class="line">  -&gt; T::task_spawn(argc=4, argv=[&quot;start&quot;,&quot;-f&quot;,&quot;-p&quot;,&quot;42&quot;])</span><br><span class="line">  -&gt; px4_task_spawn_cmd(&quot;module&quot;, ..., run_trampoline, argv)</span><br><span class="line"></span><br><span class="line">POSIX 在新线程入口构造 argv:</span><br><span class="line">  argv=[&quot;module&quot;,&quot;start&quot;,&quot;-f&quot;,&quot;-p&quot;,&quot;42&quot;]  argc=5</span><br><span class="line"></span><br><span class="line">run_trampoline() 丢弃 argv[0]:</span><br><span class="line">  argc=4, argv=[&quot;start&quot;,&quot;-f&quot;,&quot;-p&quot;,&quot;42&quot;]</span><br><span class="line"></span><br><span class="line">T::instantiate(argc=4, argv=[&quot;start&quot;,&quot;-f&quot;,&quot;-p&quot;,&quot;42&quot;])</span><br><span class="line">  px4_getopt 从 index=1 开始解析 &quot;-f -p 42&quot;</span><br></pre></td></tr></table></figure>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">module start -f -p 42</span><br><span class="line">  -&gt; &lt;module&gt;_main(argc=5, argv=["module","start","-f","-p","42"])</span><br><span class="line">  -&gt; ModuleBase&lt;T&gt;::main()  命中 start 分支</span><br><span class="line">  -&gt; start_command_base(argc-1=4, argv+1=["start","-f","-p","42"])</span><br><span class="line">  -&gt; T::task_spawn(argc=4, argv=["start","-f","-p","42"])</span><br><span class="line">  -&gt; px4_task_spawn_cmd("module", ..., run_trampoline, argv)</span><br><span class="line"></span><br><span class="line">POSIX 在新线程入口构造 argv:</span><br><span class="line">  argv=["module","start","-f","-p","42"]  argc=5</span><br><span class="line"></span><br><span class="line">run_trampoline() 丢弃 argv[0]:</span><br><span class="line">  argc=4, argv=["start","-f","-p","42"]</span><br><span class="line"></span><br><span class="line">T::instantiate(argc=4, argv=["start","-f","-p","42"])</span><br><span class="line">  px4_getopt 从 index=1 开始解析 "-f -p 42"</span><br></pre></td></tr></table></figure>
 
 <hr>
-<h2 id="六、uORB-回调驱动执行流程"><a href="#六、uORB-回调驱动执行流程" class="headerlink" title="六、uORB 回调驱动执行流程"></a>六、uORB 回调驱动执行流程</h2><h3 id="独立线程模式"><a href="#独立线程模式" class="headerlink" title="独立线程模式"></a>独立线程模式</h3><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// run() 内部</span></span><br><span class="line"><span class="keyword">while</span> (!<span class="built_in">should_exit</span>()) &#123;</span><br><span class="line">    <span class="type">px4_pollfd_struct_t</span> fds[<span class="number">1</span>];</span><br><span class="line">    fds[<span class="number">0</span>].fd = topic_sub.<span class="built_in">getHandle</span>();</span><br><span class="line">    fds[<span class="number">0</span>].events = POLLIN;</span><br><span class="line">    <span class="built_in">px4_poll</span>(fds, <span class="number">1</span>, <span class="number">100</span>);   <span class="comment">// 阻塞，最多等 100ms</span></span><br><span class="line">    <span class="keyword">if</span> (fds[<span class="number">0</span>].revents &amp; POLLIN) &#123;</span><br><span class="line">        topic_sub.<span class="built_in">copy</span>(&amp;data);</span><br><span class="line">        <span class="comment">// 处理</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="六、uORB-回调驱动执行流程"><a href="#六、uORB-回调驱动执行流程" class="headerlink" title="六、uORB 回调驱动执行流程"></a>六、uORB 回调驱动执行流程</h2><h3 id="独立线程模式"><a href="#独立线程模式" class="headerlink" title="独立线程模式"></a>独立线程模式</h3><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// run() 内部</span></span><br><span class="line"><span class="keyword">while</span> (!<span class="built_in">should_exit</span>()) {</span><br><span class="line">    <span class="type">px4_pollfd_struct_t</span> fds[<span class="number">1</span>];</span><br><span class="line">    fds[<span class="number">0</span>].fd = topic_sub.<span class="built_in">getHandle</span>();</span><br><span class="line">    fds[<span class="number">0</span>].events = POLLIN;</span><br><span class="line">    <span class="built_in">px4_poll</span>(fds, <span class="number">1</span>, <span class="number">100</span>);   <span class="comment">// 阻塞，最多等 100ms</span></span><br><span class="line">    <span class="keyword">if</span> (fds[<span class="number">0</span>].revents &amp; POLLIN) {</span><br><span class="line">        topic_sub.<span class="built_in">copy</span>(&amp;data);</span><br><span class="line">        <span class="comment">// 处理</span></span><br><span class="line">    }</span><br><span class="line">}</span><br></pre></td></tr></table></figure>
 
-<h3 id="WorkQueue-模式"><a href="#WorkQueue-模式" class="headerlink" title="WorkQueue 模式"></a>WorkQueue 模式</h3><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// task_spawn 时不创建独立线程</span></span><br><span class="line"><span class="comment">// init() 注册回调</span></span><br><span class="line">_att_sub.<span class="built_in">registerCallback</span>();</span><br><span class="line"></span><br><span class="line"><span class="comment">// uORB 发布新数据 -&gt; DeviceNode 触发回调 -&gt; ScheduleNow()</span></span><br><span class="line"><span class="comment">// WorkQueue 线程调用 Run()</span></span><br><span class="line"><span class="function"><span class="type">void</span> <span class="title">Run</span><span class="params">()</span> <span class="keyword">override</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (<span class="built_in">should_exit</span>()) &#123;</span><br><span class="line">        _att_sub.<span class="built_in">unregisterCallback</span>();</span><br><span class="line">        <span class="built_in">exit_and_cleanup</span>();</span><br><span class="line">        <span class="keyword">return</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// 处理数据</span></span><br><span class="line">    vehicle_attitude_s att&#123;&#125;;</span><br><span class="line">    <span class="keyword">if</span> (_att_sub.<span class="built_in">update</span>(&amp;att)) &#123;</span><br><span class="line">        <span class="comment">// 控制算法</span></span><br><span class="line">    &#125;</span><br><span class="line">    <span class="built_in">ScheduleDelayed</span>(<span class="number">10</span>_ms);  <span class="comment">// 定时兜底</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="WorkQueue-模式"><a href="#WorkQueue-模式" class="headerlink" title="WorkQueue 模式"></a>WorkQueue 模式</h3><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// task_spawn 时不创建独立线程</span></span><br><span class="line"><span class="comment">// init() 注册回调</span></span><br><span class="line">_att_sub.<span class="built_in">registerCallback</span>();</span><br><span class="line"></span><br><span class="line"><span class="comment">// uORB 发布新数据 -&gt; DeviceNode 触发回调 -&gt; ScheduleNow()</span></span><br><span class="line"><span class="comment">// WorkQueue 线程调用 Run()</span></span><br><span class="line"><span class="function"><span class="type">void</span> <span class="title">Run</span><span class="params">()</span> <span class="keyword">override</span> </span>{</span><br><span class="line">    <span class="keyword">if</span> (<span class="built_in">should_exit</span>()) {</span><br><span class="line">        _att_sub.<span class="built_in">unregisterCallback</span>();</span><br><span class="line">        <span class="built_in">exit_and_cleanup</span>();</span><br><span class="line">        <span class="keyword">return</span>;</span><br><span class="line">    }</span><br><span class="line">    <span class="comment">// 处理数据</span></span><br><span class="line">    vehicle_attitude_s att{};</span><br><span class="line">    <span class="keyword">if</span> (_att_sub.<span class="built_in">update</span>(&amp;att)) {</span><br><span class="line">        <span class="comment">// 控制算法</span></span><br><span class="line">    }</span><br><span class="line">    <span class="built_in">ScheduleDelayed</span>(<span class="number">10</span>_ms);  <span class="comment">// 定时兜底</span></span><br><span class="line">}</span><br></pre></td></tr></table></figure>
 
 <p>WorkQueue 模式的关键约束：</p>
 <ul>
-<li><code>Run()</code> 里不允许 <code>px4_poll</code>，不允许阻塞 I&#x2F;O</li>
+<li><code>Run()</code> 里不允许 <code>px4_poll</code>，不允许阻塞 I/O</li>
 <li>不要打印高频日志（WorkQueue 线程被卡住会影响整个队列）</li>
 <li>回调触发 + <code>ScheduleDelayed()</code> 同时存在时，频率由兜底周期决定</li>
 </ul>
@@ -477,8 +583,8 @@
               <a href="/tags/%E6%8A%80%E6%9C%AF%E5%8D%9A%E6%96%87/" rel="tag"><i class="fa fa-tag"></i> 技术博文</a>
               <a href="/tags/PX4/" rel="tag"><i class="fa fa-tag"></i> PX4</a>
               <a href="/tags/NuttX/" rel="tag"><i class="fa fa-tag"></i> NuttX</a>
-              <a href="/tags/WorkQueue/" rel="tag"><i class="fa fa-tag"></i> WorkQueue</a>
               <a href="/tags/ModuleBase/" rel="tag"><i class="fa fa-tag"></i> ModuleBase</a>
+              <a href="/tags/WorkQueue/" rel="tag"><i class="fa fa-tag"></i> WorkQueue</a>
           </div>
 
         

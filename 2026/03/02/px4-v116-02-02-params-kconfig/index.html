@@ -28,7 +28,7 @@
 <meta property="og:description" content="解析 commander_params.c 中关键参数的含义与作用，说明 Kconfig 对 Commander 模块的编译控制，以及 PARAM_DEFINE_* 宏的本质。">
 <meta property="og:locale" content="zh_CN">
 <meta property="article:published_time" content="2026-03-02T04:00:00.000Z">
-<meta property="article:modified_time" content="2026-03-14T13:02:40.000Z">
+<meta property="article:modified_time" content="2026-03-14T13:21:42.000Z">
 <meta property="article:author" content="QingShan Li">
 <meta property="article:tag" content="Commander">
 <meta property="article:tag" content="Kconfig">
@@ -79,12 +79,6 @@
 
 
 
-  
-
-  <script class="next-config" data-name="enableMath" type="application/json">true</script><script class="next-config" data-name="mathjax" type="application/json">{"enable":true,"tags":"ams","js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.js","integrity":"sha256-MASABpB4tYktI2Oitl4t+78w/lyA+D7b/s9GEP0JOGI="}}</script>
-<script src="/js/third-party/math/mathjax.js" defer></script>
-
-
 <!-- Custom Head Injection for QingShan Blog -->
 
 <!-- Google Fonts: Noto Sans SC for better Chinese rendering -->
@@ -120,7 +114,119 @@
   <noscript>
     <link rel="stylesheet" href="/css/noscript.css">
   </noscript>
-</head>
+<style>mjx-container[jax="SVG"] {
+  direction: ltr;
+}
+
+mjx-container[jax="SVG"] > svg {
+  overflow: visible;
+}
+
+mjx-container[jax="SVG"][display="true"] {
+  display: block;
+  text-align: center;
+  margin: 1em 0;
+}
+
+mjx-container[jax="SVG"][justify="left"] {
+  text-align: left;
+}
+
+mjx-container[jax="SVG"][justify="right"] {
+  text-align: right;
+}
+
+g[data-mml-node="merror"] > g {
+  fill: red;
+  stroke: red;
+}
+
+g[data-mml-node="merror"] > rect[data-background] {
+  fill: yellow;
+  stroke: none;
+}
+
+g[data-mml-node="mtable"] > line[data-line] {
+  stroke-width: 70px;
+  fill: none;
+}
+
+g[data-mml-node="mtable"] > rect[data-frame] {
+  stroke-width: 70px;
+  fill: none;
+}
+
+g[data-mml-node="mtable"] > .mjx-dashed {
+  stroke-dasharray: 140;
+}
+
+g[data-mml-node="mtable"] > .mjx-dotted {
+  stroke-linecap: round;
+  stroke-dasharray: 0,140;
+}
+
+g[data-mml-node="mtable"] > svg {
+  overflow: visible;
+}
+
+[jax="SVG"] mjx-tool {
+  display: inline-block;
+  position: relative;
+  width: 0;
+  height: 0;
+}
+
+[jax="SVG"] mjx-tool > mjx-tip {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+mjx-tool > mjx-tip {
+  display: inline-block;
+  padding: .2em;
+  border: 1px solid #888;
+  font-size: 70%;
+  background-color: #F8F8F8;
+  color: black;
+  box-shadow: 2px 2px 5px #AAAAAA;
+}
+
+g[data-mml-node="maction"][data-toggle] {
+  cursor: pointer;
+}
+
+mjx-status {
+  display: block;
+  position: fixed;
+  left: 1em;
+  bottom: 1em;
+  min-width: 25%;
+  padding: .2em .4em;
+  border: 1px solid #888;
+  font-size: 90%;
+  background-color: #F8F8F8;
+  color: black;
+}
+
+foreignObject[data-mjx-xml] {
+  font-family: initial;
+  line-height: normal;
+  overflow: visible;
+}
+
+.MathJax path {
+  stroke-width: 3;
+}
+
+mjx-container[display="true"] {
+  overflow: auto hidden;
+}
+
+mjx-container[display="true"] + br {
+  display: none;
+}
+</style></head>
 
 <body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
   <div class="headband"></div>
@@ -309,7 +415,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">更新于</span>
-      <time title="修改时间：2026-03-14 21:02:40" itemprop="dateModified" datetime="2026-03-14T21:02:40+08:00">2026-03-14</time>
+      <time title="修改时间：2026-03-14 21:21:42" itemprop="dateModified" datetime="2026-03-14T21:21:42+08:00">2026-03-14</time>
     </span>
     <span class="post-meta-item">
       <span class="post-meta-item-icon">
@@ -397,11 +503,11 @@
 </tr>
 <tr>
 <td><code>COM_HLDL_REG_T</code></td>
-<td>从已丢失状态恢复为健康的去抖&#x2F;回归时间</td>
+<td>从已丢失状态恢复为健康的去抖/回归时间</td>
 </tr>
 </tbody></table>
 <p>设置合理的超时阈值可避免链路短暂波动触发 failsafe，同时保证真实链路丢失时的响应速度。</p>
-<h3 id="2-3-RC-遥控器信号丢失"><a href="#2-3-RC-遥控器信号丢失" class="headerlink" title="2.3 RC&#x2F;遥控器信号丢失"></a>2.3 RC&#x2F;遥控器信号丢失</h3><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">PARAM_DEFINE_FLOAT(COM_RC_LOSS_T, <span class="number">0.5f</span>);</span><br></pre></td></tr></table></figure>
+<h3 id="2-3-RC-遥控器信号丢失"><a href="#2-3-RC-遥控器信号丢失" class="headerlink" title="2.3 RC/遥控器信号丢失"></a>2.3 RC/遥控器信号丢失</h3><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">PARAM_DEFINE_FLOAT(COM_RC_LOSS_T, <span class="number">0.5f</span>);</span><br></pre></td></tr></table></figure>
 
 <p>RC 或摇杆 setpoint 超过 <code>COM_RC_LOSS_T</code> 秒没有更新，判定手动输入失效。</p>
 <p>超时前系统继续执行最后一次输入，超时时间设置过长存在安全隐患：飞机可能持续执行旧杆量（持续倾斜、爬升或俯冲）。</p>
@@ -430,11 +536,11 @@
 <h3 id="2-5-RC-输入源选择"><a href="#2-5-RC-输入源选择" class="headerlink" title="2.5 RC 输入源选择"></a>2.5 RC 输入源选择</h3><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">PARAM_DEFINE_INT32(COM_RC_IN_MODE, <span class="number">3</span>);</span><br></pre></td></tr></table></figure>
 
 <p>控制 RC 输入的来源模式（纯 RC、摇杆、两者兼容等）。</p>
-<h3 id="2-6-RC-解锁-锁定迟滞"><a href="#2-6-RC-解锁-锁定迟滞" class="headerlink" title="2.6 RC 解锁&#x2F;锁定迟滞"></a>2.6 RC 解锁&#x2F;锁定迟滞</h3><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">PARAM_DEFINE_INT32(COM_RC_ARM_HYST, <span class="number">1000</span>);</span><br></pre></td></tr></table></figure>
+<h3 id="2-6-RC-解锁-锁定迟滞"><a href="#2-6-RC-解锁-锁定迟滞" class="headerlink" title="2.6 RC 解锁/锁定迟滞"></a>2.6 RC 解锁/锁定迟滞</h3><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">PARAM_DEFINE_INT32(COM_RC_ARM_HYST, <span class="number">1000</span>);</span><br></pre></td></tr></table></figure>
 
-<p>通过摇杆组合（如油门最低+偏航最右）触发 ARM&#x2F;DISARM，需要保持该动作至少 1000 ms 才生效。迟滞保护防止误触发解锁。</p>
+<p>通过摇杆组合（如油门最低+偏航最右）触发 ARM/DISARM，需要保持该动作至少 1000 ms 才生效。迟滞保护防止误触发解锁。</p>
 <hr>
-<h2 id="三、Kconfig-配置"><a href="#三、Kconfig-配置" class="headerlink" title="三、Kconfig 配置"></a>三、Kconfig 配置</h2><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">menuconfig MODULES_COMMANDER</span><br><span class="line">    bool &quot;commander&quot;</span><br><span class="line">    default n</span><br><span class="line"></span><br><span class="line">menuconfig USER_COMMANDER</span><br><span class="line">    bool &quot;commander running as userspace module&quot;</span><br><span class="line">    default y</span><br><span class="line">    depends on BOARD_PROTECTED &amp;&amp; MODULES_COMMANDER</span><br></pre></td></tr></table></figure>
+<h2 id="三、Kconfig-配置"><a href="#三、Kconfig-配置" class="headerlink" title="三、Kconfig 配置"></a>三、Kconfig 配置</h2><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">menuconfig MODULES_COMMANDER</span><br><span class="line">    bool "commander"</span><br><span class="line">    default n</span><br><span class="line"></span><br><span class="line">menuconfig USER_COMMANDER</span><br><span class="line">    bool "commander running as userspace module"</span><br><span class="line">    default y</span><br><span class="line">    depends on BOARD_PROTECTED &amp;&amp; MODULES_COMMANDER</span><br></pre></td></tr></table></figure>
 
 <table>
 <thead>
@@ -458,7 +564,7 @@
 <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">DEFINE_PARAMETERS</span>(</span><br><span class="line">    (ParamFloat&lt;px4::params::COM_RC_LOSS_T&gt;)  <span class="type">_param_rc_loss_t</span>,</span><br><span class="line">    (ParamInt&lt;px4::params::COM_DL_LOSS_T&gt;)    <span class="type">_param_dl_loss_t</span>,</span><br><span class="line">    (ParamInt&lt;px4::params::COM_HOME_EN&gt;)       _param_home_en</span><br><span class="line">)</span><br></pre></td></tr></table></figure>
 
 <p>主循环中检测参数更新并同步：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> (_parameter_update_sub.<span class="built_in">updated</span>()) &#123;</span><br><span class="line">    parameter_update_s param_update;</span><br><span class="line">    _parameter_update_sub.<span class="built_in">copy</span>(&amp;param_update);</span><br><span class="line">    <span class="built_in">updateParams</span>();  <span class="comment">// 将最新参数值同步到本地成员变量</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> (_parameter_update_sub.<span class="built_in">updated</span>()) {</span><br><span class="line">    parameter_update_s param_update;</span><br><span class="line">    _parameter_update_sub.<span class="built_in">copy</span>(&amp;param_update);</span><br><span class="line">    <span class="built_in">updateParams</span>();  <span class="comment">// 将最新参数值同步到本地成员变量</span></span><br><span class="line">}</span><br></pre></td></tr></table></figure>
 
 <p>随后直接使用本地变量（而不是每次都查表），保证高频主循环的参数读取效率。</p>
 <hr>

@@ -28,7 +28,7 @@
 <meta property="og:description" content="解析 ModeUtil&#x2F;mode_requirements 如何为每个 nav_state 生成传感器需求位图，写入 failsafe_flags_s 的 mode_req_* 字段，并说明各需求类别与传感器数据源的绑定关系。">
 <meta property="og:locale" content="zh_CN">
 <meta property="article:published_time" content="2026-03-05T06:00:00.000Z">
-<meta property="article:modified_time" content="2026-03-14T13:02:40.000Z">
+<meta property="article:modified_time" content="2026-03-14T13:21:42.000Z">
 <meta property="article:author" content="QingShan Li">
 <meta property="article:tag" content="Commander">
 <meta property="article:tag" content="PX4">
@@ -79,12 +79,6 @@
 
 
 
-  
-
-  <script class="next-config" data-name="enableMath" type="application/json">true</script><script class="next-config" data-name="mathjax" type="application/json">{"enable":true,"tags":"ams","js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.js","integrity":"sha256-MASABpB4tYktI2Oitl4t+78w/lyA+D7b/s9GEP0JOGI="}}</script>
-<script src="/js/third-party/math/mathjax.js" defer></script>
-
-
 <!-- Custom Head Injection for QingShan Blog -->
 
 <!-- Google Fonts: Noto Sans SC for better Chinese rendering -->
@@ -120,7 +114,119 @@
   <noscript>
     <link rel="stylesheet" href="/css/noscript.css">
   </noscript>
-</head>
+<style>mjx-container[jax="SVG"] {
+  direction: ltr;
+}
+
+mjx-container[jax="SVG"] > svg {
+  overflow: visible;
+}
+
+mjx-container[jax="SVG"][display="true"] {
+  display: block;
+  text-align: center;
+  margin: 1em 0;
+}
+
+mjx-container[jax="SVG"][justify="left"] {
+  text-align: left;
+}
+
+mjx-container[jax="SVG"][justify="right"] {
+  text-align: right;
+}
+
+g[data-mml-node="merror"] > g {
+  fill: red;
+  stroke: red;
+}
+
+g[data-mml-node="merror"] > rect[data-background] {
+  fill: yellow;
+  stroke: none;
+}
+
+g[data-mml-node="mtable"] > line[data-line] {
+  stroke-width: 70px;
+  fill: none;
+}
+
+g[data-mml-node="mtable"] > rect[data-frame] {
+  stroke-width: 70px;
+  fill: none;
+}
+
+g[data-mml-node="mtable"] > .mjx-dashed {
+  stroke-dasharray: 140;
+}
+
+g[data-mml-node="mtable"] > .mjx-dotted {
+  stroke-linecap: round;
+  stroke-dasharray: 0,140;
+}
+
+g[data-mml-node="mtable"] > svg {
+  overflow: visible;
+}
+
+[jax="SVG"] mjx-tool {
+  display: inline-block;
+  position: relative;
+  width: 0;
+  height: 0;
+}
+
+[jax="SVG"] mjx-tool > mjx-tip {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+mjx-tool > mjx-tip {
+  display: inline-block;
+  padding: .2em;
+  border: 1px solid #888;
+  font-size: 70%;
+  background-color: #F8F8F8;
+  color: black;
+  box-shadow: 2px 2px 5px #AAAAAA;
+}
+
+g[data-mml-node="maction"][data-toggle] {
+  cursor: pointer;
+}
+
+mjx-status {
+  display: block;
+  position: fixed;
+  left: 1em;
+  bottom: 1em;
+  min-width: 25%;
+  padding: .2em .4em;
+  border: 1px solid #888;
+  font-size: 90%;
+  background-color: #F8F8F8;
+  color: black;
+}
+
+foreignObject[data-mjx-xml] {
+  font-family: initial;
+  line-height: normal;
+  overflow: visible;
+}
+
+.MathJax path {
+  stroke-width: 3;
+}
+
+mjx-container[display="true"] {
+  overflow: auto hidden;
+}
+
+mjx-container[display="true"] + br {
+  display: none;
+}
+</style></head>
 
 <body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
   <div class="headband"></div>
@@ -309,7 +415,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">更新于</span>
-      <time title="修改时间：2026-03-14 21:02:40" itemprop="dateModified" datetime="2026-03-14T21:02:40+08:00">2026-03-14</time>
+      <time title="修改时间：2026-03-14 21:21:42" itemprop="dateModified" datetime="2026-03-14T21:21:42+08:00">2026-03-14</time>
     </span>
     <span class="post-meta-item">
       <span class="post-meta-item-icon">
@@ -375,7 +481,7 @@
 <p>相关知识：<a href="/2026/03/05/px4-v116-02-04-control-mode/">控制模式生成逻辑</a>、<a href="/2026/02/28/px4-v116-02-01-commander-framework/">Commander 模块框架</a></p>
 </blockquote>
 <hr>
-<h2 id="二、核心抽象：位图-有效性标志"><a href="#二、核心抽象：位图-有效性标志" class="headerlink" title="二、核心抽象：位图 + 有效性标志"></a>二、核心抽象：位图 + 有效性标志</h2><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">graph LR</span><br><span class="line">    A[&quot;getModeRequirements()&quot;] --&gt;|&quot;计算&quot;| B[&quot;mode_req_X\n（uint32_t 位图）\n第 n 位=1 表示 NAVIGATION_STATE==n 需要X&quot;]</span><br><span class="line">    C[&quot;HealthAndArmingChecks&quot;] --&gt;|&quot;检查传感器状态&quot;| D[&quot;X_invalid\n（布尔）\n当前系统对X的判定&quot;]</span><br><span class="line">    </span><br><span class="line">    B --&gt; E&#123;&quot;组合逻辑&quot;&#125;</span><br><span class="line">    D --&gt; E</span><br><span class="line">    E --&gt;|&quot;X_invalid=true 且 当前nav_state 在 mode_req_X 中被置位&quot;| F[&quot;该模式不可运行\n或触发 failsafe&quot;]</span><br></pre></td></tr></table></figure>
+<h2 id="二、核心抽象：位图-有效性标志"><a href="#二、核心抽象：位图-有效性标志" class="headerlink" title="二、核心抽象：位图 + 有效性标志"></a>二、核心抽象：位图 + 有效性标志</h2><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">graph LR</span><br><span class="line">    A["getModeRequirements()"] --&gt;|"计算"| B["mode_req_X\n（uint32_t 位图）\n第 n 位=1 表示 NAVIGATION_STATE==n 需要X"]</span><br><span class="line">    C["HealthAndArmingChecks"] --&gt;|"检查传感器状态"| D["X_invalid\n（布尔）\n当前系统对X的判定"]</span><br><span class="line">    </span><br><span class="line">    B --&gt; E{"组合逻辑"}</span><br><span class="line">    D --&gt; E</span><br><span class="line">    E --&gt;|"X_invalid=true 且 当前nav_state 在 mode_req_X 中被置位"| F["该模式不可运行\n或触发 failsafe"]</span><br></pre></td></tr></table></figure>
 
 <p>两个字段配合使用：</p>
 <ul>
@@ -383,10 +489,10 @@
 <li><code>X_invalid</code>：当前系统对能力 X 的健康判定</li>
 </ul>
 <hr>
-<h2 id="三、setRequirement-最小实现"><a href="#三、setRequirement-最小实现" class="headerlink" title="三、setRequirement() 最小实现"></a>三、setRequirement() 最小实现</h2><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 将某个 nav_state 对某类需求的依赖写入对应的位图</span></span><br><span class="line"><span class="comment">// 位图: 第 n 位为 1 表示 NAVIGATION_STATE==n 属于该需求集合</span></span><br><span class="line"><span class="function"><span class="type">void</span> <span class="title">setRequirement</span><span class="params">(<span class="type">uint8_t</span> nav_state, <span class="type">uint32_t</span> &amp;requirement_bitmask)</span> </span>&#123;</span><br><span class="line">    requirement_bitmask |= (<span class="number">1u</span> &lt;&lt; nav_state);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="三、setRequirement-最小实现"><a href="#三、setRequirement-最小实现" class="headerlink" title="三、setRequirement() 最小实现"></a>三、setRequirement() 最小实现</h2><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 将某个 nav_state 对某类需求的依赖写入对应的位图</span></span><br><span class="line"><span class="comment">// 位图: 第 n 位为 1 表示 NAVIGATION_STATE==n 属于该需求集合</span></span><br><span class="line"><span class="function"><span class="type">void</span> <span class="title">setRequirement</span><span class="params">(<span class="type">uint8_t</span> nav_state, <span class="type">uint32_t</span> &amp;requirement_bitmask)</span> </span>{</span><br><span class="line">    requirement_bitmask |= (<span class="number">1u</span> &lt;&lt; nav_state);</span><br><span class="line">}</span><br></pre></td></tr></table></figure>
 
 <hr>
-<h2 id="四、各模式的需求配置"><a href="#四、各模式的需求配置" class="headerlink" title="四、各模式的需求配置"></a>四、各模式的需求配置</h2><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">graph TD</span><br><span class="line">    subgraph 模式需求层级</span><br><span class="line">        MANUAL[&quot;MANUAL\n仅需: manual_control&quot;]</span><br><span class="line">        ALTCTL[&quot;ALTCTL\n需要: angular_velocity + attitude + local_alt + manual_control&quot;]</span><br><span class="line">        POSCTL[&quot;POSCTL\n需要: ALTCTL的全部 + local_position_relaxed&quot;]</span><br><span class="line">        AUTO[&quot;AUTO_MISSION\n需要: local_pos + global_pos + home_position + mission + angular_velocity + attitude&quot;]</span><br><span class="line">        RTL[&quot;AUTO_RTL\n需要: global_pos + home_position + angular_velocity + attitude&quot;]</span><br><span class="line">    end</span><br></pre></td></tr></table></figure>
+<h2 id="四、各模式的需求配置"><a href="#四、各模式的需求配置" class="headerlink" title="四、各模式的需求配置"></a>四、各模式的需求配置</h2><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">graph TD</span><br><span class="line">    subgraph 模式需求层级</span><br><span class="line">        MANUAL["MANUAL\n仅需: manual_control"]</span><br><span class="line">        ALTCTL["ALTCTL\n需要: angular_velocity + attitude + local_alt + manual_control"]</span><br><span class="line">        POSCTL["POSCTL\n需要: ALTCTL的全部 + local_position_relaxed"]</span><br><span class="line">        AUTO["AUTO_MISSION\n需要: local_pos + global_pos + home_position + mission + angular_velocity + attitude"]</span><br><span class="line">        RTL["AUTO_RTL\n需要: global_pos + home_position + angular_velocity + attitude"]</span><br><span class="line">    end</span><br></pre></td></tr></table></figure>
 
 <p>主要模式的需求汇总（以多旋翼为例）：</p>
 <table>
@@ -425,8 +531,8 @@
 <hr>
 <h2 id="五、需求类别与传感器数据源的绑定"><a href="#五、需求类别与传感器数据源的绑定" class="headerlink" title="五、需求类别与传感器数据源的绑定"></a>五、需求类别与传感器数据源的绑定</h2><p><code>*_invalid</code> 标志并非抽象概念，而是由 <code>HealthAndArmingChecks</code> 的具体检查项绑定到对应的 uORB 话题。</p>
 <h3 id="angular-velocity-invalid"><a href="#angular-velocity-invalid" class="headerlink" title="angular_velocity_invalid"></a><code>angular_velocity_invalid</code></h3><p>由 <code>vehicle_angular_velocity</code> 话题驱动，时间戳超时或数值非有限即 invalid。</p>
-<h3 id="attitude-invalid"><a href="#attitude-invalid" class="headerlink" title="attitude_invalid"></a><code>attitude_invalid</code></h3><p>由 <code>vehicle_attitude</code> 话题驱动，超时或四元数归一化&#x2F;数值检查失败即 invalid。</p>
-<h3 id="local-position-invalid-local-position-invalid-relaxed"><a href="#local-position-invalid-local-position-invalid-relaxed" class="headerlink" title="local_position_invalid &#x2F; local_position_invalid_relaxed"></a><code>local_position_invalid</code> &#x2F; <code>local_position_invalid_relaxed</code></h3><p><code>local_position_invalid</code>：严格检查，要求 EKF 位置估计高质量且置信度高。</p>
+<h3 id="attitude-invalid"><a href="#attitude-invalid" class="headerlink" title="attitude_invalid"></a><code>attitude_invalid</code></h3><p>由 <code>vehicle_attitude</code> 话题驱动，超时或四元数归一化/数值检查失败即 invalid。</p>
+<h3 id="local-position-invalid-local-position-invalid-relaxed"><a href="#local-position-invalid-local-position-invalid-relaxed" class="headerlink" title="local_position_invalid / local_position_invalid_relaxed"></a><code>local_position_invalid</code> / <code>local_position_invalid_relaxed</code></h3><p><code>local_position_invalid</code>：严格检查，要求 EKF 位置估计高质量且置信度高。</p>
 <p><code>local_position_invalid_relaxed</code>：宽松检查，允许估计精度稍低，POSCTL 模式使用此项（<code>POSCTL</code> 加入 <code>local_position_relaxed</code> 而非 <code>local_position</code>）。</p>
 <h3 id="global-position-invalid"><a href="#global-position-invalid" class="headerlink" title="global_position_invalid"></a><code>global_position_invalid</code></h3><p>要求 <code>vehicle_global_position</code> 话题有效且 EKF GPS 融合处于健康状态。</p>
 <h3 id="home-position-invalid"><a href="#home-position-invalid" class="headerlink" title="home_position_invalid"></a><code>home_position_invalid</code></h3><p>要求 <code>home_position.valid</code> 为真，且 Home 点的精度满足 RTL 所需的精度门限。</p>
@@ -451,12 +557,12 @@
 </tr>
 <tr>
 <td><code>manual_control_signal_lost</code></td>
-<td>RC&#x2F;摇杆信号丢失</td>
+<td>RC/摇杆信号丢失</td>
 </tr>
 </tbody></table>
 <hr>
 <h2 id="六、位图的消费路径"><a href="#六、位图的消费路径" class="headerlink" title="六、位图的消费路径"></a>六、位图的消费路径</h2><p><code>mode_req_*</code> 位图与 <code>*_invalid</code> 标志共同存储在 <code>failsafe_flags_s</code> 话题中，被下游两个系统消费：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">graph LR</span><br><span class="line">    FLAGS[&quot;failsafe_flags_s\nmode_req_* 位图\n*_invalid 标志&quot;]</span><br><span class="line">    </span><br><span class="line">    FLAGS --&gt; MCHECK[&quot;ModeCheck\n判断某 nav_state 是否可运行/可切换&quot;]</span><br><span class="line">    FLAGS --&gt; FSAFE[&quot;Failsafe 状态机\n判断是否触发 failsafe 动作&quot;]</span><br><span class="line">    </span><br><span class="line">    MCHECK --&gt; ARM[&quot;影响解锁条件\ncanArm()&quot;]</span><br><span class="line">    MCHECK --&gt; RUN[&quot;影响模式可运行性\ncanRun()&quot;]</span><br><span class="line">    FSAFE --&gt; NAVSTATE[&quot;影响最终 nav_state 选择&quot;]</span><br></pre></td></tr></table></figure>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">graph LR</span><br><span class="line">    FLAGS["failsafe_flags_s\nmode_req_* 位图\n*_invalid 标志"]</span><br><span class="line">    </span><br><span class="line">    FLAGS --&gt; MCHECK["ModeCheck\n判断某 nav_state 是否可运行/可切换"]</span><br><span class="line">    FLAGS --&gt; FSAFE["Failsafe 状态机\n判断是否触发 failsafe 动作"]</span><br><span class="line">    </span><br><span class="line">    MCHECK --&gt; ARM["影响解锁条件\ncanArm()"]</span><br><span class="line">    MCHECK --&gt; RUN["影响模式可运行性\ncanRun()"]</span><br><span class="line">    FSAFE --&gt; NAVSTATE["影响最终 nav_state 选择"]</span><br></pre></td></tr></table></figure>
 
 <hr>
 <blockquote>

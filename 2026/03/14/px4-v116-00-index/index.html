@@ -28,7 +28,7 @@
 <meta property="og:description" content="PX4 飞控 v1.16.0 源码解读系列总目录，涵盖平台层、Commander 决策层、EKF2 状态估计、Navigator 导航和 mc_pos_control 位置控制五大模块，目前共 32 篇文章，还在不断更新中。">
 <meta property="og:locale" content="zh_CN">
 <meta property="article:published_time" content="2026-03-14T13:00:00.000Z">
-<meta property="article:modified_time" content="2026-03-14T13:02:40.000Z">
+<meta property="article:modified_time" content="2026-03-14T13:21:42.000Z">
 <meta property="article:author" content="QingShan Li">
 <meta property="article:tag" content="PX4">
 <meta property="article:tag" content="总目录">
@@ -78,12 +78,6 @@
 
 
 
-  
-
-  <script class="next-config" data-name="enableMath" type="application/json">true</script><script class="next-config" data-name="mathjax" type="application/json">{"enable":true,"tags":"ams","js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.js","integrity":"sha256-MASABpB4tYktI2Oitl4t+78w/lyA+D7b/s9GEP0JOGI="}}</script>
-<script src="/js/third-party/math/mathjax.js" defer></script>
-
-
 <!-- Custom Head Injection for QingShan Blog -->
 
 <!-- Google Fonts: Noto Sans SC for better Chinese rendering -->
@@ -119,7 +113,119 @@
   <noscript>
     <link rel="stylesheet" href="/css/noscript.css">
   </noscript>
-</head>
+<style>mjx-container[jax="SVG"] {
+  direction: ltr;
+}
+
+mjx-container[jax="SVG"] > svg {
+  overflow: visible;
+}
+
+mjx-container[jax="SVG"][display="true"] {
+  display: block;
+  text-align: center;
+  margin: 1em 0;
+}
+
+mjx-container[jax="SVG"][justify="left"] {
+  text-align: left;
+}
+
+mjx-container[jax="SVG"][justify="right"] {
+  text-align: right;
+}
+
+g[data-mml-node="merror"] > g {
+  fill: red;
+  stroke: red;
+}
+
+g[data-mml-node="merror"] > rect[data-background] {
+  fill: yellow;
+  stroke: none;
+}
+
+g[data-mml-node="mtable"] > line[data-line] {
+  stroke-width: 70px;
+  fill: none;
+}
+
+g[data-mml-node="mtable"] > rect[data-frame] {
+  stroke-width: 70px;
+  fill: none;
+}
+
+g[data-mml-node="mtable"] > .mjx-dashed {
+  stroke-dasharray: 140;
+}
+
+g[data-mml-node="mtable"] > .mjx-dotted {
+  stroke-linecap: round;
+  stroke-dasharray: 0,140;
+}
+
+g[data-mml-node="mtable"] > svg {
+  overflow: visible;
+}
+
+[jax="SVG"] mjx-tool {
+  display: inline-block;
+  position: relative;
+  width: 0;
+  height: 0;
+}
+
+[jax="SVG"] mjx-tool > mjx-tip {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+mjx-tool > mjx-tip {
+  display: inline-block;
+  padding: .2em;
+  border: 1px solid #888;
+  font-size: 70%;
+  background-color: #F8F8F8;
+  color: black;
+  box-shadow: 2px 2px 5px #AAAAAA;
+}
+
+g[data-mml-node="maction"][data-toggle] {
+  cursor: pointer;
+}
+
+mjx-status {
+  display: block;
+  position: fixed;
+  left: 1em;
+  bottom: 1em;
+  min-width: 25%;
+  padding: .2em .4em;
+  border: 1px solid #888;
+  font-size: 90%;
+  background-color: #F8F8F8;
+  color: black;
+}
+
+foreignObject[data-mjx-xml] {
+  font-family: initial;
+  line-height: normal;
+  overflow: visible;
+}
+
+.MathJax path {
+  stroke-width: 3;
+}
+
+mjx-container[display="true"] {
+  overflow: auto hidden;
+}
+
+mjx-container[display="true"] + br {
+  display: none;
+}
+</style></head>
 
 <body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
   <div class="headband"></div>
@@ -302,7 +408,7 @@
       <span class="post-meta-item-text">发表于</span>
       
 
-      <time title="创建时间：2026-03-14 21:00:00 / 修改时间：21:02:40" itemprop="dateCreated datePublished" datetime="2026-03-14T21:00:00+08:00">2026-03-14</time>
+      <time title="创建时间：2026-03-14 21:00:00 / 修改时间：21:21:42" itemprop="dateCreated datePublished" datetime="2026-03-14T21:00:00+08:00">2026-03-14</time>
     </span>
     <span class="post-meta-item">
       <span class="post-meta-item-icon">
@@ -354,10 +460,10 @@
     <div class="post-body" itemprop="articleBody"><h2 id="一、系列说明"><a href="#一、系列说明" class="headerlink" title="一、系列说明"></a>一、系列说明</h2><p>本系列基于 PX4 Autopilot <strong>v1.16.0</strong> 源码展开，围绕多旋翼飞控的核心执行链路，分五大模块逐层剖析。</p>
 <p><strong>覆盖模块</strong>：</p>
 <ul>
-<li>平台层（Board&#x2F;SOC&#x2F;BSP&#x2F;uORB&#x2F;WorkQueue）</li>
+<li>平台层（Board/SOC/BSP/uORB/WorkQueue）</li>
 <li>Commander 决策层（飞行模式状态机）</li>
 <li>EKF2 状态估计（延迟时间融合卡尔曼滤波）</li>
-<li>Navigator 导航（自动任务&#x2F;RTL&#x2F;围栏）</li>
+<li>Navigator 导航（自动任务/RTL/围栏）</li>
 <li>mc_pos_control 位置控制（串级 PID + 推力映射）</li>
 </ul>
 <p><strong>文档约定</strong>：</p>
@@ -379,42 +485,42 @@
 <tbody><tr>
 <td>01</td>
 <td><a href="/2026/01/06/px4-v116-01-01-board-config/">Board 层硬件配置</a></td>
-<td>GPIO&#x2F;ADC&#x2F;PWM&#x2F;HRT&#x2F;PX4IO</td>
+<td>GPIO/ADC/PWM/HRT/PX4IO</td>
 </tr>
 <tr>
 <td>02</td>
 <td><a href="/2026/01/15/px4-v116-01-02-soc-bsp/">SOC 与 BSP 层平台抽象</a></td>
-<td>STM32F7&#x2F;NUTTX&#x2F;HAL</td>
+<td>STM32F7/NUTTX/HAL</td>
 </tr>
 <tr>
 <td>03</td>
 <td><a href="/2026/01/16/px4-v116-01-03-firmware-build/">固件编译与烧写流程</a></td>
-<td>make&#x2F;CMake&#x2F;Bootloader</td>
+<td>make/CMake/Bootloader</td>
 </tr>
 <tr>
 <td>04</td>
 <td><a href="/2026/01/16/px4-v116-01-04-cross-compile/">交叉编译顺序详解</a></td>
-<td>Kconfig&#x2F;CMake&#x2F;Ninja&#x2F;链接</td>
+<td>Kconfig/CMake/Ninja/链接</td>
 </tr>
 <tr>
 <td>05</td>
 <td><a href="/2026/01/16/px4-v116-01-05-module-entry/">模块入口与运行模式</a></td>
-<td>ModuleBase&#x2F;WorkQueue&#x2F;线程</td>
+<td>ModuleBase/WorkQueue/线程</td>
 </tr>
 <tr>
 <td>06</td>
 <td><a href="/2026/01/22/px4-v116-01-06-uorb-part1/">uORB 通信机制（上）</a></td>
-<td>Topic&#x2F;DeviceNode&#x2F;Manager</td>
+<td>Topic/DeviceNode/Manager</td>
 </tr>
 <tr>
 <td>07</td>
 <td><a href="/2026/01/23/px4-v116-01-07-uorb-part2/">uORB 通信机制（下）</a></td>
-<td>WorkQueue集成&#x2F;dt&#x2F;HRT</td>
+<td>WorkQueue集成/dt/HRT</td>
 </tr>
 <tr>
 <td>08</td>
 <td><a href="/2026/01/12/px4-v116-01-08-dshot-direction/">DShot 电机转向修改</a></td>
-<td>DShot&#x2F;MAVLink&#x2F;NSH</td>
+<td>DShot/MAVLink/NSH</td>
 </tr>
 </tbody></table>
 <h3 id="02-Commander-决策层（7-篇）"><a href="#02-Commander-决策层（7-篇）" class="headerlink" title="02-Commander 决策层（7 篇）"></a>02-Commander 决策层（7 篇）</h3><table>
@@ -428,17 +534,17 @@
 <tbody><tr>
 <td>01</td>
 <td><a href="/2026/02/28/px4-v116-02-01-commander-framework/">Commander 模块框架</a></td>
-<td>主循环&#x2F;状态机&#x2F;健康监控</td>
+<td>主循环/状态机/健康监控</td>
 </tr>
 <tr>
 <td>02</td>
 <td><a href="/2026/03/02/px4-v116-02-02-params-kconfig/">参数系统与 Kconfig</a></td>
-<td>PARAM_DEFINE&#x2F;Kconfig</td>
+<td>PARAM_DEFINE/Kconfig</td>
 </tr>
 <tr>
 <td>03</td>
 <td><a href="/2026/03/02/px4-v116-02-03-flight-mode-encoding/">飞行模式编码与映射</a></td>
-<td>nav_state&#x2F;MAVLink custom_mode</td>
+<td>nav_state/MAVLink custom_mode</td>
 </tr>
 <tr>
 <td>04</td>
@@ -448,17 +554,17 @@
 <tr>
 <td>05</td>
 <td><a href="/2026/03/05/px4-v116-02-05-mode-requirements/">模式需求位图</a></td>
-<td>mode_req_bitmask&#x2F;传感器依赖</td>
+<td>mode_req_bitmask/传感器依赖</td>
 </tr>
 <tr>
 <td>06</td>
 <td><a href="/2026/03/06/px4-v116-02-06-commander-core/">Commander 核心调度</a></td>
-<td>arm&#x2F;disarm&#x2F;failsafe&#x2F;mode切换</td>
+<td>arm/disarm/failsafe/mode切换</td>
 </tr>
 <tr>
 <td>07</td>
 <td><a href="/2026/03/06/px4-v116-02-07-home-position/">HomePosition 管理</a></td>
-<td>Home设定&#x2F;RTL基准&#x2F;Failsafe</td>
+<td>Home设定/RTL基准/Failsafe</td>
 </tr>
 </tbody></table>
 <h3 id="03-状态估计-EKF2（10-篇）"><a href="#03-状态估计-EKF2（10-篇）" class="headerlink" title="03-状态估计-EKF2（10 篇）"></a>03-状态估计-EKF2（10 篇）</h3><table>
@@ -472,52 +578,52 @@
 <tbody><tr>
 <td>01</td>
 <td><a href="/2026/02/05/px4-v116-03-01-ekf2-architecture/">EKF2 目录与层级架构</a></td>
-<td>延迟融合架构&#x2F;目录结构</td>
+<td>延迟融合架构/目录结构</td>
 </tr>
 <tr>
 <td>02</td>
 <td><a href="/2026/02/06/px4-v116-03-02-common-h/">common.h 数据结构</a></td>
-<td>imuSample&#x2F;gnssSample&#x2F;parameters</td>
+<td>imuSample/gnssSample/parameters</td>
 </tr>
 <tr>
 <td>03</td>
 <td><a href="/2026/02/06/px4-v116-03-03-ring-buffer/">RingBuffer 环形缓冲区</a></td>
-<td>延迟对齐&#x2F;pop_first_older_than</td>
+<td>延迟对齐/pop_first_older_than</td>
 </tr>
 <tr>
 <td>04</td>
 <td><a href="/2026/02/24/px4-v116-03-04-state-h/">State.h 状态向量</a></td>
-<td>24维状态&#x2F;ESKF&#x2F;协方差P</td>
+<td>24维状态/ESKF/协方差P</td>
 </tr>
 <tr>
 <td>05</td>
 <td><a href="/2026/02/24/px4-v116-03-05-ekf2-app/">EKF2 应用管理层</a></td>
-<td>EKF2.cpp&#x2F;多实例&#x2F;Selector</td>
+<td>EKF2.cpp/多实例/Selector</td>
 </tr>
 <tr>
 <td>06</td>
 <td><a href="/2026/02/26/px4-v116-03-06-ekf-main-loop/">ekf.cpp 核心主循环</a></td>
-<td>update&#x2F;predictState&#x2F;初始化</td>
+<td>update/predictState/初始化</td>
 </tr>
 <tr>
 <td>07</td>
 <td><a href="/2026/02/27/px4-v116-03-07-covariance/">协方差矩阵预测</a></td>
-<td>P&#x3D;FPF’+Q&#x2F;初始化&#x2F;约束</td>
+<td>P=FPF’+Q/初始化/约束</td>
 </tr>
 <tr>
 <td>08</td>
 <td><a href="/2026/02/26/px4-v116-03-08-control-fusion/">融合调度 control.cpp</a></td>
-<td>controlFusionModes&#x2F;新息门</td>
+<td>controlFusionModes/新息门</td>
 </tr>
 <tr>
 <td>09</td>
 <td><a href="/2026/02/27/px4-v116-03-09-height-fusion/">高度融合与多源仲裁</a></td>
-<td>多高度源&#x2F;参考切换&#x2F;航向融合</td>
+<td>多高度源/参考切换/航向融合</td>
 </tr>
 <tr>
 <td>10</td>
 <td><a href="/2026/02/27/px4-v116-03-10-ekf-helper/">辅助函数与卡尔曼更新</a></td>
-<td>measurementUpdate&#x2F;精度报告</td>
+<td>measurementUpdate/精度报告</td>
 </tr>
 </tbody></table>
 <h3 id="04-Navigator-导航（4-篇）"><a href="#04-Navigator-导航（4-篇）" class="headerlink" title="04-Navigator 导航（4 篇）"></a>04-Navigator 导航（4 篇）</h3><table>
@@ -531,22 +637,22 @@
 <tbody><tr>
 <td>01</td>
 <td><a href="/2026/03/06/px4-v116-04-01-navigator-architecture/">Navigator 模块架构总览</a></td>
-<td>7 层架构&#x2F;输入输出&#x2F;与上下游接口</td>
+<td>7 层架构/输入输出/与上下游接口</td>
 </tr>
 <tr>
 <td>02</td>
 <td><a href="/2026/03/06/px4-v116-04-02-navigation-h/">navigation.h 与数据协议</a></td>
-<td>NAV_CMD&#x2F;mission_item_s</td>
+<td>NAV_CMD/mission_item_s</td>
 </tr>
 <tr>
 <td>03</td>
 <td><a href="/2026/03/06/px4-v116-04-03-navigator-main-loop/">Navigator 主循环与模式调度</a></td>
-<td>run()&#x2F;MissionBase&#x2F;RTL策略树</td>
+<td>run()/MissionBase/RTL策略树</td>
 </tr>
 <tr>
 <td>04</td>
 <td><a href="/2026/03/14/px4-v116-04-04-geofence-precland/">围栏安全与精确降落</a></td>
-<td>Geofence&#x2F;PrecLand状态机</td>
+<td>Geofence/PrecLand状态机</td>
 </tr>
 </tbody></table>
 <h3 id="05-位置控制（3-篇）"><a href="#05-位置控制（3-篇）" class="headerlink" title="05-位置控制（3 篇）"></a>05-位置控制（3 篇）</h3><table>
@@ -560,12 +666,12 @@
 <tbody><tr>
 <td>01</td>
 <td><a href="/2026/03/09/px4-v116-05-01-pos-control-overview/">mc_pos_control 总览</a></td>
-<td>全局控制链路&#x2F;模块架构</td>
+<td>全局控制链路/模块架构</td>
 </tr>
 <tr>
 <td>02</td>
 <td><a href="/2026/03/09/px4-v116-05-02-main-loop/">MulticopterPositionControl 主循环</a></td>
-<td>多级滤波&#x2F;EKF重置保护&#x2F;起飞状态机</td>
+<td>多级滤波/EKF重置保护/起飞状态机</td>
 </tr>
 <tr>
 <td>03</td>

@@ -28,7 +28,7 @@
 <meta property="og:description" content="深入解析 PX4 EKF2 高度融合的实现：从 controlHeightFusion 的调度逻辑，到气压计&#x2F;GNSS&#x2F;测距仪&#x2F;外部视觉各高度源的融合机制，以及高度参考切换的自动降级策略。">
 <meta property="og:locale" content="zh_CN">
 <meta property="article:published_time" content="2026-02-27T06:00:00.000Z">
-<meta property="article:modified_time" content="2026-03-14T13:02:40.000Z">
+<meta property="article:modified_time" content="2026-03-14T13:21:42.000Z">
 <meta property="article:author" content="QingShan Li">
 <meta property="article:tag" content="EKF2">
 <meta property="article:tag" content="PX4">
@@ -79,12 +79,6 @@
 
 
 
-  
-
-  <script class="next-config" data-name="enableMath" type="application/json">true</script><script class="next-config" data-name="mathjax" type="application/json">{"enable":true,"tags":"ams","js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.js","integrity":"sha256-MASABpB4tYktI2Oitl4t+78w/lyA+D7b/s9GEP0JOGI="}}</script>
-<script src="/js/third-party/math/mathjax.js" defer></script>
-
-
 <!-- Custom Head Injection for QingShan Blog -->
 
 <!-- Google Fonts: Noto Sans SC for better Chinese rendering -->
@@ -120,7 +114,119 @@
   <noscript>
     <link rel="stylesheet" href="/css/noscript.css">
   </noscript>
-</head>
+<style>mjx-container[jax="SVG"] {
+  direction: ltr;
+}
+
+mjx-container[jax="SVG"] > svg {
+  overflow: visible;
+}
+
+mjx-container[jax="SVG"][display="true"] {
+  display: block;
+  text-align: center;
+  margin: 1em 0;
+}
+
+mjx-container[jax="SVG"][justify="left"] {
+  text-align: left;
+}
+
+mjx-container[jax="SVG"][justify="right"] {
+  text-align: right;
+}
+
+g[data-mml-node="merror"] > g {
+  fill: red;
+  stroke: red;
+}
+
+g[data-mml-node="merror"] > rect[data-background] {
+  fill: yellow;
+  stroke: none;
+}
+
+g[data-mml-node="mtable"] > line[data-line] {
+  stroke-width: 70px;
+  fill: none;
+}
+
+g[data-mml-node="mtable"] > rect[data-frame] {
+  stroke-width: 70px;
+  fill: none;
+}
+
+g[data-mml-node="mtable"] > .mjx-dashed {
+  stroke-dasharray: 140;
+}
+
+g[data-mml-node="mtable"] > .mjx-dotted {
+  stroke-linecap: round;
+  stroke-dasharray: 0,140;
+}
+
+g[data-mml-node="mtable"] > svg {
+  overflow: visible;
+}
+
+[jax="SVG"] mjx-tool {
+  display: inline-block;
+  position: relative;
+  width: 0;
+  height: 0;
+}
+
+[jax="SVG"] mjx-tool > mjx-tip {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+mjx-tool > mjx-tip {
+  display: inline-block;
+  padding: .2em;
+  border: 1px solid #888;
+  font-size: 70%;
+  background-color: #F8F8F8;
+  color: black;
+  box-shadow: 2px 2px 5px #AAAAAA;
+}
+
+g[data-mml-node="maction"][data-toggle] {
+  cursor: pointer;
+}
+
+mjx-status {
+  display: block;
+  position: fixed;
+  left: 1em;
+  bottom: 1em;
+  min-width: 25%;
+  padding: .2em .4em;
+  border: 1px solid #888;
+  font-size: 90%;
+  background-color: #F8F8F8;
+  color: black;
+}
+
+foreignObject[data-mjx-xml] {
+  font-family: initial;
+  line-height: normal;
+  overflow: visible;
+}
+
+.MathJax path {
+  stroke-width: 3;
+}
+
+mjx-container[display="true"] {
+  overflow: auto hidden;
+}
+
+mjx-container[display="true"] + br {
+  display: none;
+}
+</style></head>
 
 <body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
   <div class="headband"></div>
@@ -309,7 +415,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">更新于</span>
-      <time title="修改时间：2026-03-14 21:02:40" itemprop="dateModified" datetime="2026-03-14T21:02:40+08:00">2026-03-14</time>
+      <time title="修改时间：2026-03-14 21:21:42" itemprop="dateModified" datetime="2026-03-14T21:21:42+08:00">2026-03-14</time>
     </span>
     <span class="post-meta-item">
       <span class="post-meta-item-icon">
@@ -402,9 +508,9 @@
 </tbody></table>
 <p>实际工作中，<strong>多个高度源可以同时工作</strong>，只是只有一个是”参考”（reference），其他作为辅助约束。</p>
 <hr>
-<h2 id="三、controlHeightFusion-实现"><a href="#三、controlHeightFusion-实现" class="headerlink" title="三、controlHeightFusion() 实现"></a>三、<code>controlHeightFusion()</code> 实现</h2><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">flowchart TD</span><br><span class="line">    A[controlHeightFusion] --&gt; B[checkVerticalAccelerationHealth]</span><br><span class="line">    B --&gt; C&#123;垂直加速度\n是否异常?&#125;</span><br><span class="line">    C --是--&gt; D[设置 bad_vert_accel 标志\n抑制垂直状态更新]</span><br><span class="line">    C --否--&gt; E[controlGroundEffect\n地面效应补偿]</span><br><span class="line">    E --&gt; F[controlBaroHeightFusion\n气压计高度]</span><br><span class="line">    F --&gt; G[controlGnssHeightFusion\nGNSS高度]</span><br><span class="line">    G --&gt; H[controlRangeHeightFusion\n测距仪高度]</span><br><span class="line">    H --&gt; I[controlEvHeightFusion\n外部视觉高度]</span><br><span class="line">    I --&gt; J[checkHeightSensorRefFallback\n主参考健康检查]</span><br><span class="line">    J --&gt; K&#123;主参考是否持续输出?&#125;</span><br><span class="line">    K --是--&gt; L([继续当前参考])</span><br><span class="line">    K --否超时--&gt; M[按优先级选择下一个可用源]</span><br><span class="line">    M --&gt; N[resetHeightToBaro/GPS/Range/EV\n执行高度重置对齐]</span><br><span class="line">    N --&gt; L</span><br></pre></td></tr></table></figure>
+<h2 id="三、controlHeightFusion-实现"><a href="#三、controlHeightFusion-实现" class="headerlink" title="三、controlHeightFusion() 实现"></a>三、<code>controlHeightFusion()</code> 实现</h2><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">flowchart TD</span><br><span class="line">    A[controlHeightFusion] --&gt; B[checkVerticalAccelerationHealth]</span><br><span class="line">    B --&gt; C{垂直加速度\n是否异常?}</span><br><span class="line">    C --是--&gt; D[设置 bad_vert_accel 标志\n抑制垂直状态更新]</span><br><span class="line">    C --否--&gt; E[controlGroundEffect\n地面效应补偿]</span><br><span class="line">    E --&gt; F[controlBaroHeightFusion\n气压计高度]</span><br><span class="line">    F --&gt; G[controlGnssHeightFusion\nGNSS高度]</span><br><span class="line">    G --&gt; H[controlRangeHeightFusion\n测距仪高度]</span><br><span class="line">    H --&gt; I[controlEvHeightFusion\n外部视觉高度]</span><br><span class="line">    I --&gt; J[checkHeightSensorRefFallback\n主参考健康检查]</span><br><span class="line">    J --&gt; K{主参考是否持续输出?}</span><br><span class="line">    K --是--&gt; L([继续当前参考])</span><br><span class="line">    K --否超时--&gt; M[按优先级选择下一个可用源]</span><br><span class="line">    M --&gt; N[resetHeightToBaro/GPS/Range/EV\n执行高度重置对齐]</span><br><span class="line">    N --&gt; L</span><br></pre></td></tr></table></figure>
 
-<h3 id="3-1-垂直加速度健康检查"><a href="#3-1-垂直加速度健康检查" class="headerlink" title="3.1 垂直加速度健康检查"></a>3.1 垂直加速度健康检查</h3><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="type">void</span> <span class="title">Ekf::checkVerticalAccelerationHealth</span><span class="params">(<span class="type">const</span> imuSample &amp;imu_sample)</span> </span>&#123;</span><br><span class="line">    <span class="comment">// 检测加速度计纵轴削波（delta_vel_clipping[2]）</span></span><br><span class="line">    <span class="keyword">if</span> (imu_sample.delta_vel_clipping[<span class="number">2</span>]) &#123;</span><br><span class="line">        _clip_counter++;</span><br><span class="line">        <span class="keyword">if</span> (_clip_counter &gt; CLIP_COUNT_THRESHOLD) &#123;</span><br><span class="line">            _fault_status.flags.bad_acc_vertical = <span class="literal">true</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        _clip_counter = math::<span class="built_in">max</span>(<span class="number">0</span>, _clip_counter - <span class="number">1</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// 恢复条件：连续若干步无削波</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="3-1-垂直加速度健康检查"><a href="#3-1-垂直加速度健康检查" class="headerlink" title="3.1 垂直加速度健康检查"></a>3.1 垂直加速度健康检查</h3><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="type">void</span> <span class="title">Ekf::checkVerticalAccelerationHealth</span><span class="params">(<span class="type">const</span> imuSample &amp;imu_sample)</span> </span>{</span><br><span class="line">    <span class="comment">// 检测加速度计纵轴削波（delta_vel_clipping[2]）</span></span><br><span class="line">    <span class="keyword">if</span> (imu_sample.delta_vel_clipping[<span class="number">2</span>]) {</span><br><span class="line">        _clip_counter++;</span><br><span class="line">        <span class="keyword">if</span> (_clip_counter &gt; CLIP_COUNT_THRESHOLD) {</span><br><span class="line">            _fault_status.flags.bad_acc_vertical = <span class="literal">true</span>;</span><br><span class="line">        }</span><br><span class="line">    } <span class="keyword">else</span> {</span><br><span class="line">        _clip_counter = math::<span class="built_in">max</span>(<span class="number">0</span>, _clip_counter - <span class="number">1</span>);</span><br><span class="line">    }</span><br><span class="line">    <span class="comment">// 恢复条件：连续若干步无削波</span></span><br><span class="line">}</span><br></pre></td></tr></table></figure>
 
 <p>当 <code>bad_acc_vertical</code> 置位时，EKF 停止使用加速度计进行垂直状态预测（防止削波导致高度突变）。</p>
 <h3 id="3-2-气压计高度融合"><a href="#3-2-气压计高度融合" class="headerlink" title="3.2 气压计高度融合"></a>3.2 气压计高度融合</h3><p>气压计高度单位转换：气压计提供的是<strong>气压高度</strong>（相对起飞点 MSL 高度差）：</p>
@@ -419,7 +525,7 @@
 
 <hr>
 <h2 id="四、高度参考自动切换"><a href="#四、高度参考自动切换" class="headerlink" title="四、高度参考自动切换"></a>四、高度参考自动切换</h2><p><code>checkHeightSensorRefFallback()</code> 检测主高度参考是否超时无数据：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="type">void</span> <span class="title">Ekf::checkHeightSensorRefFallback</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="comment">// 超时阈值：2 * 最大传感器延迟</span></span><br><span class="line">    <span class="type">const</span> <span class="type">uint64_t</span> timeout_us = <span class="number">2</span> * _params.hgt_timeout_us;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (_time_last_hgt_fuse + timeout_us &lt; _time_delayed_us) &#123;</span><br><span class="line">        <span class="comment">// 主高度源超时，触发切换</span></span><br><span class="line">        <span class="keyword">switch</span> (_params.hgt_sensor_ref) &#123;</span><br><span class="line">        <span class="keyword">case</span> HeightSensor::EV:</span><br><span class="line">            <span class="keyword">if</span> (<span class="built_in">isBaroHealthy</span>()) <span class="built_in">resetHeightToBaro</span>();</span><br><span class="line">            <span class="keyword">else</span> <span class="keyword">if</span> (<span class="built_in">isGnssHgtHealthy</span>()) <span class="built_in">resetHeightToGnss</span>();</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">        <span class="keyword">case</span> HeightSensor::GNSS:</span><br><span class="line">            <span class="keyword">if</span> (<span class="built_in">isBaroHealthy</span>()) <span class="built_in">resetHeightToBaro</span>();</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">        <span class="comment">// ...</span></span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="type">void</span> <span class="title">Ekf::checkHeightSensorRefFallback</span><span class="params">()</span> </span>{</span><br><span class="line">    <span class="comment">// 超时阈值：2 * 最大传感器延迟</span></span><br><span class="line">    <span class="type">const</span> <span class="type">uint64_t</span> timeout_us = <span class="number">2</span> * _params.hgt_timeout_us;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (_time_last_hgt_fuse + timeout_us &lt; _time_delayed_us) {</span><br><span class="line">        <span class="comment">// 主高度源超时，触发切换</span></span><br><span class="line">        <span class="keyword">switch</span> (_params.hgt_sensor_ref) {</span><br><span class="line">        <span class="keyword">case</span> HeightSensor::EV:</span><br><span class="line">            <span class="keyword">if</span> (<span class="built_in">isBaroHealthy</span>()) <span class="built_in">resetHeightToBaro</span>();</span><br><span class="line">            <span class="keyword">else</span> <span class="keyword">if</span> (<span class="built_in">isGnssHgtHealthy</span>()) <span class="built_in">resetHeightToGnss</span>();</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">        <span class="keyword">case</span> HeightSensor::GNSS:</span><br><span class="line">            <span class="keyword">if</span> (<span class="built_in">isBaroHealthy</span>()) <span class="built_in">resetHeightToBaro</span>();</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">        <span class="comment">// ...</span></span><br><span class="line">        }</span><br><span class="line">    }</span><br><span class="line">}</span><br></pre></td></tr></table></figure>
 
 <p>切换时会执行 <strong><code>resetHeight*()</code></strong>，将 EKF 高度状态直接跳变到新传感器的读数，同时：</p>
 <ol>
@@ -429,14 +535,14 @@
 </ol>
 <hr>
 <h2 id="五、速度融合通用模式"><a href="#五、速度融合通用模式" class="headerlink" title="五、速度融合通用模式"></a>五、速度融合通用模式</h2><p>速度融合（<code>velocity_fusion.cpp</code>）统一处理各传感器速度：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="type">void</span> <span class="title">Ekf::fuseVelocity</span><span class="params">(AidSourceStatus&lt;<span class="number">3</span>&gt;&amp; status)</span> </span>&#123;</span><br><span class="line">    <span class="comment">// 3D 速度融合，每轴独立执行</span></span><br><span class="line">    <span class="keyword">for</span> (<span class="type">int</span> i = <span class="number">0</span>; i &lt; <span class="number">3</span>; i++) &#123;</span><br><span class="line">        <span class="comment">// 新息</span></span><br><span class="line">        status.innovation[i] = _state.vel[i] - status.observation[i];</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 新息方差</span></span><br><span class="line">        status.innovation_variance[i] = <span class="built_in">P</span>(<span class="number">3</span>+i, <span class="number">3</span>+i) + status.observation_variance[i];</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 新息检验</span></span><br><span class="line">        <span class="type">const</span> <span class="type">float</span> test_ratio = <span class="built_in">sq</span>(status.innovation[i]) / status.innovation_variance[i];</span><br><span class="line">        <span class="keyword">if</span> (test_ratio &gt; <span class="built_in">sq</span>(_params.vel_innov_gate)) &#123;</span><br><span class="line">            status.innovation_rejected = <span class="literal">true</span>;</span><br><span class="line">            <span class="keyword">continue</span>;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 卡尔曼更新（单维测量）</span></span><br><span class="line">        VectorState K = P.<span class="built_in">col</span>(<span class="number">3</span>+i) / status.innovation_variance[i];</span><br><span class="line">        <span class="built_in">applyKalmanGainToState</span>(K, status.innovation[i]);</span><br><span class="line">        <span class="built_in">applyKalmanGainToCovariance</span>(K, <span class="number">3</span>+i);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="type">void</span> <span class="title">Ekf::fuseVelocity</span><span class="params">(AidSourceStatus&lt;<span class="number">3</span>&gt;&amp; status)</span> </span>{</span><br><span class="line">    <span class="comment">// 3D 速度融合，每轴独立执行</span></span><br><span class="line">    <span class="keyword">for</span> (<span class="type">int</span> i = <span class="number">0</span>; i &lt; <span class="number">3</span>; i++) {</span><br><span class="line">        <span class="comment">// 新息</span></span><br><span class="line">        status.innovation[i] = _state.vel[i] - status.observation[i];</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 新息方差</span></span><br><span class="line">        status.innovation_variance[i] = <span class="built_in">P</span>(<span class="number">3</span>+i, <span class="number">3</span>+i) + status.observation_variance[i];</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 新息检验</span></span><br><span class="line">        <span class="type">const</span> <span class="type">float</span> test_ratio = <span class="built_in">sq</span>(status.innovation[i]) / status.innovation_variance[i];</span><br><span class="line">        <span class="keyword">if</span> (test_ratio &gt; <span class="built_in">sq</span>(_params.vel_innov_gate)) {</span><br><span class="line">            status.innovation_rejected = <span class="literal">true</span>;</span><br><span class="line">            <span class="keyword">continue</span>;</span><br><span class="line">        }</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 卡尔曼更新（单维测量）</span></span><br><span class="line">        VectorState K = P.<span class="built_in">col</span>(<span class="number">3</span>+i) / status.innovation_variance[i];</span><br><span class="line">        <span class="built_in">applyKalmanGainToState</span>(K, status.innovation[i]);</span><br><span class="line">        <span class="built_in">applyKalmanGainToCovariance</span>(K, <span class="number">3</span>+i);</span><br><span class="line">    }</span><br><span class="line">}</span><br></pre></td></tr></table></figure>
 
 <hr>
 <h2 id="六、航向融合-fuseYaw"><a href="#六、航向融合-fuseYaw" class="headerlink" title="六、航向融合 fuseYaw()"></a>六、航向融合 <code>fuseYaw()</code></h2><p>航向角 ψ 无法由重力观测，必须依赖磁力计或 GPS 双天线或外部视觉：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="type">void</span> <span class="title">Ekf::fuseYaw</span><span class="params">(AidSourceStatus&lt;<span class="number">1</span>&gt;&amp; status)</span> </span>&#123;</span><br><span class="line">    <span class="comment">// 观测矩阵 H 由 Symforce 自动生成（非线性，ψ 是四元数 q 的函数）</span></span><br><span class="line">    sym::<span class="built_in">ComputeYawInnovVarAndH</span>(q, R_yaw, &amp;status.innovation_variance[<span class="number">0</span>], &amp;H);</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 病态检查：新息方差必须大于观测噪声</span></span><br><span class="line">    <span class="keyword">if</span> (status.innovation_variance[<span class="number">0</span>] &lt; status.observation_variance[<span class="number">0</span>]) &#123;</span><br><span class="line">        <span class="comment">// P 矩阵崩溃（非正定），触发全局协方差重置</span></span><br><span class="line">        <span class="built_in">initialiseCovariance</span>();</span><br><span class="line">        <span class="keyword">return</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 卡尔曼更新</span></span><br><span class="line">    <span class="built_in">measurementUpdate</span>(status, H, status.innovation, status.innovation_variance);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="type">void</span> <span class="title">Ekf::fuseYaw</span><span class="params">(AidSourceStatus&lt;<span class="number">1</span>&gt;&amp; status)</span> </span>{</span><br><span class="line">    <span class="comment">// 观测矩阵 H 由 Symforce 自动生成（非线性，ψ 是四元数 q 的函数）</span></span><br><span class="line">    sym::<span class="built_in">ComputeYawInnovVarAndH</span>(q, R_yaw, &amp;status.innovation_variance[<span class="number">0</span>], &amp;H);</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 病态检查：新息方差必须大于观测噪声</span></span><br><span class="line">    <span class="keyword">if</span> (status.innovation_variance[<span class="number">0</span>] &lt; status.observation_variance[<span class="number">0</span>]) {</span><br><span class="line">        <span class="comment">// P 矩阵崩溃（非正定），触发全局协方差重置</span></span><br><span class="line">        <span class="built_in">initialiseCovariance</span>();</span><br><span class="line">        <span class="keyword">return</span>;</span><br><span class="line">    }</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 卡尔曼更新</span></span><br><span class="line">    <span class="built_in">measurementUpdate</span>(status, H, status.innovation, status.innovation_variance);</span><br><span class="line">}</span><br></pre></td></tr></table></figure>
 
 <p><strong>航向重置 <code>resetQuatStateYaw()</code></strong>：当航向误差过大时，直接重置四元数而非卡尔曼更新：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="type">void</span> <span class="title">Ekf::resetQuatStateYaw</span><span class="params">(<span class="type">float</span> yaw, <span class="type">float</span> yaw_var)</span> </span>&#123;</span><br><span class="line">    <span class="comment">// 构建仅包含 yaw 变化的旋转四元数</span></span><br><span class="line">    <span class="type">const</span> Dcmf R_body_to_earth&#123;_state.quat_nominal&#125;;</span><br><span class="line">    <span class="comment">// 提取当前 roll/pitch，替换 yaw</span></span><br><span class="line">    <span class="function"><span class="type">const</span> Eulerf <span class="title">euler_angles</span><span class="params">(R_body_to_earth)</span></span>;</span><br><span class="line">    _state.quat_nominal = <span class="built_in">Quatf</span>(<span class="built_in">Eulerf</span>(euler_angles.<span class="built_in">phi</span>(), euler_angles.<span class="built_in">theta</span>(), yaw));</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 通知 OutputPredictor 同步更新（外环控制器感知坐标系旋转）</span></span><br><span class="line">    _output_predictor.<span class="built_in">resetQuatState</span>(_state.quat_nominal);</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 更新协方差（清零 yaw 相关项，设置新的 yaw 方差）</span></span><br><span class="line">    <span class="built_in">P</span>(<span class="number">2</span>,<span class="number">2</span>) = yaw_var;</span><br><span class="line">    <span class="comment">// 清除 yaw 与其他状态的相关性</span></span><br><span class="line">    <span class="keyword">for</span> (<span class="type">int</span> i = <span class="number">0</span>; i &lt; _k_num_states; i++) &#123;</span><br><span class="line">        <span class="keyword">if</span> (i != <span class="number">2</span>) &#123;</span><br><span class="line">            <span class="built_in">P</span>(<span class="number">2</span>,i) = <span class="built_in">P</span>(i,<span class="number">2</span>) = <span class="number">0.0f</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="type">void</span> <span class="title">Ekf::resetQuatStateYaw</span><span class="params">(<span class="type">float</span> yaw, <span class="type">float</span> yaw_var)</span> </span>{</span><br><span class="line">    <span class="comment">// 构建仅包含 yaw 变化的旋转四元数</span></span><br><span class="line">    <span class="type">const</span> Dcmf R_body_to_earth{_state.quat_nominal};</span><br><span class="line">    <span class="comment">// 提取当前 roll/pitch，替换 yaw</span></span><br><span class="line">    <span class="function"><span class="type">const</span> Eulerf <span class="title">euler_angles</span><span class="params">(R_body_to_earth)</span></span>;</span><br><span class="line">    _state.quat_nominal = <span class="built_in">Quatf</span>(<span class="built_in">Eulerf</span>(euler_angles.<span class="built_in">phi</span>(), euler_angles.<span class="built_in">theta</span>(), yaw));</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 通知 OutputPredictor 同步更新（外环控制器感知坐标系旋转）</span></span><br><span class="line">    _output_predictor.<span class="built_in">resetQuatState</span>(_state.quat_nominal);</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 更新协方差（清零 yaw 相关项，设置新的 yaw 方差）</span></span><br><span class="line">    <span class="built_in">P</span>(<span class="number">2</span>,<span class="number">2</span>) = yaw_var;</span><br><span class="line">    <span class="comment">// 清除 yaw 与其他状态的相关性</span></span><br><span class="line">    <span class="keyword">for</span> (<span class="type">int</span> i = <span class="number">0</span>; i &lt; _k_num_states; i++) {</span><br><span class="line">        <span class="keyword">if</span> (i != <span class="number">2</span>) {</span><br><span class="line">            <span class="built_in">P</span>(<span class="number">2</span>,i) = <span class="built_in">P</span>(i,<span class="number">2</span>) = <span class="number">0.0f</span>;</span><br><span class="line">        }</span><br><span class="line">    }</span><br><span class="line">}</span><br></pre></td></tr></table></figure>
 
 <hr>
 <h2 id="七、小结"><a href="#七、小结" class="headerlink" title="七、小结"></a>七、小结</h2><p>EKF2 高度融合的关键设计：</p>
@@ -462,8 +568,8 @@
               <a href="/tags/%E6%8A%80%E6%9C%AF%E5%8D%9A%E6%96%87/" rel="tag"><i class="fa fa-tag"></i> 技术博文</a>
               <a href="/tags/PX4/" rel="tag"><i class="fa fa-tag"></i> PX4</a>
               <a href="/tags/EKF2/" rel="tag"><i class="fa fa-tag"></i> EKF2</a>
-              <a href="/tags/%E9%AB%98%E5%BA%A6%E8%9E%8D%E5%90%88/" rel="tag"><i class="fa fa-tag"></i> 高度融合</a>
               <a href="/tags/%E4%BC%A0%E6%84%9F%E5%99%A8%E8%9E%8D%E5%90%88/" rel="tag"><i class="fa fa-tag"></i> 传感器融合</a>
+              <a href="/tags/%E9%AB%98%E5%BA%A6%E8%9E%8D%E5%90%88/" rel="tag"><i class="fa fa-tag"></i> 高度融合</a>
           </div>
 
         

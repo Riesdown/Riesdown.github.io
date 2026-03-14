@@ -28,7 +28,7 @@
 <meta property="og:description" content="解析 PX4 BSP（stm32_common）与 SOC（stm32f7）层的职责划分、构建方式与运行时调用链路，说明 Board 层宏如何通过 BSP 落地到 STM32 寄存器操作。">
 <meta property="og:locale" content="zh_CN">
 <meta property="article:published_time" content="2026-01-15T04:00:00.000Z">
-<meta property="article:modified_time" content="2026-03-14T13:02:40.000Z">
+<meta property="article:modified_time" content="2026-03-14T13:21:42.000Z">
 <meta property="article:author" content="QingShan Li">
 <meta property="article:tag" content="BSP">
 <meta property="article:tag" content="NuttX">
@@ -79,12 +79,6 @@
 
 
 
-  
-
-  <script class="next-config" data-name="enableMath" type="application/json">true</script><script class="next-config" data-name="mathjax" type="application/json">{"enable":true,"tags":"ams","js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.js","integrity":"sha256-MASABpB4tYktI2Oitl4t+78w/lyA+D7b/s9GEP0JOGI="}}</script>
-<script src="/js/third-party/math/mathjax.js" defer></script>
-
-
 <!-- Custom Head Injection for QingShan Blog -->
 
 <!-- Google Fonts: Noto Sans SC for better Chinese rendering -->
@@ -120,7 +114,119 @@
   <noscript>
     <link rel="stylesheet" href="/css/noscript.css">
   </noscript>
-</head>
+<style>mjx-container[jax="SVG"] {
+  direction: ltr;
+}
+
+mjx-container[jax="SVG"] > svg {
+  overflow: visible;
+}
+
+mjx-container[jax="SVG"][display="true"] {
+  display: block;
+  text-align: center;
+  margin: 1em 0;
+}
+
+mjx-container[jax="SVG"][justify="left"] {
+  text-align: left;
+}
+
+mjx-container[jax="SVG"][justify="right"] {
+  text-align: right;
+}
+
+g[data-mml-node="merror"] > g {
+  fill: red;
+  stroke: red;
+}
+
+g[data-mml-node="merror"] > rect[data-background] {
+  fill: yellow;
+  stroke: none;
+}
+
+g[data-mml-node="mtable"] > line[data-line] {
+  stroke-width: 70px;
+  fill: none;
+}
+
+g[data-mml-node="mtable"] > rect[data-frame] {
+  stroke-width: 70px;
+  fill: none;
+}
+
+g[data-mml-node="mtable"] > .mjx-dashed {
+  stroke-dasharray: 140;
+}
+
+g[data-mml-node="mtable"] > .mjx-dotted {
+  stroke-linecap: round;
+  stroke-dasharray: 0,140;
+}
+
+g[data-mml-node="mtable"] > svg {
+  overflow: visible;
+}
+
+[jax="SVG"] mjx-tool {
+  display: inline-block;
+  position: relative;
+  width: 0;
+  height: 0;
+}
+
+[jax="SVG"] mjx-tool > mjx-tip {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+mjx-tool > mjx-tip {
+  display: inline-block;
+  padding: .2em;
+  border: 1px solid #888;
+  font-size: 70%;
+  background-color: #F8F8F8;
+  color: black;
+  box-shadow: 2px 2px 5px #AAAAAA;
+}
+
+g[data-mml-node="maction"][data-toggle] {
+  cursor: pointer;
+}
+
+mjx-status {
+  display: block;
+  position: fixed;
+  left: 1em;
+  bottom: 1em;
+  min-width: 25%;
+  padding: .2em .4em;
+  border: 1px solid #888;
+  font-size: 90%;
+  background-color: #F8F8F8;
+  color: black;
+}
+
+foreignObject[data-mjx-xml] {
+  font-family: initial;
+  line-height: normal;
+  overflow: visible;
+}
+
+.MathJax path {
+  stroke-width: 3;
+}
+
+mjx-container[display="true"] {
+  overflow: auto hidden;
+}
+
+mjx-container[display="true"] + br {
+  display: none;
+}
+</style></head>
 
 <body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
   <div class="headband"></div>
@@ -309,7 +415,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">更新于</span>
-      <time title="修改时间：2026-03-14 21:02:40" itemprop="dateModified" datetime="2026-03-14T21:02:40+08:00">2026-03-14</time>
+      <time title="修改时间：2026-03-14 21:21:42" itemprop="dateModified" datetime="2026-03-14T21:21:42+08:00">2026-03-14</time>
     </span>
     <span class="post-meta-item">
       <span class="post-meta-item-icon">
@@ -363,7 +469,7 @@
     
     
     <div class="post-body" itemprop="articleBody"><h2 id="一、三层结构概览"><a href="#一、三层结构概览" class="headerlink" title="一、三层结构概览"></a>一、三层结构概览</h2><p>Board 层、BSP 层、SOC 层构成 PX4 硬件抽象的三级结构，职责各异：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">flowchart TD</span><br><span class="line">    Board[&quot;Board 层\nboards/px4/fmu-v5/\n提供 board_config.h 宏定义\n不直接操作寄存器&quot;]</span><br><span class="line">    BSP[&quot;BSP 层\nplatforms/nuttx/src/px4/stm32_common/\n实现 GPIO/ADC/TIM/SPI/UART 等外设\n暴露 px4_arch_* hrt_* io_timer_* 接口&quot;]</span><br><span class="line">    SOC[&quot;SOC 层\nplatforms/nuttx/src/px4/stm32f7/\n聚合 stm32_common 通用能力\n实现 F7 特定功能（DMA Cache IDLE 中断）&quot;]</span><br><span class="line">    NuttX[&quot;NuttX STM32 arch/HAL\nstm32_* 寄存器级实现&quot;]</span><br><span class="line"></span><br><span class="line">    Board --&gt; BSP</span><br><span class="line">    Board --&gt; SOC</span><br><span class="line">    BSP --&gt; NuttX</span><br><span class="line">    SOC --&gt; BSP</span><br></pre></td></tr></table></figure>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">flowchart TD</span><br><span class="line">    Board["Board 层\nboards/px4/fmu-v5/\n提供 board_config.h 宏定义\n不直接操作寄存器"]</span><br><span class="line">    BSP["BSP 层\nplatforms/nuttx/src/px4/stm32_common/\n实现 GPIO/ADC/TIM/SPI/UART 等外设\n暴露 px4_arch_* hrt_* io_timer_* 接口"]</span><br><span class="line">    SOC["SOC 层\nplatforms/nuttx/src/px4/stm32f7/\n聚合 stm32_common 通用能力\n实现 F7 特定功能（DMA Cache IDLE 中断）"]</span><br><span class="line">    NuttX["NuttX STM32 arch/HAL\nstm32_* 寄存器级实现"]</span><br><span class="line"></span><br><span class="line">    Board --&gt; BSP</span><br><span class="line">    Board --&gt; SOC</span><br><span class="line">    BSP --&gt; NuttX</span><br><span class="line">    SOC --&gt; BSP</span><br></pre></td></tr></table></figure>
 
 <blockquote>
 <p>相关前置知识：<a href="/2026/01/06/px4-v116-01-01-board-config/">Board 层硬件配置</a></p>
@@ -378,7 +484,7 @@
 </ul>
 </li>
 </ul>
-<p>Board 层在更高层的 Board CMake 中被加入同一构建图谱，最终与 BSP&#x2F;SOC 一起链接成单一的 <code>.elf</code> 固件镜像。</p>
+<p>Board 层在更高层的 Board CMake 中被加入同一构建图谱，最终与 BSP/SOC 一起链接成单一的 <code>.elf</code> 固件镜像。</p>
 <hr>
 <h2 id="三、运行时调用链路"><a href="#三、运行时调用链路" class="headerlink" title="三、运行时调用链路"></a>三、运行时调用链路</h2><h3 id="3-1-stm32-boardinitialize"><a href="#3-1-stm32-boardinitialize" class="headerlink" title="3.1 stm32_boardinitialize()"></a>3.1 stm32_boardinitialize()</h3><p>NuttX 启动序列最早调用的板级入口，在 <code>init.c</code> 中实现：</p>
 <figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">stm32_boardinitialize()</span><br><span class="line">  -&gt; board_on_reset()：危险引脚/PWM 切到安全态</span><br><span class="line">  -&gt; board_autoled_initialize()：不依赖 NuttX 系统的 LED 初始化</span><br><span class="line">  -&gt; px4_gpio_init(PX4_GPIO_INIT_LIST)</span><br><span class="line">       Board 层提供 GPIO_xxx 宏（Pinset 位域）</span><br><span class="line">       BSP 层 micro_hal.h 将 px4_arch_configgpio() 映射到 stm32_configgpio()</span><br><span class="line">       NuttX STM32 arch 层做实际寄存器写入</span><br><span class="line">  -&gt; USB 相关初始化</span><br></pre></td></tr></table></figure>
@@ -390,7 +496,7 @@
 <h2 id="四、BSP-层核心文件"><a href="#四、BSP-层核心文件" class="headerlink" title="四、BSP 层核心文件"></a>四、BSP 层核心文件</h2><h3 id="4-1-micro-hal-h"><a href="#4-1-micro-hal-h" class="headerlink" title="4.1 micro_hal.h"></a>4.1 micro_hal.h</h3><p>BSP 层将 Board 层定义的宏落地到 NuttX STM32 HAL 的关键桥接文件，统一将 <code>px4_arch_*</code> 映射到 NuttX STM32 的 <code>stm32_*</code> 实现：</p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">px4_arch_configgpio(pinset)  -&gt;  stm32_configgpio(pinset)</span><br><span class="line">px4_arch_gpioread(pinset)    -&gt;  stm32_gpioread(pinset)</span><br><span class="line">px4_arch_gpiowrite(pinset, value) -&gt; stm32_gpiowrite(pinset, value)</span><br><span class="line">px4_arch_gpiosetevent(...)   -&gt;  stm32_gpiosetevent(...)</span><br></pre></td></tr></table></figure>
 
-<p>Board 层产出 Pinset 位域（端口&#x2F;引脚&#x2F;模式&#x2F;上下拉&#x2F;AF&#x2F;默认电平），BSP 层把 Pinset 写进 STM32 GPIO 寄存器。Board 层不允许直接操作寄存器。</p>
+<p>Board 层产出 Pinset 位域（端口/引脚/模式/上下拉/AF/默认电平），BSP 层把 Pinset 写进 STM32 GPIO 寄存器。Board 层不允许直接操作寄存器。</p>
 <h3 id="4-2-board-hw-rev-ver-c"><a href="#4-2-board-hw-rev-ver-c" class="headerlink" title="4.2 board_hw_rev_ver.c"></a>4.2 board_hw_rev_ver.c</h3><p>硬件版本识别：将 ADC 电阻梯码值转为 <code>V5xxxx</code> 类型信息。</p>
 <p>Board 层在 <code>board_config.h</code> 定义版本识别的引脚宏与 ADC 通道，BSP 层 <code>determine_hw_info()</code> 用 <code>read_id_dn()</code> 做两次测量（先测 revision，再测 version），将 ADC 码值 <code>dn</code> 转成 ordinal（离散编号），最终生成 <code>hw_info</code> 字符串。</p>
 <h3 id="4-3-board-reset-cpp"><a href="#4-3-board-reset-cpp" class="headerlink" title="4.3 board_reset.cpp"></a>4.3 board_reset.cpp</h3><p>复位到 Bootloader 或应用程序，核心机制：</p>
@@ -412,34 +518,34 @@
 <p>同一颗 TIM 同时承担：</p>
 <ul>
 <li>HRT：系统微秒时基 + callout 调度（比较中断）</li>
-<li>PPM：输入捕获&#x2F;边沿时间戳 → PPM 状态机解码</li>
+<li>PPM：输入捕获/边沿时间戳 → PPM 状态机解码</li>
 </ul>
 <h3 id="4-5-adc-cpp"><a href="#4-5-adc-cpp" class="headerlink" title="4.5 adc.cpp"></a>4.5 adc.cpp</h3><p>ADC 采样抽象，单次转换、寄存器级操作：</p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 初始化接口</span></span><br><span class="line">px4_arch_adc_init(base_address);   <span class="comment">// 对 ADC 实例做一次性初始化、校准、上电</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// 采样接口</span></span><br><span class="line">px4_arch_adc_sample(base_address, channel);</span><br><span class="line"><span class="comment">// 配置 SQR3=channel -&gt; 启动 SWSTART -&gt; 等待 EOC -&gt; 读 DR 返回原始码值</span></span><br></pre></td></tr></table></figure>
 
 <p>Board 层定义引脚与通道映射，<code>board_hw_rev_ver.c</code> 与 <code>board_adc</code> 驱动只关心通道编号，不关心寄存器细节。</p>
-<h3 id="4-6-io-timer-c"><a href="#4-6-io-timer-c" class="headerlink" title="4.6 io_timer.c"></a>4.6 io_timer.c</h3><p>PWM&#x2F;捕获&#x2F;Oneshot&#x2F;DShot 的统一定时器框架：</p>
+<h3 id="4-6-io-timer-c"><a href="#4-6-io-timer-c" class="headerlink" title="4.6 io_timer.c"></a>4.6 io_timer.c</h3><p>PWM/捕获/Oneshot/DShot 的统一定时器框架：</p>
 <figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">初始化流程：</span><br><span class="line">  io_timer_init_timer(timer, mode)</span><br><span class="line">    -&gt; 开 RCC 时钟</span><br><span class="line">    -&gt; 清零 CR1/CR2/SMCR/DIER/CCER/CCMR 等寄存器到可控初态</span><br><span class="line">    -&gt; 安装 IRQ handler</span><br><span class="line">    -&gt; 配置定时器频率与分频</span><br><span class="line"></span><br><span class="line">通道初始化：</span><br><span class="line">  io_timer_channel_init(channel, mode, handler, context)</span><br><span class="line">    -&gt; 从 timer_io_channels[]（Board 层 timer_config.cpp 生成的映射表）获取：</span><br><span class="line">       - 该 channel 属于哪个 timer</span><br><span class="line">       - 该 channel 是 timer 的 CH1/2/3/4</span><br><span class="line">       - 对应的 GPIO pinset（AF 复用）</span><br><span class="line">    -&gt; 按 mode 设置 CCMR（输入/输出比较模式）、CCER（极性、使能）、CCR（占空比/比较值）</span><br><span class="line">    -&gt; 配置 GPIO 为 AF 推挽或 AF 开漏</span><br></pre></td></tr></table></figure>
 
-<p>Board 层 <code>timer_config.cpp</code> 决定”哪些 TIM 实例可用、每个通道映射到哪个引脚”，BSP <code>io_timer.c</code> 只负责把”映射表 + 模式”变成寄存器配置。同一套框架覆盖 PWM&#x2F;捕获&#x2F;OneShot&#x2F;DShot，差异只在 mode 与寄存器位。</p>
+<p>Board 层 <code>timer_config.cpp</code> 决定”哪些 TIM 实例可用、每个通道映射到哪个引脚”，BSP <code>io_timer.c</code> 只负责把”映射表 + 模式”变成寄存器配置。同一套框架覆盖 PWM/捕获/OneShot/DShot，差异只在 mode 与寄存器位。</p>
 <hr>
 <h2 id="五、SOC-层：stm32f7-特定实现"><a href="#五、SOC-层：stm32f7-特定实现" class="headerlink" title="五、SOC 层：stm32f7 特定实现"></a>五、SOC 层：stm32f7 特定实现</h2><p><code>stm32f7/px4io_serial/px4io_serial.cpp</code> 是 SOC 层的典型代表。</p>
-<h3 id="ArchPX4IOSerial-init"><a href="#ArchPX4IOSerial-init" class="headerlink" title="ArchPX4IOSerial::init()"></a>ArchPX4IOSerial::init()</h3><p>通过 <code>PX4IO_SERIAL_*</code> 宏（来自 Board 层 <code>board_config.h</code>）拿到 UART base&#x2F;vector&#x2F;DMAMAP&#x2F;RCC 等硬件细节：</p>
+<h3 id="ArchPX4IOSerial-init"><a href="#ArchPX4IOSerial-init" class="headerlink" title="ArchPX4IOSerial::init()"></a>ArchPX4IOSerial::init()</h3><p>通过 <code>PX4IO_SERIAL_*</code> 宏（来自 Board 层 <code>board_config.h</code>）拿到 UART base/vector/DMAMAP/RCC 等硬件细节：</p>
 <figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">-&gt; 申请 TX/RX DMA 通道：stm32_dmachannel(PX4IO_SERIAL_TX_DMAMAP)</span><br><span class="line">-&gt; 配置 UART：启用 RE/TE/UE，启用 IDLEIE（空闲线中断）与错误中断</span><br><span class="line">-&gt; 设置 DMA 缓冲区对齐（F7 DCache 行对齐，避免 cache 污染）</span><br></pre></td></tr></table></figure>
 
 <h3 id="ArchPX4IOSerial-bus-exchange"><a href="#ArchPX4IOSerial-bus-exchange" class="headerlink" title="ArchPX4IOSerial::_bus_exchange()"></a>ArchPX4IOSerial::_bus_exchange()</h3><p>每次事务流程：</p>
-<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">准备 RX DMA -&gt; TX DMA 发包 -&gt; 等待 RX DMA 完成或超时</span><br><span class="line">-&gt; CRC 校验 -&gt; 失败则重试或报错</span><br><span class="line">-&gt; 超时则 _abort_dma() 清理 DMA 状态</span><br><span class="line">-&gt; 处理 IDLE 中断触发的&quot;帧结束&quot;语义</span><br></pre></td></tr></table></figure>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">准备 RX DMA -&gt; TX DMA 发包 -&gt; 等待 RX DMA 完成或超时</span><br><span class="line">-&gt; CRC 校验 -&gt; 失败则重试或报错</span><br><span class="line">-&gt; 超时则 _abort_dma() 清理 DMA 状态</span><br><span class="line">-&gt; 处理 IDLE 中断触发的"帧结束"语义</span><br></pre></td></tr></table></figure>
 
-<p>F7 有 DCache，DMA 必须处理 cache line 对齐与 invalidate&#x2F;clean。这也是 SOC 层独立于 BSP 层的原因：不同 STM32 系列的 UART&#x2F;DMA&#x2F;中断细节差异显著，通用化会引入大量条件编译。</p>
+<p>F7 有 DCache，DMA 必须处理 cache line 对齐与 invalidate/clean。这也是 SOC 层独立于 BSP 层的原因：不同 STM32 系列的 UART/DMA/中断细节差异显著，通用化会引入大量条件编译。</p>
 <p>驱动层（<code>src/drivers/px4io/</code>）通过 <code>PX4IO_serial_interface()</code> 工厂函数拿到 <code>ArchPX4IOSerial</code> 实例，px4io 驱动本身不直接写寄存器，实现了驱动层与 SOC 层的解耦。</p>
 <hr>
-<h2 id="六、Board-BSP-SOC-层宏到行为的对应关系"><a href="#六、Board-BSP-SOC-层宏到行为的对应关系" class="headerlink" title="六、Board&#x2F;BSP&#x2F;SOC 层宏到行为的对应关系"></a>六、Board&#x2F;BSP&#x2F;SOC 层宏到行为的对应关系</h2><h3 id="GPIO-链路"><a href="#GPIO-链路" class="headerlink" title="GPIO 链路"></a>GPIO 链路</h3><figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">Board -&gt; 定义 GPIO_*、PX4_GPIO_INIT_LIST</span><br><span class="line">BSP   -&gt; micro_hal.h: px4_arch_configgpio() -&gt; stm32_configgpio()</span><br><span class="line">bringup -&gt; init.c 调用 px4_gpio_init(PX4_GPIO_INIT_LIST)</span><br><span class="line">最终效果: 上电早期每个焊盘进入确定状态</span><br></pre></td></tr></table></figure>
+<h2 id="六、Board-BSP-SOC-层宏到行为的对应关系"><a href="#六、Board-BSP-SOC-层宏到行为的对应关系" class="headerlink" title="六、Board/BSP/SOC 层宏到行为的对应关系"></a>六、Board/BSP/SOC 层宏到行为的对应关系</h2><h3 id="GPIO-链路"><a href="#GPIO-链路" class="headerlink" title="GPIO 链路"></a>GPIO 链路</h3><figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">Board -&gt; 定义 GPIO_*、PX4_GPIO_INIT_LIST</span><br><span class="line">BSP   -&gt; micro_hal.h: px4_arch_configgpio() -&gt; stm32_configgpio()</span><br><span class="line">bringup -&gt; init.c 调用 px4_gpio_init(PX4_GPIO_INIT_LIST)</span><br><span class="line">最终效果: 上电早期每个焊盘进入确定状态</span><br></pre></td></tr></table></figure>
 
-<h3 id="ADC-硬件版本链路"><a href="#ADC-硬件版本链路" class="headerlink" title="ADC&#x2F;硬件版本链路"></a>ADC&#x2F;硬件版本链路</h3><figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">Board -&gt; 定义 ADC_HW_VER_SENSE_CHANNEL 等</span><br><span class="line">BSP   -&gt; board_hw_rev_ver.c 调用 read_id_dn() 读码值转 ordinal</span><br><span class="line">BSP   -&gt; adc.cpp 完成寄存器配置与 EOC 等待，返回 raw dn</span><br><span class="line">最终效果: 固件启动时得到 hw_version/hw_revision/hw_type_name</span><br></pre></td></tr></table></figure>
+<h3 id="ADC-硬件版本链路"><a href="#ADC-硬件版本链路" class="headerlink" title="ADC/硬件版本链路"></a>ADC/硬件版本链路</h3><figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">Board -&gt; 定义 ADC_HW_VER_SENSE_CHANNEL 等</span><br><span class="line">BSP   -&gt; board_hw_rev_ver.c 调用 read_id_dn() 读码值转 ordinal</span><br><span class="line">BSP   -&gt; adc.cpp 完成寄存器配置与 EOC 等待，返回 raw dn</span><br><span class="line">最终效果: 固件启动时得到 hw_version/hw_revision/hw_type_name</span><br></pre></td></tr></table></figure>
 
 <h3 id="HRT-链路"><a href="#HRT-链路" class="headerlink" title="HRT 链路"></a>HRT 链路</h3><figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">Board -&gt; 选择 HRT_TIMER=8、HRT_TIMER_CHANNEL=3、HRT_PPM_CHANNEL=1</span><br><span class="line">BSP   -&gt; hrt.c 用这些宏选择 TIM base/clock/IRQ vector</span><br><span class="line">        设 prescaler 让 CNT 以 1MHz free-run</span><br><span class="line">最终效果: hrt_absolute_time() 提供统一微秒时间戳；PPM 输入捕获与系统时基同域</span><br></pre></td></tr></table></figure>
 
-<h3 id="PX4IO-串口链路"><a href="#PX4IO-串口链路" class="headerlink" title="PX4IO 串口链路"></a>PX4IO 串口链路</h3><figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">Board -&gt; 给出 /dev/ttyS6、UART base/vector、DMA map、RCC enable、TX/RX GPIO</span><br><span class="line">SOC   -&gt; ArchPX4IOSerial::init() 用这些宏配置 UART+DMA+IRQ</span><br><span class="line">Driver-&gt; 通过 PX4IO_serial_interface() 拿到实例，执行 _bus_exchange()</span><br><span class="line">最终效果: PX4IO 通信的&quot;协议/事务&quot;在驱动层稳定，&quot;寄存器/DMA/Cache&quot;在 F7 SOC 层实现</span><br></pre></td></tr></table></figure>
+<h3 id="PX4IO-串口链路"><a href="#PX4IO-串口链路" class="headerlink" title="PX4IO 串口链路"></a>PX4IO 串口链路</h3><figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">Board -&gt; 给出 /dev/ttyS6、UART base/vector、DMA map、RCC enable、TX/RX GPIO</span><br><span class="line">SOC   -&gt; ArchPX4IOSerial::init() 用这些宏配置 UART+DMA+IRQ</span><br><span class="line">Driver-&gt; 通过 PX4IO_serial_interface() 拿到实例，执行 _bus_exchange()</span><br><span class="line">最终效果: PX4IO 通信的"协议/事务"在驱动层稳定，"寄存器/DMA/Cache"在 F7 SOC 层实现</span><br></pre></td></tr></table></figure>
 
 <hr>
 <blockquote>

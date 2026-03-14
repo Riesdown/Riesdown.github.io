@@ -28,7 +28,7 @@
 <meta property="og:description" content="详细解析 PX4 Navigator 的任务数据协议层，包括 NAV_CMD 命令枚举、NAV_FRAME 坐标系、mission_item_s 结构体的完整字段分析，以及各字段在导航链路中的使用位置。">
 <meta property="og:locale" content="zh_CN">
 <meta property="article:published_time" content="2026-03-06T06:00:00.000Z">
-<meta property="article:modified_time" content="2026-03-14T13:02:40.000Z">
+<meta property="article:modified_time" content="2026-03-14T13:21:42.000Z">
 <meta property="article:author" content="QingShan Li">
 <meta property="article:tag" content="Navigator">
 <meta property="article:tag" content="PX4">
@@ -79,12 +79,6 @@
 
 
 
-  
-
-  <script class="next-config" data-name="enableMath" type="application/json">true</script><script class="next-config" data-name="mathjax" type="application/json">{"enable":true,"tags":"ams","js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.js","integrity":"sha256-MASABpB4tYktI2Oitl4t+78w/lyA+D7b/s9GEP0JOGI="}}</script>
-<script src="/js/third-party/math/mathjax.js" defer></script>
-
-
 <!-- Custom Head Injection for QingShan Blog -->
 
 <!-- Google Fonts: Noto Sans SC for better Chinese rendering -->
@@ -120,7 +114,119 @@
   <noscript>
     <link rel="stylesheet" href="/css/noscript.css">
   </noscript>
-</head>
+<style>mjx-container[jax="SVG"] {
+  direction: ltr;
+}
+
+mjx-container[jax="SVG"] > svg {
+  overflow: visible;
+}
+
+mjx-container[jax="SVG"][display="true"] {
+  display: block;
+  text-align: center;
+  margin: 1em 0;
+}
+
+mjx-container[jax="SVG"][justify="left"] {
+  text-align: left;
+}
+
+mjx-container[jax="SVG"][justify="right"] {
+  text-align: right;
+}
+
+g[data-mml-node="merror"] > g {
+  fill: red;
+  stroke: red;
+}
+
+g[data-mml-node="merror"] > rect[data-background] {
+  fill: yellow;
+  stroke: none;
+}
+
+g[data-mml-node="mtable"] > line[data-line] {
+  stroke-width: 70px;
+  fill: none;
+}
+
+g[data-mml-node="mtable"] > rect[data-frame] {
+  stroke-width: 70px;
+  fill: none;
+}
+
+g[data-mml-node="mtable"] > .mjx-dashed {
+  stroke-dasharray: 140;
+}
+
+g[data-mml-node="mtable"] > .mjx-dotted {
+  stroke-linecap: round;
+  stroke-dasharray: 0,140;
+}
+
+g[data-mml-node="mtable"] > svg {
+  overflow: visible;
+}
+
+[jax="SVG"] mjx-tool {
+  display: inline-block;
+  position: relative;
+  width: 0;
+  height: 0;
+}
+
+[jax="SVG"] mjx-tool > mjx-tip {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+mjx-tool > mjx-tip {
+  display: inline-block;
+  padding: .2em;
+  border: 1px solid #888;
+  font-size: 70%;
+  background-color: #F8F8F8;
+  color: black;
+  box-shadow: 2px 2px 5px #AAAAAA;
+}
+
+g[data-mml-node="maction"][data-toggle] {
+  cursor: pointer;
+}
+
+mjx-status {
+  display: block;
+  position: fixed;
+  left: 1em;
+  bottom: 1em;
+  min-width: 25%;
+  padding: .2em .4em;
+  border: 1px solid #888;
+  font-size: 90%;
+  background-color: #F8F8F8;
+  color: black;
+}
+
+foreignObject[data-mjx-xml] {
+  font-family: initial;
+  line-height: normal;
+  overflow: visible;
+}
+
+.MathJax path {
+  stroke-width: 3;
+}
+
+mjx-container[display="true"] {
+  overflow: auto hidden;
+}
+
+mjx-container[display="true"] + br {
+  display: none;
+}
+</style></head>
 
 <body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
   <div class="headband"></div>
@@ -309,7 +415,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">更新于</span>
-      <time title="修改时间：2026-03-14 21:02:40" itemprop="dateModified" datetime="2026-03-14T21:02:40+08:00">2026-03-14</time>
+      <time title="修改时间：2026-03-14 21:21:42" itemprop="dateModified" datetime="2026-03-14T21:21:42+08:00">2026-03-14</time>
     </span>
     <span class="post-meta-item">
       <span class="post-meta-item-icon">
@@ -362,7 +468,7 @@
     
     
     
-    <div class="post-body" itemprop="articleBody"><h2 id="一、任务数据协议层的定位"><a href="#一、任务数据协议层的定位" class="headerlink" title="一、任务数据协议层的定位"></a>一、任务数据协议层的定位</h2><p><code>navigation.h</code> 和 <code>safe_point_land.hpp</code> 是 Navigator 模块的 <strong>L0 数据协议层</strong>，不包含任何运行逻辑，只定义数据语义。后续所有模式（Mission&#x2F;RTL&#x2F;Loiter 等）都基于这里定义的结构体进行操作。</p>
+    <div class="post-body" itemprop="articleBody"><h2 id="一、任务数据协议层的定位"><a href="#一、任务数据协议层的定位" class="headerlink" title="一、任务数据协议层的定位"></a>一、任务数据协议层的定位</h2><p><code>navigation.h</code> 和 <code>safe_point_land.hpp</code> 是 Navigator 模块的 <strong>L0 数据协议层</strong>，不包含任何运行逻辑，只定义数据语义。后续所有模式（Mission/RTL/Loiter 等）都基于这里定义的结构体进行操作。</p>
 <hr>
 <h2 id="二、NAV-CMD-—-导航命令枚举"><a href="#二、NAV-CMD-—-导航命令枚举" class="headerlink" title="二、NAV_CMD — 导航命令枚举"></a>二、<code>NAV_CMD</code> — 导航命令枚举</h2><p><code>NAV_CMD</code> 定义了任务项的<strong>命令类型</strong>，决定了 MissionBlock 如何解释该任务项：</p>
 <table>
@@ -380,23 +486,23 @@
 </tr>
 <tr>
 <td>起降</td>
-<td><code>NAV_CMD_TAKEOFF</code> &#x2F; <code>NAV_CMD_LAND</code></td>
-<td>起飞 &#x2F; 降落</td>
+<td><code>NAV_CMD_TAKEOFF</code> / <code>NAV_CMD_LAND</code></td>
+<td>起飞 / 降落</td>
 </tr>
 <tr>
 <td>盘旋</td>
-<td><code>NAV_CMD_LOITER_UNLIMITED</code> &#x2F; <code>LOITER_TIME_LIMIT</code> &#x2F; <code>LOITER_TO_ALT</code></td>
+<td><code>NAV_CMD_LOITER_UNLIMITED</code> / <code>LOITER_TIME_LIMIT</code> / <code>LOITER_TO_ALT</code></td>
 <td>各类盘旋</td>
 </tr>
 <tr>
 <td>VTOL</td>
-<td><code>NAV_CMD_VTOL_TAKEOFF</code> &#x2F; <code>VTOL_LAND</code> &#x2F; <code>DO_VTOL_TRANSITION</code></td>
+<td><code>NAV_CMD_VTOL_TAKEOFF</code> / <code>VTOL_LAND</code> / <code>DO_VTOL_TRANSITION</code></td>
 <td>VTOL 相关</td>
 </tr>
 <tr>
 <td>动作</td>
-<td><code>NAV_CMD_DO_CHANGE_SPEED</code> &#x2F; <code>DO_SET_ROI_*</code> &#x2F; <code>DO_JUMP</code></td>
-<td>速度&#x2F;ROI&#x2F;跳转</td>
+<td><code>NAV_CMD_DO_CHANGE_SPEED</code> / <code>DO_SET_ROI_*</code> / <code>DO_JUMP</code></td>
+<td>速度/ROI/跳转</td>
 </tr>
 <tr>
 <td>围栏</td>
@@ -405,7 +511,7 @@
 </tr>
 </tbody></table>
 <p><code>is_mission_item_reached_or_completed()</code> 中的第一步就是 switch(nav_cmd)，不同命令有截然不同的完成判据：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">switch</span> (navigator-&gt;<span class="built_in">get_mission_item</span>()-&gt;nav_cmd) &#123;</span><br><span class="line">    <span class="keyword">case</span> NAV_CMD_LAND:</span><br><span class="line">        <span class="keyword">return</span> vehicle_land_detected.landed;  <span class="comment">// 以落地检测为准</span></span><br><span class="line">    <span class="keyword">case</span> NAV_CMD_TAKEOFF:</span><br><span class="line">        <span class="keyword">return</span> altitude_reached_and_yaw_ok;   <span class="comment">// 高度+航向判断</span></span><br><span class="line">    <span class="keyword">case</span> NAV_CMD_LOITER_UNLIMITED:</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">false</span>;  <span class="comment">// 永不自动完成</span></span><br><span class="line">    <span class="keyword">case</span> NAV_CMD_DO_CHANGE_SPEED:</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">true</span>;   <span class="comment">// 立即完成（动作型命令）</span></span><br><span class="line">    <span class="comment">// ...</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">switch</span> (navigator-&gt;<span class="built_in">get_mission_item</span>()-&gt;nav_cmd) {</span><br><span class="line">    <span class="keyword">case</span> NAV_CMD_LAND:</span><br><span class="line">        <span class="keyword">return</span> vehicle_land_detected.landed;  <span class="comment">// 以落地检测为准</span></span><br><span class="line">    <span class="keyword">case</span> NAV_CMD_TAKEOFF:</span><br><span class="line">        <span class="keyword">return</span> altitude_reached_and_yaw_ok;   <span class="comment">// 高度+航向判断</span></span><br><span class="line">    <span class="keyword">case</span> NAV_CMD_LOITER_UNLIMITED:</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">false</span>;  <span class="comment">// 永不自动完成</span></span><br><span class="line">    <span class="keyword">case</span> NAV_CMD_DO_CHANGE_SPEED:</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">true</span>;   <span class="comment">// 立即完成（动作型命令）</span></span><br><span class="line">    <span class="comment">// ...</span></span><br><span class="line">}</span><br></pre></td></tr></table></figure>
 
 <hr>
 <h2 id="三、NAV-FRAME-—-坐标系枚举"><a href="#三、NAV-FRAME-—-坐标系枚举" class="headerlink" title="三、NAV_FRAME — 坐标系枚举"></a>三、<code>NAV_FRAME</code> — 坐标系枚举</h2><p><code>NAV_FRAME</code> 指定任务项高度的参考框架：</p>
@@ -436,7 +542,7 @@
 <p><code>MissionBlock::get_absolute_altitude_for_item()</code> 根据 <code>altitude_is_relative</code> 字段和 <code>frame</code> 进行高度换算，统一转为 AMSL 绝对高度后再用于计算。</p>
 <hr>
 <h2 id="四、mission-item-s-—-核心数据结构"><a href="#四、mission-item-s-—-核心数据结构" class="headerlink" title="四、mission_item_s — 核心数据结构"></a>四、<code>mission_item_s</code> — 核心数据结构</h2><p><code>mission_item_s</code> 是整个 Navigator 的<strong>统一任务表达结构</strong>，所有导航模式都围绕它工作。</p>
-<h3 id="4-1-字段分层说明"><a href="#4-1-字段分层说明" class="headerlink" title="4.1 字段分层说明"></a>4.1 字段分层说明</h3><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">struct</span> <span class="title class_">mission_item_s</span> &#123;</span><br><span class="line">    <span class="comment">// ─── 空间位置层 ───────────────────────────────────────────</span></span><br><span class="line">    <span class="type">double</span>  lat&#123;&#125;;          <span class="comment">// 目标纬度（度）</span></span><br><span class="line">    <span class="type">double</span>  lon&#123;&#125;;          <span class="comment">// 目标经度（度）</span></span><br><span class="line">    <span class="type">float</span>   altitude&#123;&#125;;     <span class="comment">// 目标高度（m，绝对或相对，取决于 altitude_is_relative）</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">// ─── 轨迹与接受判据层 ─────────────────────────────────────</span></span><br><span class="line">    <span class="type">float</span>   acceptance_radius&#123;&#125;;   <span class="comment">// 水平到达接受半径（m），控制航点切换松紧</span></span><br><span class="line">    <span class="type">float</span>   loiter_radius&#123;&#125;;       <span class="comment">// 盘旋半径（m，固定翼 loiter 必须）</span></span><br><span class="line">    <span class="type">float</span>   time_inside&#123;&#125;;         <span class="comment">// 在任务点内停留时间（s）</span></span><br><span class="line">    <span class="type">float</span>   yaw&#123;&#125;;                 <span class="comment">// 目标航向角（rad）</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">// ─── 命令执行层 ───────────────────────────────────────────</span></span><br><span class="line">    <span class="type">uint16_t</span> nav_cmd&#123;&#125;;            <span class="comment">// 任务命令类型（NAV_CMD_*）</span></span><br><span class="line">    <span class="type">float</span>    params[<span class="number">7</span>]&#123;&#125;;          <span class="comment">// MAVLink 命令参数（通用扩展字段）</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">// ─── 跳转/流程控制层 ──────────────────────────────────────</span></span><br><span class="line">    <span class="type">uint16_t</span> do_jump_mission_index&#123;&#125;;   <span class="comment">// DO_JUMP 跳转目标索引</span></span><br><span class="line">    <span class="type">uint16_t</span> do_jump_repeat_count&#123;&#125;;    <span class="comment">// DO_JUMP 重复次数</span></span><br><span class="line">    <span class="type">uint16_t</span> do_jump_current_count&#123;&#125;;   <span class="comment">// DO_JUMP 当前执行次数</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">// ─── 着陆/围栏复用层 ──────────────────────────────────────</span></span><br><span class="line">    <span class="type">uint8_t</span>  land_precision&#123;&#125;;          <span class="comment">// 着陆精度类型（0=标准，1/2=精确降落）</span></span><br><span class="line">    <span class="type">uint8_t</span>  vertex_count&#123;&#125;;            <span class="comment">// 围栏多边形顶点数</span></span><br><span class="line">    <span class="type">float</span>    circle_radius&#123;&#125;;           <span class="comment">// 围栏圆形半径（m）</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">// ─── 行为修饰层 ───────────────────────────────────────────</span></span><br><span class="line">    <span class="type">uint8_t</span>  frame&#123;&#125;;                   <span class="comment">// 坐标系（NAV_FRAME）</span></span><br><span class="line">    <span class="type">bool</span>     loiter_exit_xtrack&#123;&#125;;      <span class="comment">// 是否从切线方向离开盘旋</span></span><br><span class="line">    <span class="type">bool</span>     force_heading&#123;&#125;;           <span class="comment">// 是否强制控制航向</span></span><br><span class="line">    <span class="type">bool</span>     altitude_is_relative&#123;&#125;;    <span class="comment">// true=相对Home高度，false=AMSL绝对高度</span></span><br><span class="line">    <span class="type">bool</span>     autocontinue&#123;&#125;;            <span class="comment">// 完成后是否自动进入下一任务项</span></span><br><span class="line">    <span class="type">bool</span>     vtol_back_transition&#123;&#125;;    <span class="comment">// 是否属于 VTOL 回转换链路</span></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<h3 id="4-1-字段分层说明"><a href="#4-1-字段分层说明" class="headerlink" title="4.1 字段分层说明"></a>4.1 字段分层说明</h3><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">struct</span> <span class="title class_">mission_item_s</span> {</span><br><span class="line">    <span class="comment">// ─── 空间位置层 ───────────────────────────────────────────</span></span><br><span class="line">    <span class="type">double</span>  lat{};          <span class="comment">// 目标纬度（度）</span></span><br><span class="line">    <span class="type">double</span>  lon{};          <span class="comment">// 目标经度（度）</span></span><br><span class="line">    <span class="type">float</span>   altitude{};     <span class="comment">// 目标高度（m，绝对或相对，取决于 altitude_is_relative）</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">// ─── 轨迹与接受判据层 ─────────────────────────────────────</span></span><br><span class="line">    <span class="type">float</span>   acceptance_radius{};   <span class="comment">// 水平到达接受半径（m），控制航点切换松紧</span></span><br><span class="line">    <span class="type">float</span>   loiter_radius{};       <span class="comment">// 盘旋半径（m，固定翼 loiter 必须）</span></span><br><span class="line">    <span class="type">float</span>   time_inside{};         <span class="comment">// 在任务点内停留时间（s）</span></span><br><span class="line">    <span class="type">float</span>   yaw{};                 <span class="comment">// 目标航向角（rad）</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">// ─── 命令执行层 ───────────────────────────────────────────</span></span><br><span class="line">    <span class="type">uint16_t</span> nav_cmd{};            <span class="comment">// 任务命令类型（NAV_CMD_*）</span></span><br><span class="line">    <span class="type">float</span>    params[<span class="number">7</span>]{};          <span class="comment">// MAVLink 命令参数（通用扩展字段）</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">// ─── 跳转/流程控制层 ──────────────────────────────────────</span></span><br><span class="line">    <span class="type">uint16_t</span> do_jump_mission_index{};   <span class="comment">// DO_JUMP 跳转目标索引</span></span><br><span class="line">    <span class="type">uint16_t</span> do_jump_repeat_count{};    <span class="comment">// DO_JUMP 重复次数</span></span><br><span class="line">    <span class="type">uint16_t</span> do_jump_current_count{};   <span class="comment">// DO_JUMP 当前执行次数</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">// ─── 着陆/围栏复用层 ──────────────────────────────────────</span></span><br><span class="line">    <span class="type">uint8_t</span>  land_precision{};          <span class="comment">// 着陆精度类型（0=标准，1/2=精确降落）</span></span><br><span class="line">    <span class="type">uint8_t</span>  vertex_count{};            <span class="comment">// 围栏多边形顶点数</span></span><br><span class="line">    <span class="type">float</span>    circle_radius{};           <span class="comment">// 围栏圆形半径（m）</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">// ─── 行为修饰层 ───────────────────────────────────────────</span></span><br><span class="line">    <span class="type">uint8_t</span>  frame{};                   <span class="comment">// 坐标系（NAV_FRAME）</span></span><br><span class="line">    <span class="type">bool</span>     loiter_exit_xtrack{};      <span class="comment">// 是否从切线方向离开盘旋</span></span><br><span class="line">    <span class="type">bool</span>     force_heading{};           <span class="comment">// 是否强制控制航向</span></span><br><span class="line">    <span class="type">bool</span>     altitude_is_relative{};    <span class="comment">// true=相对Home高度，false=AMSL绝对高度</span></span><br><span class="line">    <span class="type">bool</span>     autocontinue{};            <span class="comment">// 完成后是否自动进入下一任务项</span></span><br><span class="line">    <span class="type">bool</span>     vtol_back_transition{};    <span class="comment">// 是否属于 VTOL 回转换链路</span></span><br><span class="line">};</span><br></pre></td></tr></table></figure>
 
 <h3 id="4-2-关键字段使用位置"><a href="#4-2-关键字段使用位置" class="headerlink" title="4.2 关键字段使用位置"></a>4.2 关键字段使用位置</h3><table>
 <thead>
@@ -484,7 +590,7 @@
 </tbody></table>
 <hr>
 <h2 id="五、mission-item-to-position-setpoint-翻译过程"><a href="#五、mission-item-to-position-setpoint-翻译过程" class="headerlink" title="五、mission_item_to_position_setpoint() 翻译过程"></a>五、<code>mission_item_to_position_setpoint()</code> 翻译过程</h2><p>这是从任务语义到控制量的<strong>核心翻译函数</strong>，将 <code>mission_item_s</code> 转为 <code>position_setpoint_s</code>：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">flowchart TD</span><br><span class="line">    MS[&quot;mission_item_s&quot;] --&gt; CMD&#123;nav_cmd 类型&#125;</span><br><span class="line">    CMD --&gt;|WAYPOINT/LOITER| POS[&quot;填充 lat/lon/alt\n设置 type=POSITION\n写入 acceptance_radius&quot;]</span><br><span class="line">    CMD --&gt;|TAKEOFF| TKO[&quot;设置 type=TAKEOFF\n填充起飞高度&quot;]</span><br><span class="line">    CMD --&gt;|LAND| LND[&quot;设置 type=LAND\n填充落地位置&quot;]</span><br><span class="line">    CMD --&gt;|DO_*| CMD2[&quot;直接发 vehicle_command\n不生成 setpoint&quot;]</span><br><span class="line">    POS --&gt; SP[&quot;position_setpoint_s&quot;]</span><br><span class="line">    TKO --&gt; SP</span><br><span class="line">    LND --&gt; SP</span><br><span class="line">    SP --&gt; TRIP[&quot;position_setpoint_triplet.current&quot;]</span><br></pre></td></tr></table></figure>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">flowchart TD</span><br><span class="line">    MS["mission_item_s"] --&gt; CMD{nav_cmd 类型}</span><br><span class="line">    CMD --&gt;|WAYPOINT/LOITER| POS["填充 lat/lon/alt\n设置 type=POSITION\n写入 acceptance_radius"]</span><br><span class="line">    CMD --&gt;|TAKEOFF| TKO["设置 type=TAKEOFF\n填充起飞高度"]</span><br><span class="line">    CMD --&gt;|LAND| LND["设置 type=LAND\n填充落地位置"]</span><br><span class="line">    CMD --&gt;|DO_*| CMD2["直接发 vehicle_command\n不生成 setpoint"]</span><br><span class="line">    POS --&gt; SP["position_setpoint_s"]</span><br><span class="line">    TKO --&gt; SP</span><br><span class="line">    LND --&gt; SP</span><br><span class="line">    SP --&gt; TRIP["position_setpoint_triplet.current"]</span><br></pre></td></tr></table></figure>
 
 <p><code>position_setpoint_s</code> 的核心字段：</p>
 <table>
@@ -496,7 +602,7 @@
 </thead>
 <tbody><tr>
 <td><code>type</code></td>
-<td>setpoint 类型（POSITION &#x2F; VELOCITY &#x2F; LOITER &#x2F; TAKEOFF &#x2F; LAND &#x2F; IDLE）</td>
+<td>setpoint 类型（POSITION / VELOCITY / LOITER / TAKEOFF / LAND / IDLE）</td>
 </tr>
 <tr>
 <td><code>lat / lon / alt</code></td>
@@ -522,14 +628,14 @@
 <hr>
 <h2 id="六、mission-fence-point-s-—-围栏数据"><a href="#六、mission-fence-point-s-—-围栏数据" class="headerlink" title="六、mission_fence_point_s — 围栏数据"></a>六、<code>mission_fence_point_s</code> — 围栏数据</h2><p>围栏数据存储于 dataman，通过 <code>mission_fence_point_s</code> 表达：</p>
 <ul>
-<li>多边形顶点（<code>NAV_FRAME_GLOBAL</code>坐标）：构成包含&#x2F;排除多边形</li>
+<li>多边形顶点（<code>NAV_FRAME_GLOBAL</code>坐标）：构成包含/排除多边形</li>
 <li>圆形区域：中心 + 半径</li>
 <li>Rally 点：安全备降点</li>
 </ul>
 <p><code>Geofence::checkPointAgainstAllGeofences()</code> 读取 dataman 中的围栏数据，判断目标点是否在有效飞行区域内。</p>
 <hr>
 <h2 id="七、PositionYawSetpoint-—-轻量化位置航向结构"><a href="#七、PositionYawSetpoint-—-轻量化位置航向结构" class="headerlink" title="七、PositionYawSetpoint — 轻量化位置航向结构"></a>七、<code>PositionYawSetpoint</code> — 轻量化位置航向结构</h2><p><code>PositionYawSetpoint</code> 是一个简化结构，专用于 RTL、safe point、着陆进近等不需要完整 <code>mission_item_s</code> 复杂语义的场景：</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">struct</span> <span class="title class_">PositionYawSetpoint</span> &#123;</span><br><span class="line">    <span class="type">float</span> lat&#123;&#125;;      <span class="comment">// 纬度（度）</span></span><br><span class="line">    <span class="type">float</span> lon&#123;&#125;;      <span class="comment">// 经度（度）</span></span><br><span class="line">    <span class="type">float</span> alt&#123;&#125;;      <span class="comment">// 高度（m，AMSL）</span></span><br><span class="line">    <span class="type">float</span> yaw&#123;&#125;;      <span class="comment">// 目标航向（rad）</span></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">struct</span> <span class="title class_">PositionYawSetpoint</span> {</span><br><span class="line">    <span class="type">float</span> lat{};      <span class="comment">// 纬度（度）</span></span><br><span class="line">    <span class="type">float</span> lon{};      <span class="comment">// 经度（度）</span></span><br><span class="line">    <span class="type">float</span> alt{};      <span class="comment">// 高度（m，AMSL）</span></span><br><span class="line">    <span class="type">float</span> yaw{};      <span class="comment">// 目标航向（rad）</span></span><br><span class="line">};</span><br></pre></td></tr></table></figure>
 
 <p><code>safe_point_land.hpp</code> 中的 <code>land_approaches_s</code> 进一步描述着陆进近的几何形状（入场角、最终进近路径等），主要由 RTL 模式在选择着陆方式时使用。</p>
 <hr>
