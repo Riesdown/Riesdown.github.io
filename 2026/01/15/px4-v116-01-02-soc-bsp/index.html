@@ -1,0 +1,796 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 8.1.1">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css" integrity="sha256-VHqXKFhhMxcpubYf9xiWdCiojEbY9NexQ4jh8AxbvcM=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/fancyapps-ui/5.0.31/fancybox/fancybox.css" integrity="sha256-gkQVf8UKZgQ0HyuxL/VnacadJ+D2Kox2TCEBuNQg5+w=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"blog.qingshanli.cn","root":"/","images":"/images","scheme":"Gemini","darkmode":false,"version":"8.27.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"codeblock":{"theme":{"light":"default","dark":"stackoverflow-dark"},"prism":{"light":"prism","dark":"prism-dark"},"copy_button":{"enable":true,"style":"mac"},"fold":{"enable":false,"height":500},"language":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":true,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"duration":300,"transition":{"menu_item":"fadeInDown","post_block":"fadeInUp","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInRight"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":1,"unescape":false,"preload":true}}</script><script src="/js/config.js" defer></script>
+
+    <meta name="description" content="解析 PX4 BSP（stm32_common）与 SOC（stm32f7）层的职责划分、构建方式与运行时调用链路，说明 Board 层宏如何通过 BSP 落地到 STM32 寄存器操作。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="PX4 SOC 与 BSP 层平台抽象">
+<meta property="og:url" content="https://blog.qingshanli.cn/2026/01/15/px4-v116-01-02-soc-bsp/index.html">
+<meta property="og:site_name" content="青山笔记">
+<meta property="og:description" content="解析 PX4 BSP（stm32_common）与 SOC（stm32f7）层的职责划分、构建方式与运行时调用链路，说明 Board 层宏如何通过 BSP 落地到 STM32 寄存器操作。">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2026-01-15T04:00:00.000Z">
+<meta property="article:modified_time" content="2026-03-14T13:02:40.000Z">
+<meta property="article:author" content="QingShan Li">
+<meta property="article:tag" content="BSP">
+<meta property="article:tag" content="NuttX">
+<meta property="article:tag" content="PX4">
+<meta property="article:tag" content="STM32">
+<meta property="article:tag" content="技术博文">
+<meta name="twitter:card" content="summary">
+
+
+<link rel="canonical" href="https://blog.qingshanli.cn/2026/01/15/px4-v116-01-02-soc-bsp/">
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"https://blog.qingshanli.cn/2026/01/15/px4-v116-01-02-soc-bsp/","path":"2026/01/15/px4-v116-01-02-soc-bsp/","title":"PX4 SOC 与 BSP 层平台抽象"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>PX4 SOC 与 BSP 层平台抽象 | 青山笔记</title>
+  
+
+
+
+
+
+
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/next-theme-pjax/0.6.0/pjax.min.js" integrity="sha256-vxLn1tSKWD4dqbMRyv940UYw4sXgMtYcK6reefzZrao=" crossorigin="anonymous" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/fancyapps-ui/5.0.31/fancybox/fancybox.umd.js" integrity="sha256-a+H7FYzJv6oU2hfsfDGM2Ohw/cR9v+hPfxHCLdmCrE8=" crossorigin="anonymous" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/lozad.js/1.16.0/lozad.min.js" integrity="sha256-mOFREFhqmHeQbXpK2lp4nA3qooVgACfh88fpJftLBbc=" crossorigin="anonymous" defer></script>
+<script src="/js/utils.js" defer></script><script src="/js/motion.js" defer></script><script src="/js/sidebar.js" defer></script><script src="/js/next-boot.js" defer></script><script src="/js/pjax.js" defer></script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/hexo-generator-searchdb/1.5.0/search.js" integrity="sha256-xFC6PJ82SL9b3WkGjFavNiA9gm5z6UBxWPiu4CYjptg=" crossorigin="anonymous" defer></script>
+<script src="/js/third-party/search/local-search.js" defer></script>
+
+
+  <script class="next-config" data-name="mermaid" type="application/json">{"enable":true,"theme":{"light":"default","dark":"dark"},"js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mermaid/11.10.1/mermaid.min.js","integrity":"sha256-BmQmdWDS8X2OTbrwELWK366LV6escyWhHHe0XCTU/Hk="}}</script>
+  <script src="/js/third-party/tags/mermaid.js" defer></script>
+
+
+  <script src="/js/third-party/fancybox.js" defer></script>
+
+
+
+  
+  <script data-pjax async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+
+
+
+  
+
+  <script class="next-config" data-name="enableMath" type="application/json">true</script><script class="next-config" data-name="mathjax" type="application/json">{"enable":true,"tags":"ams","js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.js","integrity":"sha256-MASABpB4tYktI2Oitl4t+78w/lyA+D7b/s9GEP0JOGI="}}</script>
+<script src="/js/third-party/math/mathjax.js" defer></script>
+
+
+<!-- Custom Head Injection for QingShan Blog -->
+
+<!-- Google Fonts: Noto Sans SC for better Chinese rendering -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+<!-- Preload background images for smooth transitions -->
+<link rel="preload" as="image" href="/images/bg-2.jpg">
+
+<!-- Custom font override -->
+<style>
+  body {
+    font-family: 'Inter', 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Inter', 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+    font-weight: 600;
+  }
+  .site-title {
+    font-family: 'Inter', 'Noto Sans SC', sans-serif;
+    font-weight: 700;
+    letter-spacing: 2px;
+  }
+  .site-subtitle {
+    font-family: 'Inter', 'Noto Sans SC', sans-serif;
+    font-weight: 300;
+    letter-spacing: 1px;
+  }
+</style>
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">青山笔记</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">探索无人控制的边界</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜索" role="button">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签<span class="badge">72</span></a></li><li class="menu-item menu-item-discover"><a href="/categories/" rel="section"><i class="fa fa-compass fa-fw"></i>发现</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档<span class="badge">35</span></a></li><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+      <div class="search-header">
+        <span class="search-icon">
+          <i class="fa fa-search"></i>
+        </span>
+        <div class="search-input-container">
+          <input autocomplete="off" autocapitalize="off" maxlength="80"
+                placeholder="搜索..." spellcheck="false"
+                type="search" class="search-input">
+        </div>
+        <span class="popup-btn-close" role="button">
+          <i class="fa fa-times-circle"></i>
+        </span>
+      </div>
+      <div class="search-result-container">
+        <div class="search-result-icon">
+          <i class="fa fa-spinner fa-pulse fa-5x"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%80%E3%80%81%E4%B8%89%E5%B1%82%E7%BB%93%E6%9E%84%E6%A6%82%E8%A7%88"><span class="nav-number">1.</span> <span class="nav-text">一、三层结构概览</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BA%8C%E3%80%81%E6%9E%84%E5%BB%BA%E5%85%B3%E7%B3%BB"><span class="nav-number">2.</span> <span class="nav-text">二、构建关系</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%89%E3%80%81%E8%BF%90%E8%A1%8C%E6%97%B6%E8%B0%83%E7%94%A8%E9%93%BE%E8%B7%AF"><span class="nav-number">3.</span> <span class="nav-text">三、运行时调用链路</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#3-1-stm32-boardinitialize"><span class="nav-number">3.1.</span> <span class="nav-text">3.1 stm32_boardinitialize()</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#3-2-board-app-initialize"><span class="nav-number">3.2.</span> <span class="nav-text">3.2 board_app_initialize()</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9B%9B%E3%80%81BSP-%E5%B1%82%E6%A0%B8%E5%BF%83%E6%96%87%E4%BB%B6"><span class="nav-number">4.</span> <span class="nav-text">四、BSP 层核心文件</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#4-1-micro-hal-h"><span class="nav-number">4.1.</span> <span class="nav-text">4.1 micro_hal.h</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#4-2-board-hw-rev-ver-c"><span class="nav-number">4.2.</span> <span class="nav-text">4.2 board_hw_rev_ver.c</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#4-3-board-reset-cpp"><span class="nav-number">4.3.</span> <span class="nav-text">4.3 board_reset.cpp</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#4-4-hrt-c"><span class="nav-number">4.4.</span> <span class="nav-text">4.4 hrt.c</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#4-5-adc-cpp"><span class="nav-number">4.5.</span> <span class="nav-text">4.5 adc.cpp</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#4-6-io-timer-c"><span class="nav-number">4.6.</span> <span class="nav-text">4.6 io_timer.c</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BA%94%E3%80%81SOC-%E5%B1%82%EF%BC%9Astm32f7-%E7%89%B9%E5%AE%9A%E5%AE%9E%E7%8E%B0"><span class="nav-number">5.</span> <span class="nav-text">五、SOC 层：stm32f7 特定实现</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#ArchPX4IOSerial-init"><span class="nav-number">5.1.</span> <span class="nav-text">ArchPX4IOSerial::init()</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#ArchPX4IOSerial-bus-exchange"><span class="nav-number">5.2.</span> <span class="nav-text">ArchPX4IOSerial::_bus_exchange()</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%85%AD%E3%80%81Board-BSP-SOC-%E5%B1%82%E5%AE%8F%E5%88%B0%E8%A1%8C%E4%B8%BA%E7%9A%84%E5%AF%B9%E5%BA%94%E5%85%B3%E7%B3%BB"><span class="nav-number">6.</span> <span class="nav-text">六、Board&#x2F;BSP&#x2F;SOC 层宏到行为的对应关系</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#GPIO-%E9%93%BE%E8%B7%AF"><span class="nav-number">6.1.</span> <span class="nav-text">GPIO 链路</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#ADC-%E7%A1%AC%E4%BB%B6%E7%89%88%E6%9C%AC%E9%93%BE%E8%B7%AF"><span class="nav-number">6.2.</span> <span class="nav-text">ADC&#x2F;硬件版本链路</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#HRT-%E9%93%BE%E8%B7%AF"><span class="nav-number">6.3.</span> <span class="nav-text">HRT 链路</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#PX4IO-%E4%B8%B2%E5%8F%A3%E9%93%BE%E8%B7%AF"><span class="nav-number">6.4.</span> <span class="nav-text">PX4IO 串口链路</span></a></li></ol></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="QingShan Li"
+      src="/images/avatar.jpg">
+  <p class="site-author-name" itemprop="name">QingShan Li</p>
+  <div class="site-description" itemprop="description">青山 | 无人控制方向 Learning Researcher 的个人博客</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">35</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+          <a href="/categories/">
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">72</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author animated">
+      <span class="links-of-author-item">
+        <a href="https://github.com/Riesdown" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;Riesdown" rel="noopener me" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:QingShanLi1970@qq.com" title="E-Mail → mailto:QingShanLi1970@qq.com" rel="noopener me" target="_blank"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+  </div>
+
+        </div>
+      </div>
+        <div class="back-to-top animated" role="button" aria-label="返回顶部">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://blog.qingshanli.cn/2026/01/15/px4-v116-01-02-soc-bsp/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="QingShan Li">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="青山笔记">
+      <meta itemprop="description" content="青山 | 无人控制方向 Learning Researcher 的个人博客">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="PX4 SOC 与 BSP 层平台抽象 | 青山笔记">
+      <meta itemprop="description" content="解析 PX4 BSP（stm32_common）与 SOC（stm32f7）层的职责划分、构建方式与运行时调用链路，说明 Board 层宏如何通过 BSP 落地到 STM32 寄存器操作。
+">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          PX4 SOC 与 BSP 层平台抽象
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2026-01-15 12:00:00" itemprop="dateCreated datePublished" datetime="2026-01-15T12:00:00+08:00">2026-01-15</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">更新于</span>
+      <time title="修改时间：2026-03-14 21:02:40" itemprop="dateModified" datetime="2026-03-14T21:02:40+08:00">2026-03-14</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E6%8A%80%E6%9C%AF/" itemprop="url" rel="index"><span itemprop="name">技术</span></a>
+        </span>
+          ，
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E6%8A%80%E6%9C%AF/%E9%A3%9E%E6%8E%A7PX4/" itemprop="url" rel="index"><span itemprop="name">飞控PX4</span></a>
+        </span>
+          ，
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E6%8A%80%E6%9C%AF/%E9%A3%9E%E6%8E%A7PX4/PX4%E5%B9%B3%E5%8F%B0%E5%B1%82/" itemprop="url" rel="index"><span itemprop="name">PX4平台层</span></a>
+        </span>
+    </span>
+
+  
+    <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv">
+      <span class="post-meta-item-icon">
+        <i class="far fa-eye"></i>
+      </span>
+      <span class="post-meta-item-text">阅读次数：</span>
+      <span id="busuanzi_value_page_pv"></span>
+    </span>
+    <span class="post-meta-break"></span>
+    <span class="post-meta-item" title="本文字数">
+      <span class="post-meta-item-icon">
+        <i class="far fa-file-word"></i>
+      </span>
+      <span class="post-meta-item-text">本文字数：</span>
+      <span>895</span>
+    </span>
+    <span class="post-meta-item" title="阅读时长">
+      <span class="post-meta-item-icon">
+        <i class="far fa-clock"></i>
+      </span>
+      <span class="post-meta-item-text">阅读时长 &asymp;</span>
+      <span>3 分钟</span>
+    </span>
+</div>
+
+            <div class="post-description">解析 PX4 BSP（stm32_common）与 SOC（stm32f7）层的职责划分、构建方式与运行时调用链路，说明 Board 层宏如何通过 BSP 落地到 STM32 寄存器操作。
+</div>
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><h2 id="一、三层结构概览"><a href="#一、三层结构概览" class="headerlink" title="一、三层结构概览"></a>一、三层结构概览</h2><p>Board 层、BSP 层、SOC 层构成 PX4 硬件抽象的三级结构，职责各异：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">flowchart TD</span><br><span class="line">    Board[&quot;Board 层\nboards/px4/fmu-v5/\n提供 board_config.h 宏定义\n不直接操作寄存器&quot;]</span><br><span class="line">    BSP[&quot;BSP 层\nplatforms/nuttx/src/px4/stm32_common/\n实现 GPIO/ADC/TIM/SPI/UART 等外设\n暴露 px4_arch_* hrt_* io_timer_* 接口&quot;]</span><br><span class="line">    SOC[&quot;SOC 层\nplatforms/nuttx/src/px4/stm32f7/\n聚合 stm32_common 通用能力\n实现 F7 特定功能（DMA Cache IDLE 中断）&quot;]</span><br><span class="line">    NuttX[&quot;NuttX STM32 arch/HAL\nstm32_* 寄存器级实现&quot;]</span><br><span class="line"></span><br><span class="line">    Board --&gt; BSP</span><br><span class="line">    Board --&gt; SOC</span><br><span class="line">    BSP --&gt; NuttX</span><br><span class="line">    SOC --&gt; BSP</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>相关前置知识：<a href="/2026/01/06/px4-v116-01-01-board-config/">Board 层硬件配置</a></p>
+</blockquote>
+<hr>
+<h2 id="二、构建关系"><a href="#二、构建关系" class="headerlink" title="二、构建关系"></a>二、构建关系</h2><p><code>platforms/nuttx/src/px4/stm32f7/CMakeLists.txt</code> 负责将 BSP 与 SOC 组件聚合到同一编译目标：</p>
+<ul>
+<li><strong>BSP 通用模块（stm32_common）</strong>：ADC、HRT、SPI、io_timer 等，被所有 STM32 系列复用</li>
+<li><strong>SOC 专属（stm32f7）</strong>：<ul>
+<li><code>px4io_serial</code>：F7 特定的 DMA + DCache + IDLE 中断处理</li>
+<li><code>watchdog</code>：F7 具体的硬件看门狗实现</li>
+</ul>
+</li>
+</ul>
+<p>Board 层在更高层的 Board CMake 中被加入同一构建图谱，最终与 BSP&#x2F;SOC 一起链接成单一的 <code>.elf</code> 固件镜像。</p>
+<hr>
+<h2 id="三、运行时调用链路"><a href="#三、运行时调用链路" class="headerlink" title="三、运行时调用链路"></a>三、运行时调用链路</h2><h3 id="3-1-stm32-boardinitialize"><a href="#3-1-stm32-boardinitialize" class="headerlink" title="3.1 stm32_boardinitialize()"></a>3.1 stm32_boardinitialize()</h3><p>NuttX 启动序列最早调用的板级入口，在 <code>init.c</code> 中实现：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">stm32_boardinitialize()</span><br><span class="line">  -&gt; board_on_reset()：危险引脚/PWM 切到安全态</span><br><span class="line">  -&gt; board_autoled_initialize()：不依赖 NuttX 系统的 LED 初始化</span><br><span class="line">  -&gt; px4_gpio_init(PX4_GPIO_INIT_LIST)</span><br><span class="line">       Board 层提供 GPIO_xxx 宏（Pinset 位域）</span><br><span class="line">       BSP 层 micro_hal.h 将 px4_arch_configgpio() 映射到 stm32_configgpio()</span><br><span class="line">       NuttX STM32 arch 层做实际寄存器写入</span><br><span class="line">  -&gt; USB 相关初始化</span><br></pre></td></tr></table></figure>
+
+<h3 id="3-2-board-app-initialize"><a href="#3-2-board-app-initialize" class="headerlink" title="3.2 board_app_initialize()"></a>3.2 board_app_initialize()</h3><p>应用层初始化入口，PX4 平台起来前的最后板级准备：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">board_app_initialize()</span><br><span class="line">  -&gt; 上电策略：调用 board_config.h 中的 True-logic 宏</span><br><span class="line">  -&gt; px4_platform_init()：明确要求 HRT 先跑起来</span><br><span class="line">  -&gt; board_determine_hw_info()：读取 ADC 电阻梯，生成 Ver/Rev/type_name</span><br><span class="line">  -&gt; stm32_spiinitialize()：在确定 HW 版本后配置 SPI</span><br><span class="line">  -&gt; 裁剪不存在的 CAN2/CAN3：把 RX 引脚从外设复用切换成下拉输入</span><br><span class="line">  -&gt; board_dma_alloc_init()、串口 DMA Polling、LED 驱动、SDIO 等</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="四、BSP-层核心文件"><a href="#四、BSP-层核心文件" class="headerlink" title="四、BSP 层核心文件"></a>四、BSP 层核心文件</h2><h3 id="4-1-micro-hal-h"><a href="#4-1-micro-hal-h" class="headerlink" title="4.1 micro_hal.h"></a>4.1 micro_hal.h</h3><p>BSP 层将 Board 层定义的宏落地到 NuttX STM32 HAL 的关键桥接文件，统一将 <code>px4_arch_*</code> 映射到 NuttX STM32 的 <code>stm32_*</code> 实现：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">px4_arch_configgpio(pinset)  -&gt;  stm32_configgpio(pinset)</span><br><span class="line">px4_arch_gpioread(pinset)    -&gt;  stm32_gpioread(pinset)</span><br><span class="line">px4_arch_gpiowrite(pinset, value) -&gt; stm32_gpiowrite(pinset, value)</span><br><span class="line">px4_arch_gpiosetevent(...)   -&gt;  stm32_gpiosetevent(...)</span><br></pre></td></tr></table></figure>
+
+<p>Board 层产出 Pinset 位域（端口&#x2F;引脚&#x2F;模式&#x2F;上下拉&#x2F;AF&#x2F;默认电平），BSP 层把 Pinset 写进 STM32 GPIO 寄存器。Board 层不允许直接操作寄存器。</p>
+<h3 id="4-2-board-hw-rev-ver-c"><a href="#4-2-board-hw-rev-ver-c" class="headerlink" title="4.2 board_hw_rev_ver.c"></a>4.2 board_hw_rev_ver.c</h3><p>硬件版本识别：将 ADC 电阻梯码值转为 <code>V5xxxx</code> 类型信息。</p>
+<p>Board 层在 <code>board_config.h</code> 定义版本识别的引脚宏与 ADC 通道，BSP 层 <code>determine_hw_info()</code> 用 <code>read_id_dn()</code> 做两次测量（先测 revision，再测 version），将 ADC 码值 <code>dn</code> 转成 ordinal（离散编号），最终生成 <code>hw_info</code> 字符串。</p>
+<h3 id="4-3-board-reset-cpp"><a href="#4-3-board-reset-cpp" class="headerlink" title="4.3 board_reset.cpp"></a>4.3 board_reset.cpp</h3><p>复位到 Bootloader 或应用程序，核心机制：</p>
+<ul>
+<li>写 RTC 备份寄存器（如 <code>STM32_RTC_BK0R</code>）存放模式魔数</li>
+<li>魔数类型：boot to BL、boot to app、CAN BL 等</li>
+<li>调用 <code>up_systemreset()</code> 触发复位</li>
+<li>备份域掉电保持，适合跨复位传递启动模式意图</li>
+</ul>
+<h3 id="4-4-hrt-c"><a href="#4-4-hrt-c" class="headerlink" title="4.4 hrt.c"></a>4.4 hrt.c</h3><p>HRT 高精度时钟与 PPM 解码绑定在同一硬件定时器上。直接占用一个 TIM，不走 NuttX 通用定时器驱动：</p>
+<ul>
+<li>需要稳定 1 MHz free-running 计数作微秒级时间基准</li>
+<li>需要比较中断，安排未来某时刻触发回调</li>
+<li>需要最小抖动与最小开销</li>
+</ul>
+<p><code>hrt_init()</code> 核心流程：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 打开定时器时钟 RCC</span></span><br><span class="line"><span class="comment">// 配置 TIM 为 1MHz free-run</span></span><br><span class="line">PSC = (HRT_TIMER_CLOCK / <span class="number">1000000</span>) - <span class="number">1</span>;</span><br><span class="line">ARR = <span class="number">0xffff</span>;  <span class="comment">// 自由运行</span></span><br><span class="line">CR1 = CEN;     <span class="comment">// 开始计数</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// 使能中断向量</span></span><br><span class="line"><span class="comment">// 同时打开 DIER_HRT | DIER_PPM</span></span><br><span class="line"><span class="comment">// 配置 CCMR/CCER 与 PPM 相关通道寄存器</span></span><br></pre></td></tr></table></figure>
+
+<p>同一颗 TIM 同时承担：</p>
+<ul>
+<li>HRT：系统微秒时基 + callout 调度（比较中断）</li>
+<li>PPM：输入捕获&#x2F;边沿时间戳 → PPM 状态机解码</li>
+</ul>
+<h3 id="4-5-adc-cpp"><a href="#4-5-adc-cpp" class="headerlink" title="4.5 adc.cpp"></a>4.5 adc.cpp</h3><p>ADC 采样抽象，单次转换、寄存器级操作：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 初始化接口</span></span><br><span class="line">px4_arch_adc_init(base_address);   <span class="comment">// 对 ADC 实例做一次性初始化、校准、上电</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// 采样接口</span></span><br><span class="line">px4_arch_adc_sample(base_address, channel);</span><br><span class="line"><span class="comment">// 配置 SQR3=channel -&gt; 启动 SWSTART -&gt; 等待 EOC -&gt; 读 DR 返回原始码值</span></span><br></pre></td></tr></table></figure>
+
+<p>Board 层定义引脚与通道映射，<code>board_hw_rev_ver.c</code> 与 <code>board_adc</code> 驱动只关心通道编号，不关心寄存器细节。</p>
+<h3 id="4-6-io-timer-c"><a href="#4-6-io-timer-c" class="headerlink" title="4.6 io_timer.c"></a>4.6 io_timer.c</h3><p>PWM&#x2F;捕获&#x2F;Oneshot&#x2F;DShot 的统一定时器框架：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">初始化流程：</span><br><span class="line">  io_timer_init_timer(timer, mode)</span><br><span class="line">    -&gt; 开 RCC 时钟</span><br><span class="line">    -&gt; 清零 CR1/CR2/SMCR/DIER/CCER/CCMR 等寄存器到可控初态</span><br><span class="line">    -&gt; 安装 IRQ handler</span><br><span class="line">    -&gt; 配置定时器频率与分频</span><br><span class="line"></span><br><span class="line">通道初始化：</span><br><span class="line">  io_timer_channel_init(channel, mode, handler, context)</span><br><span class="line">    -&gt; 从 timer_io_channels[]（Board 层 timer_config.cpp 生成的映射表）获取：</span><br><span class="line">       - 该 channel 属于哪个 timer</span><br><span class="line">       - 该 channel 是 timer 的 CH1/2/3/4</span><br><span class="line">       - 对应的 GPIO pinset（AF 复用）</span><br><span class="line">    -&gt; 按 mode 设置 CCMR（输入/输出比较模式）、CCER（极性、使能）、CCR（占空比/比较值）</span><br><span class="line">    -&gt; 配置 GPIO 为 AF 推挽或 AF 开漏</span><br></pre></td></tr></table></figure>
+
+<p>Board 层 <code>timer_config.cpp</code> 决定”哪些 TIM 实例可用、每个通道映射到哪个引脚”，BSP <code>io_timer.c</code> 只负责把”映射表 + 模式”变成寄存器配置。同一套框架覆盖 PWM&#x2F;捕获&#x2F;OneShot&#x2F;DShot，差异只在 mode 与寄存器位。</p>
+<hr>
+<h2 id="五、SOC-层：stm32f7-特定实现"><a href="#五、SOC-层：stm32f7-特定实现" class="headerlink" title="五、SOC 层：stm32f7 特定实现"></a>五、SOC 层：stm32f7 特定实现</h2><p><code>stm32f7/px4io_serial/px4io_serial.cpp</code> 是 SOC 层的典型代表。</p>
+<h3 id="ArchPX4IOSerial-init"><a href="#ArchPX4IOSerial-init" class="headerlink" title="ArchPX4IOSerial::init()"></a>ArchPX4IOSerial::init()</h3><p>通过 <code>PX4IO_SERIAL_*</code> 宏（来自 Board 层 <code>board_config.h</code>）拿到 UART base&#x2F;vector&#x2F;DMAMAP&#x2F;RCC 等硬件细节：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">-&gt; 申请 TX/RX DMA 通道：stm32_dmachannel(PX4IO_SERIAL_TX_DMAMAP)</span><br><span class="line">-&gt; 配置 UART：启用 RE/TE/UE，启用 IDLEIE（空闲线中断）与错误中断</span><br><span class="line">-&gt; 设置 DMA 缓冲区对齐（F7 DCache 行对齐，避免 cache 污染）</span><br></pre></td></tr></table></figure>
+
+<h3 id="ArchPX4IOSerial-bus-exchange"><a href="#ArchPX4IOSerial-bus-exchange" class="headerlink" title="ArchPX4IOSerial::_bus_exchange()"></a>ArchPX4IOSerial::_bus_exchange()</h3><p>每次事务流程：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">准备 RX DMA -&gt; TX DMA 发包 -&gt; 等待 RX DMA 完成或超时</span><br><span class="line">-&gt; CRC 校验 -&gt; 失败则重试或报错</span><br><span class="line">-&gt; 超时则 _abort_dma() 清理 DMA 状态</span><br><span class="line">-&gt; 处理 IDLE 中断触发的&quot;帧结束&quot;语义</span><br></pre></td></tr></table></figure>
+
+<p>F7 有 DCache，DMA 必须处理 cache line 对齐与 invalidate&#x2F;clean。这也是 SOC 层独立于 BSP 层的原因：不同 STM32 系列的 UART&#x2F;DMA&#x2F;中断细节差异显著，通用化会引入大量条件编译。</p>
+<p>驱动层（<code>src/drivers/px4io/</code>）通过 <code>PX4IO_serial_interface()</code> 工厂函数拿到 <code>ArchPX4IOSerial</code> 实例，px4io 驱动本身不直接写寄存器，实现了驱动层与 SOC 层的解耦。</p>
+<hr>
+<h2 id="六、Board-BSP-SOC-层宏到行为的对应关系"><a href="#六、Board-BSP-SOC-层宏到行为的对应关系" class="headerlink" title="六、Board&#x2F;BSP&#x2F;SOC 层宏到行为的对应关系"></a>六、Board&#x2F;BSP&#x2F;SOC 层宏到行为的对应关系</h2><h3 id="GPIO-链路"><a href="#GPIO-链路" class="headerlink" title="GPIO 链路"></a>GPIO 链路</h3><figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">Board -&gt; 定义 GPIO_*、PX4_GPIO_INIT_LIST</span><br><span class="line">BSP   -&gt; micro_hal.h: px4_arch_configgpio() -&gt; stm32_configgpio()</span><br><span class="line">bringup -&gt; init.c 调用 px4_gpio_init(PX4_GPIO_INIT_LIST)</span><br><span class="line">最终效果: 上电早期每个焊盘进入确定状态</span><br></pre></td></tr></table></figure>
+
+<h3 id="ADC-硬件版本链路"><a href="#ADC-硬件版本链路" class="headerlink" title="ADC&#x2F;硬件版本链路"></a>ADC&#x2F;硬件版本链路</h3><figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">Board -&gt; 定义 ADC_HW_VER_SENSE_CHANNEL 等</span><br><span class="line">BSP   -&gt; board_hw_rev_ver.c 调用 read_id_dn() 读码值转 ordinal</span><br><span class="line">BSP   -&gt; adc.cpp 完成寄存器配置与 EOC 等待，返回 raw dn</span><br><span class="line">最终效果: 固件启动时得到 hw_version/hw_revision/hw_type_name</span><br></pre></td></tr></table></figure>
+
+<h3 id="HRT-链路"><a href="#HRT-链路" class="headerlink" title="HRT 链路"></a>HRT 链路</h3><figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">Board -&gt; 选择 HRT_TIMER=8、HRT_TIMER_CHANNEL=3、HRT_PPM_CHANNEL=1</span><br><span class="line">BSP   -&gt; hrt.c 用这些宏选择 TIM base/clock/IRQ vector</span><br><span class="line">        设 prescaler 让 CNT 以 1MHz free-run</span><br><span class="line">最终效果: hrt_absolute_time() 提供统一微秒时间戳；PPM 输入捕获与系统时基同域</span><br></pre></td></tr></table></figure>
+
+<h3 id="PX4IO-串口链路"><a href="#PX4IO-串口链路" class="headerlink" title="PX4IO 串口链路"></a>PX4IO 串口链路</h3><figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">Board -&gt; 给出 /dev/ttyS6、UART base/vector、DMA map、RCC enable、TX/RX GPIO</span><br><span class="line">SOC   -&gt; ArchPX4IOSerial::init() 用这些宏配置 UART+DMA+IRQ</span><br><span class="line">Driver-&gt; 通过 PX4IO_serial_interface() 拿到实例，执行 _bus_exchange()</span><br><span class="line">最终效果: PX4IO 通信的&quot;协议/事务&quot;在驱动层稳定，&quot;寄存器/DMA/Cache&quot;在 F7 SOC 层实现</span><br></pre></td></tr></table></figure>
+
+<hr>
+<blockquote>
+<p>上一篇：<a href="/2026/01/06/px4-v116-01-01-board-config/">Board 层硬件配置</a><br>下一篇：<a href="/2026/01/16/px4-v116-01-03-build-flash/">固件编译与烧写流程</a></p>
+</blockquote>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E6%8A%80%E6%9C%AF%E5%8D%9A%E6%96%87/" rel="tag"><i class="fa fa-tag"></i> 技术博文</a>
+              <a href="/tags/PX4/" rel="tag"><i class="fa fa-tag"></i> PX4</a>
+              <a href="/tags/BSP/" rel="tag"><i class="fa fa-tag"></i> BSP</a>
+              <a href="/tags/STM32/" rel="tag"><i class="fa fa-tag"></i> STM32</a>
+              <a href="/tags/NuttX/" rel="tag"><i class="fa fa-tag"></i> NuttX</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2026/01/12/px4-v116-01-08-dshot-motor/" rel="prev" title="PX4 DShot 电机转向修改">
+                  <i class="fa fa-angle-left"></i> PX4 DShot 电机转向修改
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2026/01/16/px4-v116-01-03-build-flash/" rel="next" title="PX4 固件编译与烧写流程">
+                  PX4 固件编译与烧写流程 <i class="fa fa-angle-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 2025 – 
+    <span itemprop="copyrightYear">2026</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">QingShan Li</span>
+  </div>
+<div class="busuanzi-count">
+    <span class="post-meta-item" id="busuanzi_container_site_uv">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="reading-progress-bar"></div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+<!-- QingShan Blog - 顶部Banner背景图轮播 + 增强功能 -->
+
+<script>
+(function() {
+  'use strict';
+
+  // ============================================
+  // 顶部 Banner 背景图轮播
+  // ============================================
+  var bannerImages = [
+    '/images/bg-2.jpg',
+    '/images/bg-3.jpg',
+    '/images/bg-4.png',
+    '/images/bg-5.png'
+  ];
+
+  var currentBannerIndex = 0;
+  var bannerInterval = 10000; // 10秒切换
+
+  function preloadImages(urls) {
+    urls.forEach(function(url) {
+      var img = new Image();
+      img.src = url;
+    });
+  }
+
+  function createBanner() {
+    // 检查是否已存在
+    if (document.getElementById('hero-banner')) return;
+
+    var banner = document.createElement('div');
+    banner.id = 'hero-banner';
+
+    var bgLayer = document.createElement('div');
+    bgLayer.className = 'banner-bg';
+
+    var bgNextLayer = document.createElement('div');
+    bgNextLayer.className = 'banner-bg-next';
+
+    banner.appendChild(bgLayer);
+    banner.appendChild(bgNextLayer);
+
+    // 插入到 .main 之前（全宽独立元素，不进入 flex 容器）
+    var mainEl = document.querySelector('main.main');
+    if (mainEl) {
+      mainEl.parentNode.insertBefore(banner, mainEl);
+    } else {
+      // 备选：插到 headband 之后
+      var headband = document.querySelector('.headband');
+      if (headband && headband.nextSibling) {
+        headband.parentNode.insertBefore(banner, headband.nextSibling);
+      } else {
+        document.body.insertBefore(banner, document.body.firstChild);
+      }
+    }
+
+    return banner;
+  }
+
+  function initBanner() {
+    if (bannerImages.length === 0) return;
+
+    var banner = createBanner();
+    if (!banner) return;
+
+    var bgLayer = banner.querySelector('.banner-bg');
+    var bgNextLayer = banner.querySelector('.banner-bg-next');
+    if (!bgLayer || !bgNextLayer) return;
+
+    // 随机起始
+    currentBannerIndex = Math.floor(Math.random() * bannerImages.length);
+    bgLayer.style.backgroundImage = 'url(' + bannerImages[currentBannerIndex] + ')';
+
+    preloadImages(bannerImages);
+
+    // 开始轮播
+    if (bannerImages.length > 1) {
+      setInterval(function() {
+        var nextIndex = (currentBannerIndex + 1) % bannerImages.length;
+        bgNextLayer.style.backgroundImage = 'url(' + bannerImages[nextIndex] + ')';
+        bgNextLayer.style.opacity = '1';
+        bgLayer.style.opacity = '0';
+
+        setTimeout(function() {
+          bgLayer.style.transition = 'none';
+          bgLayer.style.backgroundImage = 'url(' + bannerImages[nextIndex] + ')';
+          bgLayer.style.opacity = '1';
+          bgNextLayer.style.opacity = '0';
+
+          setTimeout(function() {
+            bgLayer.style.transition = 'opacity 2s ease-in-out';
+          }, 50);
+
+          currentBannerIndex = nextIndex;
+        }, 2100);
+      }, bannerInterval);
+    }
+  }
+
+  // ============================================
+  // Scroll Reveal Animation
+  // ============================================
+  function initScrollReveal() {
+    var selectors = '.post-block, .pagination, .comments, .sub-menu';
+    var elements = document.querySelectorAll(selectors);
+    if (!elements.length) return;
+
+    if ('IntersectionObserver' in window) {
+      var observer = new IntersectionObserver(function(entries) {
+        entries.forEach(function(entry) {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('revealed');
+            observer.unobserve(entry.target);
+          }
+        });
+      }, {
+        threshold: 0.08,
+        rootMargin: '0px 0px -40px 0px'
+      });
+
+      elements.forEach(function(el) {
+        el.classList.add('scroll-reveal');
+        observer.observe(el);
+      });
+    } else {
+      elements.forEach(function(el) {
+        el.style.opacity = '1';
+      });
+    }
+  }
+
+  // ============================================
+  // Typing Effect for Subtitle
+  // ============================================
+  function initSubtitleEffect() {
+    var subtitle = document.querySelector('.site-subtitle');
+    if (!subtitle || subtitle.dataset.typed) return;
+    subtitle.dataset.typed = 'true';
+
+    var text = subtitle.textContent;
+    subtitle.textContent = '';
+    subtitle.style.borderRight = '2px solid #c0956c';
+    subtitle.style.display = 'inline-block';
+
+    var i = 0;
+    var timer = setInterval(function() {
+      if (i < text.length) {
+        subtitle.textContent += text.charAt(i);
+        i++;
+      } else {
+        clearInterval(timer);
+        setTimeout(function() {
+          subtitle.style.borderRight = 'none';
+        }, 1500);
+      }
+    }, 100);
+  }
+
+  // ============================================
+  // Search Popup Enhancement: 显示最近文章
+  // ============================================
+  function initSearchEnhancement() {
+    var searchContainer = document.querySelector('.search-result-container');
+    var searchInput = document.querySelector('.search-input');
+    if (!searchContainer || !searchInput) return;
+
+    function showRecentPosts() {
+      fetch('/search.xml')
+        .then(function(res) { return res.text(); })
+        .then(function(xmlText) {
+          var parser = new DOMParser();
+          var doc = parser.parseFromString(xmlText, 'text/xml');
+          var entries = doc.querySelectorAll('entry');
+          if (!entries.length) return;
+
+          var html = '<div class="search-recent-posts">';
+          html += '<div class="search-recent-title">📄 最近发布的文章</div>';
+          html += '<ul class="search-recent-list">';
+
+          var count = Math.min(entries.length, 10);
+          for (var i = 0; i < count; i++) {
+            var entry = entries[i];
+            var title = entry.querySelector('title') ? entry.querySelector('title').textContent : '';
+            var url = entry.querySelector('url') ? entry.querySelector('url').textContent : '#';
+            var dateNode = entry.querySelector('date');
+            var dateStr = '';
+            if (dateNode) {
+              var d = new Date(dateNode.textContent);
+              dateStr = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+            }
+            html += '<li class="search-recent-item">';
+            html += '<a href="' + url + '">';
+            html += '<div class="search-recent-item-title">' + title + '</div>';
+            if (dateStr) html += '<div class="search-recent-item-date">' + dateStr + '</div>';
+            html += '</a></li>';
+          }
+          html += '</ul></div>';
+
+          window._recentPostsHTML = html;
+          if (!searchInput.value.trim()) {
+            searchContainer.innerHTML = html;
+          }
+        })
+        .catch(function() {});
+    }
+
+    // 监听搜索弹窗打开
+    var observer = new MutationObserver(function(mutations) {
+      mutations.forEach(function(mutation) {
+        if (mutation.target.classList && mutation.target.classList.contains('search-active')) {
+          setTimeout(function() {
+            if (!searchInput.value.trim()) {
+              if (window._recentPostsHTML) {
+                searchContainer.innerHTML = window._recentPostsHTML;
+              } else {
+                showRecentPosts();
+              }
+            }
+          }, 300);
+        }
+      });
+    });
+    observer.observe(document.body, { attributes: true, attributeFilter: ['class'] });
+
+    searchInput.addEventListener('input', function() {
+      if (!searchInput.value.trim() && window._recentPostsHTML) {
+        setTimeout(function() {
+          if (!searchInput.value.trim()) {
+            searchContainer.innerHTML = window._recentPostsHTML;
+          }
+        }, 100);
+      }
+    });
+
+    showRecentPosts();
+  }
+
+  // ============================================
+  // Initialize
+  // ============================================
+  function init() {
+    initBanner();
+    initScrollReveal();
+    initSubtitleEffect();
+    initSearchEnhancement();
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+
+  document.addEventListener('pjax:complete', function() {
+    initScrollReveal();
+    initSearchEnhancement();
+  });
+})();
+</script>
+
+</body>
+</html>

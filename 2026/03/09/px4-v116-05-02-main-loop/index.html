@@ -1,0 +1,785 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 8.1.1">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css" integrity="sha256-VHqXKFhhMxcpubYf9xiWdCiojEbY9NexQ4jh8AxbvcM=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/fancyapps-ui/5.0.31/fancybox/fancybox.css" integrity="sha256-gkQVf8UKZgQ0HyuxL/VnacadJ+D2Kox2TCEBuNQg5+w=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"blog.qingshanli.cn","root":"/","images":"/images","scheme":"Gemini","darkmode":false,"version":"8.27.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"codeblock":{"theme":{"light":"default","dark":"stackoverflow-dark"},"prism":{"light":"prism","dark":"prism-dark"},"copy_button":{"enable":true,"style":"mac"},"fold":{"enable":false,"height":500},"language":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":true,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"duration":300,"transition":{"menu_item":"fadeInDown","post_block":"fadeInUp","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInRight"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":1,"unescape":false,"preload":true}}</script><script src="/js/config.js" defer></script>
+
+    <meta name="description" content="深入解析 PX4 MulticopterPositionControl.cpp 的主循环 Run()，包括状态预处理、多级滤波原理、EKF 重置鲁棒补偿、起飞状态机与推力斜坡、故障回退策略。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="PX4 MulticopterPositionControl 主循环详解">
+<meta property="og:url" content="https://blog.qingshanli.cn/2026/03/09/px4-v116-05-02-main-loop/index.html">
+<meta property="og:site_name" content="青山笔记">
+<meta property="og:description" content="深入解析 PX4 MulticopterPositionControl.cpp 的主循环 Run()，包括状态预处理、多级滤波原理、EKF 重置鲁棒补偿、起飞状态机与推力斜坡、故障回退策略。">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2026-03-09T06:00:00.000Z">
+<meta property="article:modified_time" content="2026-03-14T13:02:40.000Z">
+<meta property="article:author" content="QingShan Li">
+<meta property="article:tag" content="PX4">
+<meta property="article:tag" content="mc_pos_control">
+<meta property="article:tag" content="技术博文">
+<meta property="article:tag" content="数据清洗">
+<meta property="article:tag" content="滤波器">
+<meta property="article:tag" content="起飞保护">
+<meta name="twitter:card" content="summary">
+
+
+<link rel="canonical" href="https://blog.qingshanli.cn/2026/03/09/px4-v116-05-02-main-loop/">
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"https://blog.qingshanli.cn/2026/03/09/px4-v116-05-02-main-loop/","path":"2026/03/09/px4-v116-05-02-main-loop/","title":"PX4 MulticopterPositionControl 主循环详解"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>PX4 MulticopterPositionControl 主循环详解 | 青山笔记</title>
+  
+
+
+
+
+
+
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/next-theme-pjax/0.6.0/pjax.min.js" integrity="sha256-vxLn1tSKWD4dqbMRyv940UYw4sXgMtYcK6reefzZrao=" crossorigin="anonymous" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/fancyapps-ui/5.0.31/fancybox/fancybox.umd.js" integrity="sha256-a+H7FYzJv6oU2hfsfDGM2Ohw/cR9v+hPfxHCLdmCrE8=" crossorigin="anonymous" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/lozad.js/1.16.0/lozad.min.js" integrity="sha256-mOFREFhqmHeQbXpK2lp4nA3qooVgACfh88fpJftLBbc=" crossorigin="anonymous" defer></script>
+<script src="/js/utils.js" defer></script><script src="/js/motion.js" defer></script><script src="/js/sidebar.js" defer></script><script src="/js/next-boot.js" defer></script><script src="/js/pjax.js" defer></script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/hexo-generator-searchdb/1.5.0/search.js" integrity="sha256-xFC6PJ82SL9b3WkGjFavNiA9gm5z6UBxWPiu4CYjptg=" crossorigin="anonymous" defer></script>
+<script src="/js/third-party/search/local-search.js" defer></script>
+
+
+  <script class="next-config" data-name="mermaid" type="application/json">{"enable":true,"theme":{"light":"default","dark":"dark"},"js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mermaid/11.10.1/mermaid.min.js","integrity":"sha256-BmQmdWDS8X2OTbrwELWK366LV6escyWhHHe0XCTU/Hk="}}</script>
+  <script src="/js/third-party/tags/mermaid.js" defer></script>
+
+
+  <script src="/js/third-party/fancybox.js" defer></script>
+
+
+
+  
+  <script data-pjax async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+
+
+
+  
+
+  <script class="next-config" data-name="enableMath" type="application/json">true</script><script class="next-config" data-name="mathjax" type="application/json">{"enable":true,"tags":"ams","js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.js","integrity":"sha256-MASABpB4tYktI2Oitl4t+78w/lyA+D7b/s9GEP0JOGI="}}</script>
+<script src="/js/third-party/math/mathjax.js" defer></script>
+
+
+<!-- Custom Head Injection for QingShan Blog -->
+
+<!-- Google Fonts: Noto Sans SC for better Chinese rendering -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+<!-- Preload background images for smooth transitions -->
+<link rel="preload" as="image" href="/images/bg-2.jpg">
+
+<!-- Custom font override -->
+<style>
+  body {
+    font-family: 'Inter', 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Inter', 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+    font-weight: 600;
+  }
+  .site-title {
+    font-family: 'Inter', 'Noto Sans SC', sans-serif;
+    font-weight: 700;
+    letter-spacing: 2px;
+  }
+  .site-subtitle {
+    font-family: 'Inter', 'Noto Sans SC', sans-serif;
+    font-weight: 300;
+    letter-spacing: 1px;
+  }
+</style>
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">青山笔记</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">探索无人控制的边界</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜索" role="button">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签<span class="badge">72</span></a></li><li class="menu-item menu-item-discover"><a href="/categories/" rel="section"><i class="fa fa-compass fa-fw"></i>发现</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档<span class="badge">35</span></a></li><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+      <div class="search-header">
+        <span class="search-icon">
+          <i class="fa fa-search"></i>
+        </span>
+        <div class="search-input-container">
+          <input autocomplete="off" autocapitalize="off" maxlength="80"
+                placeholder="搜索..." spellcheck="false"
+                type="search" class="search-input">
+        </div>
+        <span class="popup-btn-close" role="button">
+          <i class="fa fa-times-circle"></i>
+        </span>
+      </div>
+      <div class="search-result-container">
+        <div class="search-result-icon">
+          <i class="fa fa-spinner fa-pulse fa-5x"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%80%E3%80%81Run-%E4%B8%BB%E5%BE%AA%E7%8E%AF%E7%BB%93%E6%9E%84"><span class="nav-number">1.</span> <span class="nav-text">一、Run() 主循环结构</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BA%8C%E3%80%81%E6%A8%A1%E5%BC%8F%E7%AE%A1%E7%90%86%E4%B8%8E%E6%82%AC%E5%81%9C%E6%8E%A8%E5%8A%9B%E8%87%AA%E9%80%82%E5%BA%94"><span class="nav-number">2.</span> <span class="nav-text">二、模式管理与悬停推力自适应</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%89%E3%80%81set-vehicle-states-%E2%80%94-%E5%A4%9A%E7%BA%A7%E6%BB%A4%E6%B3%A2%E6%95%B0%E6%8D%AE%E6%B8%85%E6%B4%97"><span class="nav-number">3.</span> <span class="nav-text">三、set_vehicle_states() — 多级滤波数据清洗</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#3-1-%E9%99%B7%E6%B3%A2%E6%BB%A4%E6%B3%A2%E5%99%A8%E6%95%B0%E5%AD%A6"><span class="nav-number">3.1.</span> <span class="nav-text">3.1 陷波滤波器数学</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#3-2-%E4%B8%80%E9%98%B6%E4%BD%8E%E9%80%9A%E6%BB%A4%E6%B3%A2%E5%99%A8%EF%BC%88EMA%EF%BC%89"><span class="nav-number">3.2.</span> <span class="nav-text">3.2 一阶低通滤波器（EMA）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#3-3-%E5%A4%84%E7%90%86%E6%B5%81%E7%A8%8B"><span class="nav-number">3.3.</span> <span class="nav-text">3.3 处理流程</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9B%9B%E3%80%81adjustSetpointForEKFResets-%E2%80%94-EKF-%E9%87%8D%E7%BD%AE%E9%B2%81%E6%A3%92%E8%A1%A5%E5%81%BF"><span class="nav-number">4.</span> <span class="nav-text">四、adjustSetpointForEKFResets() — EKF 重置鲁棒补偿</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BA%94%E3%80%81TakeoffHandling-%E2%80%94-%E8%B5%B7%E9%A3%9E%E7%8A%B6%E6%80%81%E6%9C%BA%E4%B8%8E%E4%BF%9D%E6%8A%A4"><span class="nav-number">5.</span> <span class="nav-text">五、TakeoffHandling — 起飞状态机与保护</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#5-1-%E8%B5%B7%E9%A3%9E%E7%8A%B6%E6%80%81%E6%9C%BA"><span class="nav-number">5.1.</span> <span class="nav-text">5.1 起飞状态机</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#5-2-%E6%8E%A8%E5%8A%9B%E6%96%9C%E5%9D%A1%EF%BC%88rampup-%E9%98%B6%E6%AE%B5%EF%BC%89"><span class="nav-number">5.2.</span> <span class="nav-text">5.2 推力斜坡（rampup 阶段）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#5-3-%E5%85%B3%E9%94%AE%E4%BF%9D%E6%8A%A4%E6%9C%BA%E5%88%B6"><span class="nav-number">5.3.</span> <span class="nav-text">5.3 关键保护机制</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%85%AD%E3%80%81%E6%95%85%E9%9A%9C%E5%9B%9E%E9%80%80-generateFailsafeSetpoint"><span class="nav-number">6.</span> <span class="nav-text">六、故障回退 generateFailsafeSetpoint()</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%83%E3%80%81%E5%B0%8F%E7%BB%93"><span class="nav-number">7.</span> <span class="nav-text">七、小结</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="QingShan Li"
+      src="/images/avatar.jpg">
+  <p class="site-author-name" itemprop="name">QingShan Li</p>
+  <div class="site-description" itemprop="description">青山 | 无人控制方向 Learning Researcher 的个人博客</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">35</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+          <a href="/categories/">
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">72</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author animated">
+      <span class="links-of-author-item">
+        <a href="https://github.com/Riesdown" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;Riesdown" rel="noopener me" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:QingShanLi1970@qq.com" title="E-Mail → mailto:QingShanLi1970@qq.com" rel="noopener me" target="_blank"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+  </div>
+
+        </div>
+      </div>
+        <div class="back-to-top animated" role="button" aria-label="返回顶部">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://blog.qingshanli.cn/2026/03/09/px4-v116-05-02-main-loop/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="QingShan Li">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="青山笔记">
+      <meta itemprop="description" content="青山 | 无人控制方向 Learning Researcher 的个人博客">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="PX4 MulticopterPositionControl 主循环详解 | 青山笔记">
+      <meta itemprop="description" content="深入解析 PX4 MulticopterPositionControl.cpp 的主循环 Run()，包括状态预处理、多级滤波原理、EKF 重置鲁棒补偿、起飞状态机与推力斜坡、故障回退策略。
+">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          PX4 MulticopterPositionControl 主循环详解
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2026-03-09 14:00:00" itemprop="dateCreated datePublished" datetime="2026-03-09T14:00:00+08:00">2026-03-09</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">更新于</span>
+      <time title="修改时间：2026-03-14 21:02:40" itemprop="dateModified" datetime="2026-03-14T21:02:40+08:00">2026-03-14</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E6%8A%80%E6%9C%AF/" itemprop="url" rel="index"><span itemprop="name">技术</span></a>
+        </span>
+          ，
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E6%8A%80%E6%9C%AF/%E9%A3%9E%E6%8E%A7PX4/" itemprop="url" rel="index"><span itemprop="name">飞控PX4</span></a>
+        </span>
+          ，
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E6%8A%80%E6%9C%AF/%E9%A3%9E%E6%8E%A7PX4/%E4%BD%8D%E7%BD%AE%E6%8E%A7%E5%88%B6/" itemprop="url" rel="index"><span itemprop="name">位置控制</span></a>
+        </span>
+    </span>
+
+  
+    <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv">
+      <span class="post-meta-item-icon">
+        <i class="far fa-eye"></i>
+      </span>
+      <span class="post-meta-item-text">阅读次数：</span>
+      <span id="busuanzi_value_page_pv"></span>
+    </span>
+    <span class="post-meta-break"></span>
+    <span class="post-meta-item" title="本文字数">
+      <span class="post-meta-item-icon">
+        <i class="far fa-file-word"></i>
+      </span>
+      <span class="post-meta-item-text">本文字数：</span>
+      <span>1k</span>
+    </span>
+    <span class="post-meta-item" title="阅读时长">
+      <span class="post-meta-item-icon">
+        <i class="far fa-clock"></i>
+      </span>
+      <span class="post-meta-item-text">阅读时长 &asymp;</span>
+      <span>3 分钟</span>
+    </span>
+</div>
+
+            <div class="post-description">深入解析 PX4 MulticopterPositionControl.cpp 的主循环 Run()，包括状态预处理、多级滤波原理、EKF 重置鲁棒补偿、起飞状态机与推力斜坡、故障回退策略。
+</div>
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><h2 id="一、Run-主循环结构"><a href="#一、Run-主循环结构" class="headerlink" title="一、Run() 主循环结构"></a>一、Run() 主循环结构</h2><p><code>MulticopterPositionControl</code> 运行在 <code>wq:nav_and_controllers</code> WorkQueue 上，由 <code>vehicle_local_position</code> 话题到达时触发（数据驱动），同时设置 100 ms 看门狗定时调度（防止 EKF 停发时模块锁死）：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="type">void</span> <span class="title">MulticopterPositionControl::Run</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="comment">// 1. 生命周期检查</span></span><br><span class="line">    <span class="keyword">if</span> (<span class="built_in">should_exit</span>()) &#123; ... <span class="keyword">return</span>; &#125;</span><br><span class="line">    <span class="built_in">ScheduleDelayed</span>(<span class="number">100</span>_ms);  <span class="comment">// 看门狗</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">// 2. 时钟对齐与 dt 计算</span></span><br><span class="line">    vehicle_local_position_s vl_pos;</span><br><span class="line">    <span class="keyword">if</span> (!_local_pos_sub.<span class="built_in">update</span>(&amp;vl_pos)) <span class="keyword">return</span>;</span><br><span class="line">    <span class="type">const</span> <span class="type">float</span> dt = math::<span class="built_in">constrain</span>(</span><br><span class="line">        (vl_pos.timestamp_sample - _time_stamp_last_loop) * <span class="number">1e-6f</span>,</span><br><span class="line">        <span class="number">0.002f</span>, <span class="number">0.04f</span>);  <span class="comment">// 约束在 [2ms, 40ms]，即 [25Hz, 500Hz]</span></span><br><span class="line">    _time_stamp_last_loop = vl_pos.timestamp_sample;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 3. 参数更新</span></span><br><span class="line">    <span class="built_in">parameters_update</span>(<span class="literal">false</span>);</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 4. 模式管理与悬停推力自适应</span></span><br><span class="line">    <span class="comment">// （见 §2）</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">// 5. 状态预处理（滤波）</span></span><br><span class="line">    PositionControlStates states = <span class="built_in">set_vehicle_states</span>(vl_pos, dt);</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 6. Goto 平滑桥接（若有 goto_setpoint）</span></span><br><span class="line">    <span class="keyword">if</span> (_goto_control.<span class="built_in">checkForSetpoint</span>(...)) _goto_control.<span class="built_in">update</span>(...);</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 7. 读取轨迹设定点</span></span><br><span class="line">    _trajectory_setpoint_sub.<span class="built_in">update</span>(&amp;_setpoint);</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 8. EKF 重置补偿</span></span><br><span class="line">    <span class="built_in">adjustSetpointForEKFResets</span>(vl_pos, _setpoint);</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 9. 失效保护初始激活</span></span><br><span class="line">    <span class="comment">// 10. 起飞约束与状态机处理</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">// 11. 核心控制更新</span></span><br><span class="line">    _control.<span class="built_in">setInputSetpoint</span>(_setpoint);</span><br><span class="line">    _control.<span class="built_in">setState</span>(states);</span><br><span class="line">    _control.<span class="built_in">update</span>(dt);</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 12. 发布输出</span></span><br><span class="line">    <span class="built_in">publish_local_pos_sp</span>(); <span class="built_in">publish_attitude_sp</span>();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><strong><code>dt</code> 使用物理采样时间戳</strong>（<code>timestamp_sample</code>）而非 CPU 接收时间，消除调度抖动对微分项的影响。</p>
+<hr>
+<h2 id="二、模式管理与悬停推力自适应"><a href="#二、模式管理与悬停推力自适应" class="headerlink" title="二、模式管理与悬停推力自适应"></a>二、模式管理与悬停推力自适应</h2><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 检测位置控制使能状态切换</span></span><br><span class="line"><span class="keyword">if</span> (!previous_enabled &amp;&amp; now_enabled) &#123;</span><br><span class="line">    _time_position_control_enabled = _vehicle_control_mode.timestamp;</span><br><span class="line">&#125; <span class="keyword">else</span> <span class="keyword">if</span> (previous_enabled &amp;&amp; !now_enabled) &#123;</span><br><span class="line">    _setpoint = PositionControl::empty_trajectory_setpoint;  <span class="comment">// 清除旧设定点</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// HTE 悬停推力自适应</span></span><br><span class="line"><span class="keyword">if</span> (_param_mpc_use_hte.<span class="built_in">get</span>()) &#123;</span><br><span class="line">    hover_thrust_estimate_s hte;</span><br><span class="line">    <span class="keyword">if</span> (_hover_thrust_estimate_sub.<span class="built_in">update</span>(&amp;hte) &amp;&amp; hte.valid) &#123;</span><br><span class="line">        _control.<span class="built_in">updateHoverThrust</span>(hte.hover_thrust);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><strong>HTE（Hover Thrust Estimate）</strong>：EKF2 通过加速度和推力的比较估计实时悬停推力，补偿电池电压下降（推力随电压下降而降低）或载荷变化（挂载掉落导致质量减小），提高 Z 轴位置保持精度。</p>
+<hr>
+<h2 id="三、set-vehicle-states-—-多级滤波数据清洗"><a href="#三、set-vehicle-states-—-多级滤波数据清洗" class="headerlink" title="三、set_vehicle_states() — 多级滤波数据清洗"></a>三、<code>set_vehicle_states()</code> — 多级滤波数据清洗</h2><p>EKF2 发布的速度数据包含两类典型噪声：</p>
+<ol>
+<li><strong>机架共振尖峰</strong>：机臂&#x2F;桨叶在特定频率产生强振动（如 120 Hz）</li>
+<li><strong>高频白噪声</strong>：传感器和电调开关噪声，分布广泛</li>
+</ol>
+<p>处理策略：<strong>先陷波（精确消除共振峰），再低通（整体压制高频）</strong></p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 水平速度处理</span></span><br><span class="line">states.velocity.<span class="built_in">xy</span>() = _vel_xy_lp_filter.<span class="built_in">update</span>(</span><br><span class="line">                        _vel_xy_notch_filter.<span class="built_in">apply</span>(velocity_xy));</span><br><span class="line"><span class="comment">// 加速度由速度差分估计（再低通）</span></span><br><span class="line">states.acceleration.<span class="built_in">xy</span>() = _vel_deriv_xy_lp_filter.<span class="built_in">update</span>(</span><br><span class="line">                            (current_vel_lp - prev_vel_lp) / dt);</span><br></pre></td></tr></table></figure>
+
+<h3 id="3-1-陷波滤波器数学"><a href="#3-1-陷波滤波器数学" class="headerlink" title="3.1 陷波滤波器数学"></a>3.1 陷波滤波器数学</h3><p>二阶陷波（带阻）滤波器传递函数：</p>
+<p>$$<br>H(s) &#x3D; \frac{s^2 + \omega_0^2}{s^2 + 2\zeta\omega_0 s + \omega_0^2}, \quad \omega_0 &#x3D; 2\pi f_0<br>$$</p>
+<p>在共振频率处 $|H(j\omega_0)| &#x3D; 0$，精确消除该频率的振动分量，其他频率几乎不受影响。关键参数：</p>
+<ul>
+<li><code>MPC_VEL_NF_FRQ</code>：陷波中心频率（Hz），需与实际机架共振频率匹配</li>
+<li><code>MPC_VEL_NF_BW</code>：陷波带宽（Hz），决定 ζ，太窄则对频率漂移敏感</li>
+</ul>
+<h3 id="3-2-一阶低通滤波器（EMA）"><a href="#3-2-一阶低通滤波器（EMA）" class="headerlink" title="3.2 一阶低通滤波器（EMA）"></a>3.2 一阶低通滤波器（EMA）</h3><p>离散实现为指数移动平均（EMA）：</p>
+<p>$$<br>y[k] &#x3D; \alpha x[k] + (1-\alpha)y[k-1], \quad \alpha &#x3D; \frac{T_s}{\tau + T_s}<br>$$</p>
+<p><code>MPC_VEL_LP</code> 参数设置截止频率 $f_c &#x3D; 1&#x2F;(2\pi\tau)$（Hz）。</p>
+<h3 id="3-3-处理流程"><a href="#3-3-处理流程" class="headerlink" title="3.3 处理流程"></a>3.3 处理流程</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">flowchart LR</span><br><span class="line">    EKF[&quot;EKF2\nvz（含机架共振+白噪声）&quot;] --&gt; NF[&quot;陷波滤波\n_vel_z_notch_filter\n消除共振尖峰&quot;]</span><br><span class="line">    NF --&gt; LP[&quot;低通滤波\n_vel_z_lp_filter\n压制高频白噪声&quot;]</span><br><span class="line">    LP --&gt; STATE[&quot;states.velocity(2)\n干净的速度信号&quot;]</span><br><span class="line">    LP --&gt; DIFF[&quot;差分估计\n(vel_now - vel_prev) / dt&quot;]</span><br><span class="line">    DIFF --&gt; LP2[&quot;加速度低通\n_vel_deriv_z_lp_filter&quot;]</span><br><span class="line">    LP2 --&gt; ACC[&quot;states.acceleration(2)\n用于 PID D 项&quot;]</span><br></pre></td></tr></table></figure>
+
+<p><strong>有效性保护</strong>：若 EKF 数据无效（<code>v_z_valid == false</code>），对应状态写入 NAN 并重置所有滤波器，防止传感器恢复时出现加速度尖峰。</p>
+<hr>
+<h2 id="四、adjustSetpointForEKFResets-—-EKF-重置鲁棒补偿"><a href="#四、adjustSetpointForEKFResets-—-EKF-重置鲁棒补偿" class="headerlink" title="四、adjustSetpointForEKFResets() — EKF 重置鲁棒补偿"></a>四、<code>adjustSetpointForEKFResets()</code> — EKF 重置鲁棒补偿</h2><p>当 EKF 发生坐标系重置（如 GPS 回环修正、SLAM 重定位，产生 1 m 量级的瞬时跳变）时，若不处理，控制器会看到巨大的瞬时误差 $e &#x3D; \text{setpoint} - \text{state}$，导致满舵响应。</p>
+<p><strong>解决方案</strong>：维持控制误差的连续性：</p>
+<p>$$<br>e(t) &#x3D; P_{sp}(t) - P_{obs}(t)<br>$$</p>
+<p>当观测值发生跳变 $\Delta P$ 时，同步修正设定点：</p>
+<p>$$<br>P_{sp}^{new} &#x3D; P_{sp}^{old} + \Delta P<br>$$</p>
+<p>PX4 通过 <code>reset_counter</code>（计数器）机制实现：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 检测 counter 是否变化（EKF 发生了重置）</span></span><br><span class="line"><span class="keyword">if</span> (vl_pos.xy_reset_counter != _xy_reset_counter) &#123;</span><br><span class="line">    setpoint.position[<span class="number">0</span>] += vl_pos.delta_xy[<span class="number">0</span>];  <span class="comment">// 同步修正设定点</span></span><br><span class="line">    setpoint.position[<span class="number">1</span>] += vl_pos.delta_xy[<span class="number">1</span>];</span><br><span class="line">    <span class="comment">// 同步重置速度滤波器内部状态</span></span><br><span class="line">    _vel_xy_lp_filter.<span class="built_in">reset</span>(_vel_xy_lp_filter.<span class="built_in">getState</span>() + <span class="built_in">Vector2f</span>(vl_pos.delta_vxy));</span><br><span class="line">    _vel_xy_notch_filter.<span class="built_in">reset</span>();</span><br><span class="line">&#125;</span><br><span class="line">_xy_reset_counter = vl_pos.xy_reset_counter;  <span class="comment">// 更新计数器</span></span><br></pre></td></tr></table></figure>
+
+<p>五种独立的 reset_counter：<code>xy</code>、<code>z</code>、<code>vxy</code>、<code>vz</code>、<code>heading</code>，各自独立处理。</p>
+<hr>
+<h2 id="五、TakeoffHandling-—-起飞状态机与保护"><a href="#五、TakeoffHandling-—-起飞状态机与保护" class="headerlink" title="五、TakeoffHandling — 起飞状态机与保护"></a>五、<code>TakeoffHandling</code> — 起飞状态机与保护</h2><h3 id="5-1-起飞状态机"><a href="#5-1-起飞状态机" class="headerlink" title="5.1 起飞状态机"></a>5.1 起飞状态机</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">stateDiagram-v2</span><br><span class="line">    [*] --&gt; disarmed</span><br><span class="line">    disarmed --&gt; spoolup : armed</span><br><span class="line">    spoolup --&gt; ready_for_takeoff : 电机预热完成</span><br><span class="line">    ready_for_takeoff --&gt; rampup : want_takeoff == true</span><br><span class="line">    rampup --&gt; flight : 离地高度达到</span><br><span class="line">    flight --&gt; [*]</span><br></pre></td></tr></table></figure>
+
+<h3 id="5-2-推力斜坡（rampup-阶段）"><a href="#5-2-推力斜坡（rampup-阶段）" class="headerlink" title="5.2 推力斜坡（rampup 阶段）"></a>5.2 推力斜坡（rampup 阶段）</h3><p>避免离地瞬间推力突变和姿态抖动：</p>
+<p>$$<br>V_{z,limit}(t) &#x3D; \min!\left( V_{takeoff}, \frac{t}{T_{ramp}} \cdot V_{takeoff} \right)<br>$$</p>
+<p><code>MPC_TKO_RAMP_T</code> 控制斜坡时间（默认 3 s）。</p>
+<h3 id="5-3-关键保护机制"><a href="#5-3-关键保护机制" class="headerlink" title="5.3 关键保护机制"></a>5.3 关键保护机制</h3><ol>
+<li><strong>地面压制</strong>：在 <code>not_taken_off</code> 或触地（<code>flying_but_ground_contact</code>）状态时，设置 100 m&#x2F;s² 向下加速度，使 PID 输出饱和在最小推力，确保不因传感器抖动而蹦跳</li>
+<li><strong>积分清零</strong>：地面阶段清空 <code>_control.resetIntegral()</code>，防止高度误差积分导致离地时突然弹射</li>
+<li><strong>倾角限制</strong>：起飞前限制最大倾角（<code>MPC_TILTMAX_LND</code>，默认 12°），离地后恢复正常（<code>MPC_TILTMAX_AIR</code>）</li>
+<li><strong>悬停推力重置</strong>：未起飞时强制用参数预设值，不使用 HTE 估计（避免地面状态下 HTE 估计偏差影响起飞）</li>
+</ol>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 100 m/s² 下压的控制论解释</span></span><br><span class="line"><span class="comment">// T_cmd = SAT(PID_output + Kff * A_sp)</span></span><br><span class="line"><span class="comment">// A_sp = 100 → 无论 PID 产生多少向上修正，结果都被钳位在 T_min</span></span><br><span class="line"><span class="built_in">Vector3f</span>(<span class="number">0.f</span>, <span class="number">0.f</span>, <span class="number">100.f</span>).<span class="built_in">copyTo</span>(_setpoint.acceleration);</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="六、故障回退-generateFailsafeSetpoint"><a href="#六、故障回退-generateFailsafeSetpoint" class="headerlink" title="六、故障回退 generateFailsafeSetpoint()"></a>六、故障回退 <code>generateFailsafeSetpoint()</code></h2><p>当 <code>trajectory_setpoint</code> 无效或 <code>PositionControl::update()</code> 返回失败时：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">flowchart TD</span><br><span class="line">    A[控制更新失败] --&gt; B&#123;上次有效设定点\n是否在 200ms 内?&#125;</span><br><span class="line">    B --&gt;|是| C[使用上次有效设定点\n重试 update]</span><br><span class="line">    B --&gt;|否| D&#123;XY 速度是否有效?&#125;</span><br><span class="line">    C --&gt; E&#123;重试成功?&#125;</span><br><span class="line">    E --&gt;|否| D</span><br><span class="line">    D --&gt;|是| F[&quot;生成 stop-and-wait\n水平速度设为0，等待原地&quot;]</span><br><span class="line">    D --&gt;|否| G&#123;Z 速度是否有效?&#125;</span><br><span class="line">    G --&gt;|是| H[&quot;blind land\n缓慢垂直下降&quot;]</span><br><span class="line">    G --&gt;|否| I[&quot;blind descent\n最大下降速度直至落地&quot;]</span><br></pre></td></tr></table></figure>
+
+<p>三级故障回退确保在任何传感器失效情况下都有安全的下降策略。</p>
+<hr>
+<h2 id="七、小结"><a href="#七、小结" class="headerlink" title="七、小结"></a>七、小结</h2><p><code>MulticopterPositionControl.cpp</code> 的核心价值在于：</p>
+<ol>
+<li><strong>数据清洗</strong>：多级滤波（陷波+低通）为 PID D 项提供干净信号，直接影响飞行稳定性</li>
+<li><strong>EKF 重置保护</strong>：误差连续性维护机制，防止传感器重定位时的满舵响应</li>
+<li><strong>起飞安全</strong>：状态机 + 斜坡 + 积分清零 + 倾角限制，处理最危险的起飞阶段</li>
+<li><strong>故障容错</strong>：三级回退策略，保证任何情况下都有安全的降落路径</li>
+</ol>
+<blockquote>
+<p>上一篇：<a href="/2026/03/09/px4-v116-05-01-pos-control-overview/">mc_pos_control 总览与控制链路</a><br>下一篇：<a href="/2026/03/09/px4-v116-05-03-position-control-algorithm/">PositionControl 串级控制算法</a><br>系列总目录：<a href="/2026/03/14/px4-v116-00-index/">PX4 v1.16 源码解读总目录</a></p>
+</blockquote>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E6%8A%80%E6%9C%AF%E5%8D%9A%E6%96%87/" rel="tag"><i class="fa fa-tag"></i> 技术博文</a>
+              <a href="/tags/PX4/" rel="tag"><i class="fa fa-tag"></i> PX4</a>
+              <a href="/tags/mc-pos-control/" rel="tag"><i class="fa fa-tag"></i> mc_pos_control</a>
+              <a href="/tags/%E6%95%B0%E6%8D%AE%E6%B8%85%E6%B4%97/" rel="tag"><i class="fa fa-tag"></i> 数据清洗</a>
+              <a href="/tags/%E6%BB%A4%E6%B3%A2%E5%99%A8/" rel="tag"><i class="fa fa-tag"></i> 滤波器</a>
+              <a href="/tags/%E8%B5%B7%E9%A3%9E%E4%BF%9D%E6%8A%A4/" rel="tag"><i class="fa fa-tag"></i> 起飞保护</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2026/03/09/px4-v116-05-01-pos-control-overview/" rel="prev" title="PX4 mc_pos_control 总览与控制链路">
+                  <i class="fa fa-angle-left"></i> PX4 mc_pos_control 总览与控制链路
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2026/03/09/px4-v116-05-03-position-control-algorithm/" rel="next" title="PX4 PositionControl 串级控制算法详解">
+                  PX4 PositionControl 串级控制算法详解 <i class="fa fa-angle-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 2025 – 
+    <span itemprop="copyrightYear">2026</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">QingShan Li</span>
+  </div>
+<div class="busuanzi-count">
+    <span class="post-meta-item" id="busuanzi_container_site_uv">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="reading-progress-bar"></div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+<!-- QingShan Blog - 顶部Banner背景图轮播 + 增强功能 -->
+
+<script>
+(function() {
+  'use strict';
+
+  // ============================================
+  // 顶部 Banner 背景图轮播
+  // ============================================
+  var bannerImages = [
+    '/images/bg-2.jpg',
+    '/images/bg-3.jpg',
+    '/images/bg-4.png',
+    '/images/bg-5.png'
+  ];
+
+  var currentBannerIndex = 0;
+  var bannerInterval = 10000; // 10秒切换
+
+  function preloadImages(urls) {
+    urls.forEach(function(url) {
+      var img = new Image();
+      img.src = url;
+    });
+  }
+
+  function createBanner() {
+    // 检查是否已存在
+    if (document.getElementById('hero-banner')) return;
+
+    var banner = document.createElement('div');
+    banner.id = 'hero-banner';
+
+    var bgLayer = document.createElement('div');
+    bgLayer.className = 'banner-bg';
+
+    var bgNextLayer = document.createElement('div');
+    bgNextLayer.className = 'banner-bg-next';
+
+    banner.appendChild(bgLayer);
+    banner.appendChild(bgNextLayer);
+
+    // 插入到 .main 之前（全宽独立元素，不进入 flex 容器）
+    var mainEl = document.querySelector('main.main');
+    if (mainEl) {
+      mainEl.parentNode.insertBefore(banner, mainEl);
+    } else {
+      // 备选：插到 headband 之后
+      var headband = document.querySelector('.headband');
+      if (headband && headband.nextSibling) {
+        headband.parentNode.insertBefore(banner, headband.nextSibling);
+      } else {
+        document.body.insertBefore(banner, document.body.firstChild);
+      }
+    }
+
+    return banner;
+  }
+
+  function initBanner() {
+    if (bannerImages.length === 0) return;
+
+    var banner = createBanner();
+    if (!banner) return;
+
+    var bgLayer = banner.querySelector('.banner-bg');
+    var bgNextLayer = banner.querySelector('.banner-bg-next');
+    if (!bgLayer || !bgNextLayer) return;
+
+    // 随机起始
+    currentBannerIndex = Math.floor(Math.random() * bannerImages.length);
+    bgLayer.style.backgroundImage = 'url(' + bannerImages[currentBannerIndex] + ')';
+
+    preloadImages(bannerImages);
+
+    // 开始轮播
+    if (bannerImages.length > 1) {
+      setInterval(function() {
+        var nextIndex = (currentBannerIndex + 1) % bannerImages.length;
+        bgNextLayer.style.backgroundImage = 'url(' + bannerImages[nextIndex] + ')';
+        bgNextLayer.style.opacity = '1';
+        bgLayer.style.opacity = '0';
+
+        setTimeout(function() {
+          bgLayer.style.transition = 'none';
+          bgLayer.style.backgroundImage = 'url(' + bannerImages[nextIndex] + ')';
+          bgLayer.style.opacity = '1';
+          bgNextLayer.style.opacity = '0';
+
+          setTimeout(function() {
+            bgLayer.style.transition = 'opacity 2s ease-in-out';
+          }, 50);
+
+          currentBannerIndex = nextIndex;
+        }, 2100);
+      }, bannerInterval);
+    }
+  }
+
+  // ============================================
+  // Scroll Reveal Animation
+  // ============================================
+  function initScrollReveal() {
+    var selectors = '.post-block, .pagination, .comments, .sub-menu';
+    var elements = document.querySelectorAll(selectors);
+    if (!elements.length) return;
+
+    if ('IntersectionObserver' in window) {
+      var observer = new IntersectionObserver(function(entries) {
+        entries.forEach(function(entry) {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('revealed');
+            observer.unobserve(entry.target);
+          }
+        });
+      }, {
+        threshold: 0.08,
+        rootMargin: '0px 0px -40px 0px'
+      });
+
+      elements.forEach(function(el) {
+        el.classList.add('scroll-reveal');
+        observer.observe(el);
+      });
+    } else {
+      elements.forEach(function(el) {
+        el.style.opacity = '1';
+      });
+    }
+  }
+
+  // ============================================
+  // Typing Effect for Subtitle
+  // ============================================
+  function initSubtitleEffect() {
+    var subtitle = document.querySelector('.site-subtitle');
+    if (!subtitle || subtitle.dataset.typed) return;
+    subtitle.dataset.typed = 'true';
+
+    var text = subtitle.textContent;
+    subtitle.textContent = '';
+    subtitle.style.borderRight = '2px solid #c0956c';
+    subtitle.style.display = 'inline-block';
+
+    var i = 0;
+    var timer = setInterval(function() {
+      if (i < text.length) {
+        subtitle.textContent += text.charAt(i);
+        i++;
+      } else {
+        clearInterval(timer);
+        setTimeout(function() {
+          subtitle.style.borderRight = 'none';
+        }, 1500);
+      }
+    }, 100);
+  }
+
+  // ============================================
+  // Search Popup Enhancement: 显示最近文章
+  // ============================================
+  function initSearchEnhancement() {
+    var searchContainer = document.querySelector('.search-result-container');
+    var searchInput = document.querySelector('.search-input');
+    if (!searchContainer || !searchInput) return;
+
+    function showRecentPosts() {
+      fetch('/search.xml')
+        .then(function(res) { return res.text(); })
+        .then(function(xmlText) {
+          var parser = new DOMParser();
+          var doc = parser.parseFromString(xmlText, 'text/xml');
+          var entries = doc.querySelectorAll('entry');
+          if (!entries.length) return;
+
+          var html = '<div class="search-recent-posts">';
+          html += '<div class="search-recent-title">📄 最近发布的文章</div>';
+          html += '<ul class="search-recent-list">';
+
+          var count = Math.min(entries.length, 10);
+          for (var i = 0; i < count; i++) {
+            var entry = entries[i];
+            var title = entry.querySelector('title') ? entry.querySelector('title').textContent : '';
+            var url = entry.querySelector('url') ? entry.querySelector('url').textContent : '#';
+            var dateNode = entry.querySelector('date');
+            var dateStr = '';
+            if (dateNode) {
+              var d = new Date(dateNode.textContent);
+              dateStr = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+            }
+            html += '<li class="search-recent-item">';
+            html += '<a href="' + url + '">';
+            html += '<div class="search-recent-item-title">' + title + '</div>';
+            if (dateStr) html += '<div class="search-recent-item-date">' + dateStr + '</div>';
+            html += '</a></li>';
+          }
+          html += '</ul></div>';
+
+          window._recentPostsHTML = html;
+          if (!searchInput.value.trim()) {
+            searchContainer.innerHTML = html;
+          }
+        })
+        .catch(function() {});
+    }
+
+    // 监听搜索弹窗打开
+    var observer = new MutationObserver(function(mutations) {
+      mutations.forEach(function(mutation) {
+        if (mutation.target.classList && mutation.target.classList.contains('search-active')) {
+          setTimeout(function() {
+            if (!searchInput.value.trim()) {
+              if (window._recentPostsHTML) {
+                searchContainer.innerHTML = window._recentPostsHTML;
+              } else {
+                showRecentPosts();
+              }
+            }
+          }, 300);
+        }
+      });
+    });
+    observer.observe(document.body, { attributes: true, attributeFilter: ['class'] });
+
+    searchInput.addEventListener('input', function() {
+      if (!searchInput.value.trim() && window._recentPostsHTML) {
+        setTimeout(function() {
+          if (!searchInput.value.trim()) {
+            searchContainer.innerHTML = window._recentPostsHTML;
+          }
+        }, 100);
+      }
+    });
+
+    showRecentPosts();
+  }
+
+  // ============================================
+  // Initialize
+  // ============================================
+  function init() {
+    initBanner();
+    initScrollReveal();
+    initSubtitleEffect();
+    initSearchEnhancement();
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+
+  document.addEventListener('pjax:complete', function() {
+    initScrollReveal();
+    initSearchEnhancement();
+  });
+})();
+</script>
+
+</body>
+</html>

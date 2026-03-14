@@ -18,7 +18,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/fancyapps-ui/5.0.31/fancybox/fancybox.css" integrity="sha256-gkQVf8UKZgQ0HyuxL/VnacadJ+D2Kox2TCEBuNQg5+w=" crossorigin="anonymous">
 
-<script class="next-config" data-name="main" type="application/json">{"hostname":"blog.qingshanli.cn","root":"/","images":"/images","scheme":"Gemini","darkmode":false,"version":"8.27.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"codeblock":{"theme":{"light":"default","dark":"stackoverflow-dark"},"prism":{"light":"prism","dark":"prism-dark"},"copy_button":{"enable":true,"style":"mac"},"fold":{"enable":false,"height":500},"language":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":true,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"duration":300,"transition":{"menu_item":"fadeInDown","post_block":"fadeInUp","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInRight"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":1,"unescape":false,"preload":true}}</script><script src="/js/config.js" defer></script>
+<script class="next-config" data-name="main" type="application/json">{"hostname":"blog.qingshanli.cn","root":"/","images":"/images","scheme":"Gemini","darkmode":false,"version":"8.27.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"codeblock":{"theme":{"light":"default","dark":"stackoverflow-dark"},"prism":{"light":"prism","dark":"prism-dark"},"copy_button":{"enable":true,"style":"mac"},"fold":{"enable":false,"height":500},"language":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":true,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"duration":300,"transition":{"menu_item":"fadeInDown","post_block":"fadeInUp","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInRight"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":1,"unescape":false,"preload":true}}</script><script src="/js/config.js" defer></script>
 
     <meta name="description" content="青山 | 无人控制方向 Learning Researcher 的个人博客">
 <meta property="og:type" content="website">
@@ -58,6 +58,8 @@
 <script src="/js/third-party/search/local-search.js" defer></script>
 
 
+  <script class="next-config" data-name="mermaid" type="application/json">{"enable":true,"theme":{"light":"default","dark":"dark"},"js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mermaid/11.10.1/mermaid.min.js","integrity":"sha256-BmQmdWDS8X2OTbrwELWK366LV6escyWhHHe0XCTU/Hk="}}</script>
+  <script src="/js/third-party/tags/mermaid.js" defer></script>
 
 
   <script src="/js/third-party/fancybox.js" defer></script>
@@ -68,6 +70,12 @@
   <script data-pjax async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
 
 
+
+
+  
+
+  <script class="next-config" data-name="enableMath" type="application/json">true</script><script class="next-config" data-name="mathjax" type="application/json">{"enable":true,"tags":"ams","js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.js","integrity":"sha256-MASABpB4tYktI2Oitl4t+78w/lyA+D7b/s9GEP0JOGI="}}</script>
+<script src="/js/third-party/math/mathjax.js" defer></script>
 
 
 <!-- Custom Head Injection for QingShan Blog -->
@@ -255,7 +263,7 @@
   
 
   <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
-    <link itemprop="mainEntityOfPage" href="https://blog.qingshanli.cn/2026/02/24/05-EKF2%E5%BA%94%E7%94%A8%E7%AE%A1%E7%90%86%E5%B1%82/">
+    <link itemprop="mainEntityOfPage" href="https://blog.qingshanli.cn/2026/02/24/px4-v116-03-05-ekf2-app/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/avatar.jpg">
@@ -273,7 +281,7 @@
     </span>
       <header class="post-header">
         <h2 class="post-title" itemprop="name headline">
-          <a href="/2026/02/24/05-EKF2%E5%BA%94%E7%94%A8%E7%AE%A1%E7%90%86%E5%B1%82/" class="post-title-link" itemprop="url">PX4 EKF2 应用管理层 EKF2.cpp 详解</a>
+          <a href="/2026/02/24/px4-v116-03-05-ekf2-app/" class="post-title-link" itemprop="url">PX4 EKF2 应用管理层 EKF2.cpp 详解</a>
         </h2>
 
         <div class="post-meta-container">
@@ -291,7 +299,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">更新于</span>
-      <time title="修改时间：2026-03-14 20:49:16" itemprop="dateModified" datetime="2026-03-14T20:49:16+08:00">2026-03-14</time>
+      <time title="修改时间：2026-03-14 21:02:40" itemprop="dateModified" datetime="2026-03-14T21:02:40+08:00">2026-03-14</time>
     </span>
     <span class="post-meta-item">
       <span class="post-meta-item-icon">
@@ -340,7 +348,7 @@
 </p>
           <!--noindex-->
             <div class="post-button">
-              <a class="btn" href="/2026/02/24/05-EKF2%E5%BA%94%E7%94%A8%E7%AE%A1%E7%90%86%E5%B1%82/">
+              <a class="btn" href="/2026/02/24/px4-v116-03-05-ekf2-app/">
                 阅读全文 &raquo;
               </a>
             </div>
@@ -371,7 +379,7 @@
   
 
   <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
-    <link itemprop="mainEntityOfPage" href="https://blog.qingshanli.cn/2026/02/24/04-State-h%E7%8A%B6%E6%80%81%E5%90%91%E9%87%8F/">
+    <link itemprop="mainEntityOfPage" href="https://blog.qingshanli.cn/2026/02/24/px4-v116-03-04-state-h/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/avatar.jpg">
@@ -389,7 +397,7 @@
     </span>
       <header class="post-header">
         <h2 class="post-title" itemprop="name headline">
-          <a href="/2026/02/24/04-State-h%E7%8A%B6%E6%80%81%E5%90%91%E9%87%8F/" class="post-title-link" itemprop="url">PX4 EKF2 State.h 状态向量详解</a>
+          <a href="/2026/02/24/px4-v116-03-04-state-h/" class="post-title-link" itemprop="url">PX4 EKF2 State.h 状态向量详解</a>
         </h2>
 
         <div class="post-meta-container">
@@ -407,7 +415,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">更新于</span>
-      <time title="修改时间：2026-03-14 20:49:16" itemprop="dateModified" datetime="2026-03-14T20:49:16+08:00">2026-03-14</time>
+      <time title="修改时间：2026-03-14 21:02:40" itemprop="dateModified" datetime="2026-03-14T21:02:40+08:00">2026-03-14</time>
     </span>
     <span class="post-meta-item">
       <span class="post-meta-item-icon">
@@ -456,7 +464,7 @@
 </p>
           <!--noindex-->
             <div class="post-button">
-              <a class="btn" href="/2026/02/24/04-State-h%E7%8A%B6%E6%80%81%E5%90%91%E9%87%8F/">
+              <a class="btn" href="/2026/02/24/px4-v116-03-04-state-h/">
                 阅读全文 &raquo;
               </a>
             </div>
@@ -487,7 +495,7 @@
   
 
   <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
-    <link itemprop="mainEntityOfPage" href="https://blog.qingshanli.cn/2026/02/06/03-RingBuffer%E7%8E%AF%E5%BD%A2%E7%BC%93%E5%86%B2%E5%8C%BA/">
+    <link itemprop="mainEntityOfPage" href="https://blog.qingshanli.cn/2026/02/06/px4-v116-03-03-ring-buffer/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/avatar.jpg">
@@ -505,7 +513,7 @@
     </span>
       <header class="post-header">
         <h2 class="post-title" itemprop="name headline">
-          <a href="/2026/02/06/03-RingBuffer%E7%8E%AF%E5%BD%A2%E7%BC%93%E5%86%B2%E5%8C%BA/" class="post-title-link" itemprop="url">PX4 EKF2 RingBuffer 环形缓冲区详解</a>
+          <a href="/2026/02/06/px4-v116-03-03-ring-buffer/" class="post-title-link" itemprop="url">PX4 EKF2 RingBuffer 环形缓冲区详解</a>
         </h2>
 
         <div class="post-meta-container">
@@ -523,7 +531,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">更新于</span>
-      <time title="修改时间：2026-03-14 20:49:16" itemprop="dateModified" datetime="2026-03-14T20:49:16+08:00">2026-03-14</time>
+      <time title="修改时间：2026-03-14 21:02:40" itemprop="dateModified" datetime="2026-03-14T21:02:40+08:00">2026-03-14</time>
     </span>
     <span class="post-meta-item">
       <span class="post-meta-item-icon">
@@ -572,7 +580,7 @@
 </p>
           <!--noindex-->
             <div class="post-button">
-              <a class="btn" href="/2026/02/06/03-RingBuffer%E7%8E%AF%E5%BD%A2%E7%BC%93%E5%86%B2%E5%8C%BA/">
+              <a class="btn" href="/2026/02/06/px4-v116-03-03-ring-buffer/">
                 阅读全文 &raquo;
               </a>
             </div>
@@ -603,7 +611,7 @@
   
 
   <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
-    <link itemprop="mainEntityOfPage" href="https://blog.qingshanli.cn/2026/02/06/02-common-h%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/">
+    <link itemprop="mainEntityOfPage" href="https://blog.qingshanli.cn/2026/02/06/px4-v116-03-02-common-h/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/avatar.jpg">
@@ -621,7 +629,7 @@
     </span>
       <header class="post-header">
         <h2 class="post-title" itemprop="name headline">
-          <a href="/2026/02/06/02-common-h%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/" class="post-title-link" itemprop="url">PX4 EKF2 common.h 公共数据结构详解</a>
+          <a href="/2026/02/06/px4-v116-03-02-common-h/" class="post-title-link" itemprop="url">PX4 EKF2 common.h 公共数据结构详解</a>
         </h2>
 
         <div class="post-meta-container">
@@ -639,7 +647,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">更新于</span>
-      <time title="修改时间：2026-03-14 20:49:16" itemprop="dateModified" datetime="2026-03-14T20:49:16+08:00">2026-03-14</time>
+      <time title="修改时间：2026-03-14 21:02:40" itemprop="dateModified" datetime="2026-03-14T21:02:40+08:00">2026-03-14</time>
     </span>
     <span class="post-meta-item">
       <span class="post-meta-item-icon">
@@ -688,7 +696,7 @@
 </p>
           <!--noindex-->
             <div class="post-button">
-              <a class="btn" href="/2026/02/06/02-common-h%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/">
+              <a class="btn" href="/2026/02/06/px4-v116-03-02-common-h/">
                 阅读全文 &raquo;
               </a>
             </div>
@@ -719,7 +727,7 @@
   
 
   <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
-    <link itemprop="mainEntityOfPage" href="https://blog.qingshanli.cn/2026/02/05/01-EKF2%E7%9B%AE%E5%BD%95%E4%B8%8E%E5%B1%82%E7%BA%A7%E6%9E%B6%E6%9E%84/">
+    <link itemprop="mainEntityOfPage" href="https://blog.qingshanli.cn/2026/02/05/px4-v116-03-01-ekf2-architecture/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/avatar.jpg">
@@ -737,7 +745,7 @@
     </span>
       <header class="post-header">
         <h2 class="post-title" itemprop="name headline">
-          <a href="/2026/02/05/01-EKF2%E7%9B%AE%E5%BD%95%E4%B8%8E%E5%B1%82%E7%BA%A7%E6%9E%B6%E6%9E%84/" class="post-title-link" itemprop="url">PX4 EKF2 目录与层级架构</a>
+          <a href="/2026/02/05/px4-v116-03-01-ekf2-architecture/" class="post-title-link" itemprop="url">PX4 EKF2 目录与层级架构</a>
         </h2>
 
         <div class="post-meta-container">
@@ -755,7 +763,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">更新于</span>
-      <time title="修改时间：2026-03-14 20:49:16" itemprop="dateModified" datetime="2026-03-14T20:49:16+08:00">2026-03-14</time>
+      <time title="修改时间：2026-03-14 21:02:40" itemprop="dateModified" datetime="2026-03-14T21:02:40+08:00">2026-03-14</time>
     </span>
     <span class="post-meta-item">
       <span class="post-meta-item-icon">
@@ -804,7 +812,7 @@
 </p>
           <!--noindex-->
             <div class="post-button">
-              <a class="btn" href="/2026/02/05/01-EKF2%E7%9B%AE%E5%BD%95%E4%B8%8E%E5%B1%82%E7%BA%A7%E6%9E%B6%E6%9E%84/">
+              <a class="btn" href="/2026/02/05/px4-v116-03-01-ekf2-architecture/">
                 阅读全文 &raquo;
               </a>
             </div>
@@ -835,7 +843,7 @@
   
 
   <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
-    <link itemprop="mainEntityOfPage" href="https://blog.qingshanli.cn/2026/01/23/07-uORB%E9%80%9A%E4%BF%A1%E6%9C%BA%E5%88%B6-%E4%B8%8B/">
+    <link itemprop="mainEntityOfPage" href="https://blog.qingshanli.cn/2026/01/23/px4-v116-01-07-uorb-part2/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/avatar.jpg">
@@ -853,7 +861,7 @@
     </span>
       <header class="post-header">
         <h2 class="post-title" itemprop="name headline">
-          <a href="/2026/01/23/07-uORB%E9%80%9A%E4%BF%A1%E6%9C%BA%E5%88%B6-%E4%B8%8B/" class="post-title-link" itemprop="url">PX4 uORB 通信机制（下）：WorkQueue 实例模板</a>
+          <a href="/2026/01/23/px4-v116-01-07-uorb-part2/" class="post-title-link" itemprop="url">PX4 uORB 通信机制（下）：WorkQueue 实例模板</a>
         </h2>
 
         <div class="post-meta-container">
@@ -871,7 +879,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">更新于</span>
-      <time title="修改时间：2026-03-14 20:49:16" itemprop="dateModified" datetime="2026-03-14T20:49:16+08:00">2026-03-14</time>
+      <time title="修改时间：2026-03-14 21:02:40" itemprop="dateModified" datetime="2026-03-14T21:02:40+08:00">2026-03-14</time>
     </span>
     <span class="post-meta-item">
       <span class="post-meta-item-icon">
@@ -920,7 +928,7 @@
 </p>
           <!--noindex-->
             <div class="post-button">
-              <a class="btn" href="/2026/01/23/07-uORB%E9%80%9A%E4%BF%A1%E6%9C%BA%E5%88%B6-%E4%B8%8B/">
+              <a class="btn" href="/2026/01/23/px4-v116-01-07-uorb-part2/">
                 阅读全文 &raquo;
               </a>
             </div>
@@ -951,7 +959,7 @@
   
 
   <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
-    <link itemprop="mainEntityOfPage" href="https://blog.qingshanli.cn/2026/01/22/06-uORB%E9%80%9A%E4%BF%A1%E6%9C%BA%E5%88%B6-%E4%B8%8A/">
+    <link itemprop="mainEntityOfPage" href="https://blog.qingshanli.cn/2026/01/22/px4-v116-01-06-uorb-part1/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/avatar.jpg">
@@ -969,7 +977,7 @@
     </span>
       <header class="post-header">
         <h2 class="post-title" itemprop="name headline">
-          <a href="/2026/01/22/06-uORB%E9%80%9A%E4%BF%A1%E6%9C%BA%E5%88%B6-%E4%B8%8A/" class="post-title-link" itemprop="url">PX4 uORB 通信机制（上）：概念与用法</a>
+          <a href="/2026/01/22/px4-v116-01-06-uorb-part1/" class="post-title-link" itemprop="url">PX4 uORB 通信机制（上）：概念与用法</a>
         </h2>
 
         <div class="post-meta-container">
@@ -987,7 +995,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">更新于</span>
-      <time title="修改时间：2026-03-14 20:49:16" itemprop="dateModified" datetime="2026-03-14T20:49:16+08:00">2026-03-14</time>
+      <time title="修改时间：2026-03-14 21:02:40" itemprop="dateModified" datetime="2026-03-14T21:02:40+08:00">2026-03-14</time>
     </span>
     <span class="post-meta-item">
       <span class="post-meta-item-icon">
@@ -1036,7 +1044,7 @@
 </p>
           <!--noindex-->
             <div class="post-button">
-              <a class="btn" href="/2026/01/22/06-uORB%E9%80%9A%E4%BF%A1%E6%9C%BA%E5%88%B6-%E4%B8%8A/">
+              <a class="btn" href="/2026/01/22/px4-v116-01-06-uorb-part1/">
                 阅读全文 &raquo;
               </a>
             </div>
@@ -1067,7 +1075,7 @@
   
 
   <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
-    <link itemprop="mainEntityOfPage" href="https://blog.qingshanli.cn/2026/01/16/05-%E6%A8%A1%E5%9D%97%E5%85%A5%E5%8F%A3%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%A8%A1%E5%BC%8F/">
+    <link itemprop="mainEntityOfPage" href="https://blog.qingshanli.cn/2026/01/16/px4-v116-01-05-module-entry/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/avatar.jpg">
@@ -1085,7 +1093,7 @@
     </span>
       <header class="post-header">
         <h2 class="post-title" itemprop="name headline">
-          <a href="/2026/01/16/05-%E6%A8%A1%E5%9D%97%E5%85%A5%E5%8F%A3%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%A8%A1%E5%BC%8F/" class="post-title-link" itemprop="url">PX4 模块入口与运行模式</a>
+          <a href="/2026/01/16/px4-v116-01-05-module-entry/" class="post-title-link" itemprop="url">PX4 模块入口与运行模式</a>
         </h2>
 
         <div class="post-meta-container">
@@ -1103,7 +1111,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">更新于</span>
-      <time title="修改时间：2026-03-14 20:49:16" itemprop="dateModified" datetime="2026-03-14T20:49:16+08:00">2026-03-14</time>
+      <time title="修改时间：2026-03-14 21:02:40" itemprop="dateModified" datetime="2026-03-14T21:02:40+08:00">2026-03-14</time>
     </span>
     <span class="post-meta-item">
       <span class="post-meta-item-icon">
@@ -1152,7 +1160,7 @@
 </p>
           <!--noindex-->
             <div class="post-button">
-              <a class="btn" href="/2026/01/16/05-%E6%A8%A1%E5%9D%97%E5%85%A5%E5%8F%A3%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%A8%A1%E5%BC%8F/">
+              <a class="btn" href="/2026/01/16/px4-v116-01-05-module-entry/">
                 阅读全文 &raquo;
               </a>
             </div>
@@ -1183,7 +1191,7 @@
   
 
   <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
-    <link itemprop="mainEntityOfPage" href="https://blog.qingshanli.cn/2026/01/16/04-%E4%BA%A4%E5%8F%89%E7%BC%96%E8%AF%91%E9%A1%BA%E5%BA%8F%E8%AF%A6%E8%A7%A3/">
+    <link itemprop="mainEntityOfPage" href="https://blog.qingshanli.cn/2026/01/16/px4-v116-01-04-cross-compile/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/avatar.jpg">
@@ -1201,7 +1209,7 @@
     </span>
       <header class="post-header">
         <h2 class="post-title" itemprop="name headline">
-          <a href="/2026/01/16/04-%E4%BA%A4%E5%8F%89%E7%BC%96%E8%AF%91%E9%A1%BA%E5%BA%8F%E8%AF%A6%E8%A7%A3/" class="post-title-link" itemprop="url">PX4 交叉编译顺序详解</a>
+          <a href="/2026/01/16/px4-v116-01-04-cross-compile/" class="post-title-link" itemprop="url">PX4 交叉编译顺序详解</a>
         </h2>
 
         <div class="post-meta-container">
@@ -1219,7 +1227,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">更新于</span>
-      <time title="修改时间：2026-03-14 20:49:16" itemprop="dateModified" datetime="2026-03-14T20:49:16+08:00">2026-03-14</time>
+      <time title="修改时间：2026-03-14 21:02:40" itemprop="dateModified" datetime="2026-03-14T21:02:40+08:00">2026-03-14</time>
     </span>
     <span class="post-meta-item">
       <span class="post-meta-item-icon">
@@ -1268,7 +1276,7 @@
 </p>
           <!--noindex-->
             <div class="post-button">
-              <a class="btn" href="/2026/01/16/04-%E4%BA%A4%E5%8F%89%E7%BC%96%E8%AF%91%E9%A1%BA%E5%BA%8F%E8%AF%A6%E8%A7%A3/">
+              <a class="btn" href="/2026/01/16/px4-v116-01-04-cross-compile/">
                 阅读全文 &raquo;
               </a>
             </div>
@@ -1299,7 +1307,7 @@
   
 
   <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
-    <link itemprop="mainEntityOfPage" href="https://blog.qingshanli.cn/2026/01/16/03-%E5%9B%BA%E4%BB%B6%E7%BC%96%E8%AF%91%E4%B8%8E%E7%83%A7%E5%86%99%E6%B5%81%E7%A8%8B/">
+    <link itemprop="mainEntityOfPage" href="https://blog.qingshanli.cn/2026/01/16/px4-v116-01-03-build-flash/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/avatar.jpg">
@@ -1317,7 +1325,7 @@
     </span>
       <header class="post-header">
         <h2 class="post-title" itemprop="name headline">
-          <a href="/2026/01/16/03-%E5%9B%BA%E4%BB%B6%E7%BC%96%E8%AF%91%E4%B8%8E%E7%83%A7%E5%86%99%E6%B5%81%E7%A8%8B/" class="post-title-link" itemprop="url">PX4 固件编译与烧写流程</a>
+          <a href="/2026/01/16/px4-v116-01-03-build-flash/" class="post-title-link" itemprop="url">PX4 固件编译与烧写流程</a>
         </h2>
 
         <div class="post-meta-container">
@@ -1335,7 +1343,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">更新于</span>
-      <time title="修改时间：2026-03-14 20:49:16" itemprop="dateModified" datetime="2026-03-14T20:49:16+08:00">2026-03-14</time>
+      <time title="修改时间：2026-03-14 21:02:40" itemprop="dateModified" datetime="2026-03-14T21:02:40+08:00">2026-03-14</time>
     </span>
     <span class="post-meta-item">
       <span class="post-meta-item-icon">
@@ -1384,7 +1392,7 @@
 </p>
           <!--noindex-->
             <div class="post-button">
-              <a class="btn" href="/2026/01/16/03-%E5%9B%BA%E4%BB%B6%E7%BC%96%E8%AF%91%E4%B8%8E%E7%83%A7%E5%86%99%E6%B5%81%E7%A8%8B/">
+              <a class="btn" href="/2026/01/16/px4-v116-01-03-build-flash/">
                 阅读全文 &raquo;
               </a>
             </div>
