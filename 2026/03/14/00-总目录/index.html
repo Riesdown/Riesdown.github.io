@@ -20,15 +20,15 @@
 
 <script class="next-config" data-name="main" type="application/json">{"hostname":"blog.qingshanli.cn","root":"/","images":"/images","scheme":"Gemini","darkmode":false,"version":"8.27.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"codeblock":{"theme":{"light":"default","dark":"stackoverflow-dark"},"prism":{"light":"prism","dark":"prism-dark"},"copy_button":{"enable":true,"style":"mac"},"fold":{"enable":false,"height":500},"language":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":true,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"duration":300,"transition":{"menu_item":"fadeInDown","post_block":"fadeInUp","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInRight"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":1,"unescape":false,"preload":true}}</script><script src="/js/config.js" defer></script>
 
-    <meta name="description" content="PX4 飞控 v1.16.0 源码解读系列总目录，涵盖平台层、Commander 决策层、EKF2 状态估计、Navigator 导航和 mc_pos_control 位置控制五大模块，目前共 32 篇文章。">
+    <meta name="description" content="PX4 飞控 v1.16.0 源码解读系列总目录，涵盖平台层、Commander 决策层、EKF2 状态估计、Navigator 导航和 mc_pos_control 位置控制五大模块，目前共 32 篇文章，还在不断更新中。">
 <meta property="og:type" content="article">
 <meta property="og:title" content="PX4 v1.16 源码解读总目录">
 <meta property="og:url" content="https://blog.qingshanli.cn/2026/03/14/00-%E6%80%BB%E7%9B%AE%E5%BD%95/index.html">
 <meta property="og:site_name" content="青山笔记">
-<meta property="og:description" content="PX4 飞控 v1.16.0 源码解读系列总目录，涵盖平台层、Commander 决策层、EKF2 状态估计、Navigator 导航和 mc_pos_control 位置控制五大模块，目前共 32 篇文章。">
+<meta property="og:description" content="PX4 飞控 v1.16.0 源码解读系列总目录，涵盖平台层、Commander 决策层、EKF2 状态估计、Navigator 导航和 mc_pos_control 位置控制五大模块，目前共 32 篇文章，还在不断更新中。">
 <meta property="og:locale" content="zh_CN">
 <meta property="article:published_time" content="2026-03-14T13:00:00.000Z">
-<meta property="article:modified_time" content="2026-03-14T12:42:06.000Z">
+<meta property="article:modified_time" content="2026-03-14T12:49:16.000Z">
 <meta property="article:author" content="QingShan Li">
 <meta property="article:tag" content="PX4">
 <meta property="article:tag" content="总目录">
@@ -198,7 +198,7 @@
       <div class="sidebar-panel-container">
         <!--noindex-->
         <div class="post-toc-wrap sidebar-panel">
-            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%80%E3%80%81%E7%B3%BB%E5%88%97%E8%AF%B4%E6%98%8E"><span class="nav-number">1.</span> <span class="nav-text">一、系列说明</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BA%8C%E3%80%81%E5%85%A8%E5%B1%80%E6%8E%A7%E5%88%B6%E9%93%BE%E8%B7%AF"><span class="nav-number">2.</span> <span class="nav-text">二、全局控制链路</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%89%E3%80%81%E9%98%85%E8%AF%BB%E8%B7%AF%E5%BE%84%E5%BB%BA%E8%AE%AE"><span class="nav-number">3.</span> <span class="nav-text">三、阅读路径建议</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%B7%AF%E5%BE%84%E4%B8%80%EF%BC%9A%E4%BB%8E%E5%BA%95%E5%B1%82%E5%88%B0%E9%A1%B6%E5%B1%82%EF%BC%88%E6%8E%A8%E8%8D%90%E6%96%B0%E6%89%8B%EF%BC%89"><span class="nav-number">3.1.</span> <span class="nav-text">路径一：从底层到顶层（推荐新手）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%B7%AF%E5%BE%84%E4%BA%8C%EF%BC%9A%E8%B7%9F%E9%9A%8F%E6%8E%A7%E5%88%B6%E9%93%BE%E8%B7%AF%EF%BC%88%E6%8E%A8%E8%8D%90%E6%8E%A7%E5%88%B6%E5%B7%A5%E7%A8%8B%E5%B8%88%EF%BC%89"><span class="nav-number">3.2.</span> <span class="nav-text">路径二：跟随控制链路（推荐控制工程师）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%B7%AF%E5%BE%84%E4%B8%89%EF%BC%9A%E4%B8%93%E9%A1%B9%E6%B7%B1%E5%85%A5%EF%BC%88%E6%8E%A8%E8%8D%90%E5%B7%B2%E6%9C%89%E5%9F%BA%E7%A1%80%EF%BC%89"><span class="nav-number">3.3.</span> <span class="nav-text">路径三：专项深入（推荐已有基础）</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9B%9B%E3%80%81%E5%90%84%E6%A8%A1%E5%9D%97%E6%96%87%E6%A1%A3%E7%B4%A2%E5%BC%95"><span class="nav-number">4.</span> <span class="nav-text">四、各模块文档索引</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#01-%E5%B9%B3%E5%8F%B0%E5%B1%82%EF%BC%888-%E7%AF%87%EF%BC%89"><span class="nav-number">4.1.</span> <span class="nav-text">01-平台层（8 篇）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#02-Commander-%E5%86%B3%E7%AD%96%E5%B1%82%EF%BC%887-%E7%AF%87%EF%BC%89"><span class="nav-number">4.2.</span> <span class="nav-text">02-Commander 决策层（7 篇）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#03-%E7%8A%B6%E6%80%81%E4%BC%B0%E8%AE%A1-EKF2%EF%BC%8810-%E7%AF%87%EF%BC%89"><span class="nav-number">4.3.</span> <span class="nav-text">03-状态估计-EKF2（10 篇）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#04-Navigator-%E5%AF%BC%E8%88%AA%EF%BC%884-%E7%AF%87%EF%BC%89"><span class="nav-number">4.4.</span> <span class="nav-text">04-Navigator 导航（4 篇）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#05-%E4%BD%8D%E7%BD%AE%E6%8E%A7%E5%88%B6%EF%BC%883-%E7%AF%87%EF%BC%89"><span class="nav-number">4.5.</span> <span class="nav-text">05-位置控制（3 篇）</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BA%94%E3%80%81%E6%A0%B8%E5%BF%83%E6%95%B0%E6%8D%AE%E6%B5%81%E7%B4%A2%E5%BC%95"><span class="nav-number">5.</span> <span class="nav-text">五、核心数据流索引</span></a></li></ol></div>
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%80%E3%80%81%E7%B3%BB%E5%88%97%E8%AF%B4%E6%98%8E"><span class="nav-number">1.</span> <span class="nav-text">一、系列说明</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BA%8C%E3%80%81%E5%90%84%E6%A8%A1%E5%9D%97%E6%96%87%E6%A1%A3%E7%B4%A2%E5%BC%95"><span class="nav-number">2.</span> <span class="nav-text">二、各模块文档索引</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#01-%E5%B9%B3%E5%8F%B0%E5%B1%82%EF%BC%888-%E7%AF%87%EF%BC%89"><span class="nav-number">2.1.</span> <span class="nav-text">01-平台层（8 篇）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#02-Commander-%E5%86%B3%E7%AD%96%E5%B1%82%EF%BC%887-%E7%AF%87%EF%BC%89"><span class="nav-number">2.2.</span> <span class="nav-text">02-Commander 决策层（7 篇）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#03-%E7%8A%B6%E6%80%81%E4%BC%B0%E8%AE%A1-EKF2%EF%BC%8810-%E7%AF%87%EF%BC%89"><span class="nav-number">2.3.</span> <span class="nav-text">03-状态估计-EKF2（10 篇）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#04-Navigator-%E5%AF%BC%E8%88%AA%EF%BC%884-%E7%AF%87%EF%BC%89"><span class="nav-number">2.4.</span> <span class="nav-text">04-Navigator 导航（4 篇）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#05-%E4%BD%8D%E7%BD%AE%E6%8E%A7%E5%88%B6%EF%BC%883-%E7%AF%87%EF%BC%89"><span class="nav-number">2.5.</span> <span class="nav-text">05-位置控制（3 篇）</span></a></li></ol></li></ol></div>
         </div>
         <!--/noindex-->
 
@@ -277,7 +277,7 @@
 
     <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
       <meta itemprop="name" content="PX4 v1.16 源码解读总目录 | 青山笔记">
-      <meta itemprop="description" content="PX4 飞控 v1.16.0 源码解读系列总目录，涵盖平台层、Commander 决策层、EKF2 状态估计、Navigator 导航和 mc_pos_control 位置控制五大模块，目前共 32 篇文章。
+      <meta itemprop="description" content="PX4 飞控 v1.16.0 源码解读系列总目录，涵盖平台层、Commander 决策层、EKF2 状态估计、Navigator 导航和 mc_pos_control 位置控制五大模块，目前共 32 篇文章，还在不断更新中。
 ">
     </span>
       <header class="post-header">
@@ -294,7 +294,7 @@
       <span class="post-meta-item-text">发表于</span>
       
 
-      <time title="创建时间：2026-03-14 21:00:00 / 修改时间：20:42:06" itemprop="dateCreated datePublished" datetime="2026-03-14T21:00:00+08:00">2026-03-14</time>
+      <time title="创建时间：2026-03-14 21:00:00 / 修改时间：20:49:16" itemprop="dateCreated datePublished" datetime="2026-03-14T21:00:00+08:00">2026-03-14</time>
     </span>
     <span class="post-meta-item">
       <span class="post-meta-item-icon">
@@ -324,18 +324,18 @@
         <i class="far fa-file-word"></i>
       </span>
       <span class="post-meta-item-text">本文字数：</span>
-      <span>951</span>
+      <span>721</span>
     </span>
     <span class="post-meta-item" title="阅读时长">
       <span class="post-meta-item-icon">
         <i class="far fa-clock"></i>
       </span>
       <span class="post-meta-item-text">阅读时长 &asymp;</span>
-      <span>3 分钟</span>
+      <span>2 分钟</span>
     </span>
 </div>
 
-            <div class="post-description">PX4 飞控 v1.16.0 源码解读系列总目录，涵盖平台层、Commander 决策层、EKF2 状态估计、Navigator 导航和 mc_pos_control 位置控制五大模块，目前共 32 篇文章。
+            <div class="post-description">PX4 飞控 v1.16.0 源码解读系列总目录，涵盖平台层、Commander 决策层、EKF2 状态估计、Navigator 导航和 mc_pos_control 位置控制五大模块，目前共 32 篇文章，还在不断更新中。
 </div>
         </div>
       </header>
@@ -360,22 +360,7 @@
 <li>文中链接均为本系列内部交叉引用</li>
 </ul>
 <hr>
-<h2 id="二、全局控制链路"><a href="#二、全局控制链路" class="headerlink" title="二、全局控制链路"></a>二、全局控制链路</h2><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br></pre></td><td class="code"><pre><span class="line">flowchart TB</span><br><span class="line">    subgraph Platform[&quot;平台层&quot;]</span><br><span class="line">        HW[&quot;Board/SOC/BSP\n硬件抽象&quot;]</span><br><span class="line">        UORB[&quot;uORB\n发布订阅通信&quot;]</span><br><span class="line">        WQ[&quot;WorkQueue\n任务调度&quot;]</span><br><span class="line">        MOD[&quot;Module 框架\nModuleBase&lt;T&gt;&quot;]</span><br><span class="line">    end</span><br><span class="line"></span><br><span class="line">    subgraph EKF2_[&quot;EKF2 状态估计层&quot;]</span><br><span class="line">        SENS[&quot;传感器输入\nIMU/GPS/Mag/Baro/EV&quot;]</span><br><span class="line">        PRED[&quot;状态预测\npredictState() + predictCovariance()&quot;]</span><br><span class="line">        FUSE[&quot;融合调度\ncontrolFusionModes()&quot;]</span><br><span class="line">        OUT_EKF[&quot;估计输出\nvehicle_local_position\nvehicle_attitude&quot;]</span><br><span class="line">    end</span><br><span class="line"></span><br><span class="line">    subgraph CMD[&quot;Commander 决策层&quot;]</span><br><span class="line">        ARM[&quot;解锁/上锁\narm() / disarm()&quot;]</span><br><span class="line">        MODE[&quot;飞行模式状态机\nnav_state&quot;]</span><br><span class="line">        CTL[&quot;控制模式生成\nvehicle_control_mode&quot;]</span><br><span class="line">    end</span><br><span class="line"></span><br><span class="line">    subgraph NAV[&quot;Navigator 导航层&quot;]</span><br><span class="line">        MISSION[&quot;Mission/RTL/Loiter\n具体导航模式&quot;]</span><br><span class="line">        MBLOCK[&quot;MissionBlock\n任务语义翻译&quot;]</span><br><span class="line">        GF[&quot;Geofence\n围栏安全&quot;]</span><br><span class="line">        TRIP[&quot;position_setpoint_triplet&quot;]</span><br><span class="line">    end</span><br><span class="line"></span><br><span class="line">    subgraph MPC[&quot;位置控制层&quot;]</span><br><span class="line">        FMM[&quot;FlightTask\n轨迹生成&quot;]</span><br><span class="line">        POSCTL[&quot;PositionControl\n串级PID&quot;]</span><br><span class="line">        ATT_SP[&quot;vehicle_attitude_setpoint&quot;]</span><br><span class="line">    end</span><br><span class="line"></span><br><span class="line">    HW --&gt; UORB</span><br><span class="line">    UORB --&gt; WQ</span><br><span class="line">    SENS --&gt; EKF2_</span><br><span class="line">    EKF2_ --&gt; OUT_EKF</span><br><span class="line">    OUT_EKF --&gt; CMD</span><br><span class="line">    OUT_EKF --&gt; NAV</span><br><span class="line">    OUT_EKF --&gt; MPC</span><br><span class="line">    CMD --&gt; MODE</span><br><span class="line">    MODE --&gt; NAV</span><br><span class="line">    NAV --&gt; TRIP</span><br><span class="line">    TRIP --&gt; FMM</span><br><span class="line">    FMM --&gt; POSCTL</span><br><span class="line">    POSCTL --&gt; ATT_SP</span><br><span class="line">    ATT_SP --&gt; mc_att[&quot;mc_att_control\n姿态控制&quot;]</span><br><span class="line">    mc_att --&gt; mixer[&quot;电机混控\n输出 PWM/DShot&quot;]</span><br></pre></td></tr></table></figure>
-
-<hr>
-<h2 id="三、阅读路径建议"><a href="#三、阅读路径建议" class="headerlink" title="三、阅读路径建议"></a>三、阅读路径建议</h2><h3 id="路径一：从底层到顶层（推荐新手）"><a href="#路径一：从底层到顶层（推荐新手）" class="headerlink" title="路径一：从底层到顶层（推荐新手）"></a>路径一：从底层到顶层（推荐新手）</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">01-平台层 → 02-Commander → 03-EKF2 → 04-Navigator → 05-位置控制</span><br></pre></td></tr></table></figure>
-
-<p>按照信号流方向，先理解硬件抽象和通信机制，再理解估计、决策、导航、控制。</p>
-<h3 id="路径二：跟随控制链路（推荐控制工程师）"><a href="#路径二：跟随控制链路（推荐控制工程师）" class="headerlink" title="路径二：跟随控制链路（推荐控制工程师）"></a>路径二：跟随控制链路（推荐控制工程师）</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">EKF2（状态输入） → Commander（模式选择） → Navigator（目标生成）</span><br><span class="line">→ mc_pos_control（位置速度控制） → mc_att_control（姿态角速度控制）</span><br></pre></td></tr></table></figure>
-
-<h3 id="路径三：专项深入（推荐已有基础）"><a href="#路径三：专项深入（推荐已有基础）" class="headerlink" title="路径三：专项深入（推荐已有基础）"></a>路径三：专项深入（推荐已有基础）</h3><ul>
-<li>只关注通信机制：<code>01-06 uORB上</code>、<code>01-07 uORB下</code></li>
-<li>只关注状态估计：<code>03-01</code> ~ <code>03-10</code> EKF2 全部</li>
-<li>只关注导航逻辑：<code>04-01</code> ~ <code>04-04</code> Navigator 全部</li>
-<li>只关注控制算法：<code>05-03 串级控制算法</code></li>
-</ul>
-<hr>
-<h2 id="四、各模块文档索引"><a href="#四、各模块文档索引" class="headerlink" title="四、各模块文档索引"></a>四、各模块文档索引</h2><h3 id="01-平台层（8-篇）"><a href="#01-平台层（8-篇）" class="headerlink" title="01-平台层（8 篇）"></a>01-平台层（8 篇）</h3><table>
+<h2 id="二、各模块文档索引"><a href="#二、各模块文档索引" class="headerlink" title="二、各模块文档索引"></a>二、各模块文档索引</h2><h3 id="01-平台层（8-篇）"><a href="#01-平台层（8-篇）" class="headerlink" title="01-平台层（8 篇）"></a>01-平台层（8 篇）</h3><table>
 <thead>
 <tr>
 <th>序号</th>
@@ -581,74 +566,8 @@
 </tr>
 </tbody></table>
 <hr>
-<h2 id="五、核心数据流索引"><a href="#五、核心数据流索引" class="headerlink" title="五、核心数据流索引"></a>五、核心数据流索引</h2><p>以下是各模块之间的关键 uORB 话题连接：</p>
-<table>
-<thead>
-<tr>
-<th>话题</th>
-<th>发布者</th>
-<th>主要订阅者</th>
-</tr>
-</thead>
-<tbody><tr>
-<td><code>vehicle_attitude</code></td>
-<td>EKF2</td>
-<td>Commander, mc_att_control</td>
-</tr>
-<tr>
-<td><code>vehicle_local_position</code></td>
-<td>EKF2</td>
-<td>Commander, Navigator, mc_pos_control</td>
-</tr>
-<tr>
-<td><code>vehicle_global_position</code></td>
-<td>EKF2</td>
-<td>Navigator, GCS</td>
-</tr>
-<tr>
-<td><code>vehicle_status</code></td>
-<td>Commander</td>
-<td>Navigator, mc_pos_control, 所有模块</td>
-</tr>
-<tr>
-<td><code>vehicle_control_mode</code></td>
-<td>Commander</td>
-<td>mc_pos_control, mc_att_control</td>
-</tr>
-<tr>
-<td><code>home_position</code></td>
-<td>Commander</td>
-<td>Navigator, EKF2</td>
-</tr>
-<tr>
-<td><code>position_setpoint_triplet</code></td>
-<td>Navigator</td>
-<td>FlightTaskAuto (flight_mode_manager)</td>
-</tr>
-<tr>
-<td><code>trajectory_setpoint</code></td>
-<td>FlightTask</td>
-<td>mc_pos_control</td>
-</tr>
-<tr>
-<td><code>vehicle_attitude_setpoint</code></td>
-<td>mc_pos_control</td>
-<td>mc_att_control</td>
-</tr>
-<tr>
-<td><code>estimator_status</code></td>
-<td>EKF2</td>
-<td>Commander (健康监控)</td>
-</tr>
-<tr>
-<td><code>geofence_result</code></td>
-<td>Navigator</td>
-<td>Commander (failsafe 触发)</td>
-</tr>
-</tbody></table>
-<hr>
 <blockquote>
-<p>本系列持续更新中，内容以 PX4 v1.16.0 为基准。<br>如有错误或遗漏，欢迎在评论区指出。</p>
+<p>本系列持续更新中，内容以 PX4 v1.16.0 为基准。<br>如有错误或遗漏，欢迎私信联系交流。</p>
 </blockquote>
 
     </div>
